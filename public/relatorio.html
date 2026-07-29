@@ -19,7 +19,7 @@
       <button type="button" class="btn-voltar" onclick="history.back()" data-i18n-title="relatorio.voltar">
         <img src="/assets/voltar.png" alt="Voltar" data-i18n-alt="relatorio.voltar">
       </button>
-      <h1 class="rel-titulo">Meus ganhos</h1>
+      <h1 class="rel-titulo" data-i18n="relatorio.titulo_ganhos">Meus ganhos</h1>
     </div>
 
     <div class="acord-lista">
@@ -27,7 +27,7 @@
       <!-- GANHOS — aberto por padrão -->
       <div class="acord-item acord-aberto" id="acordGanhos">
         <div class="acord-btn acord-btn-ganhos" id="toggleGanhos">
-          <span id="labelMesAtual">Mês Atual</span>
+          <span id="labelMesAtual" data-i18n="relatorio.mes_atual">Mês Atual</span>
           <div class="acord-btn-right" onclick="event.stopPropagation()">
             <select id="filtroMes" class="rel-filtro-mes"></select>
             <button id="btnImprimir" class="rel-btn-print" title="Imprimir relatório" onclick="imprimirRelatorio()">
@@ -51,7 +51,7 @@
               </div>
             </div>
             <div class="rel-hero-total-row">
-              <span class="rel-hero-total-lbl">Total</span>
+              <span class="rel-hero-total-lbl" data-i18n="relatorio.total">Total</span>
               <strong class="rel-hero-total" id="totalMesAtual">R$ 0,00</strong>
             </div>
           </div>
@@ -74,7 +74,7 @@
           <div id="secaoAssinantes" class="rel-assinantes">
             <div class="rel-ass-info">
               <div>
-                <p class="rel-ass-lbl" data-i18n="Assinantes">Assinantes ativos</p>
+                <p class="rel-ass-lbl" data-i18n="relatorio.assinantes_ativos">Assinantes ativos</p>
                 <strong class="rel-ass-num" id="totalAssinantes">0</strong>
               </div>
             </div>
@@ -83,79 +83,79 @@
 
           <!-- SITUAÇÃO DOS VALORES -->
           <div id="secaoStatusMes">
-            <p class="rel-sec-lbl">Situação dos valores</p>
+            <p class="rel-sec-lbl" data-i18n="relatorio.situacao_valores">Situação dos valores</p>
             <div class="rel-g2">
               <div class="rel-st ok">
-                <p class="rel-st-lbl">Liberado hoje</p>
+                <p class="rel-st-lbl" data-i18n="relatorio.liberado_hoje">Liberado hoje</p>
                 <strong class="rel-st-val" id="liberadoHoje">R$ 0,00</strong>
               </div>
               <div class="rel-st hold">
-                <p class="rel-st-lbl">Pendentes hoje</p>
+                <p class="rel-st-lbl" data-i18n="relatorio.pendentes_hoje">Pendentes hoje</p>
                 <strong class="rel-st-val" id="bloqueadoHoje">R$ 0,00</strong>
               </div>
             </div>
             <div class="rel-g2" style="margin-top:8px">
               <div class="rel-st ok">
-                <p class="rel-st-lbl">Liberado no mês</p>
+                <p class="rel-st-lbl" data-i18n="relatorio.liberado_mes">Liberado no mês</p>
                 <strong class="rel-st-val" id="liberadoMes">R$ 0,00</strong>
               </div>
               <div class="rel-st hold">
-                <p class="rel-st-lbl">Pendentes no mês</p>
+                <p class="rel-st-lbl" data-i18n="relatorio.pendentes_mes">Pendentes no mês</p>
                 <strong class="rel-st-val" id="bloqueadoMes">R$ 0,00</strong>
               </div>
             </div>
-            <div class="pendentes"><p data-i18n="pendentesT"><strong>O QUE SÃO VALORES PENDENTES?</strong></p>
-                <p data-i18n="pendentesS">São valores pagos pelo cliente via cartão de crédito. Dependemos da operadora avaliar o pagamento, descartar fraude e liberar o valor — o que pode levar de 3 a 30 dias. Não se preocupe! A própria plataforma atualiza os ganhos pendentes para liberados automaticamente!</p>
+            <div class="pendentes"><p data-i18n="relatorio.pendentesT"><strong>O QUE SÃO VALORES PENDENTES?</strong></p>
+                <p data-i18n="relatorio.pendentesS">São valores pagos pelo cliente via cartão de crédito. Dependemos da operadora avaliar o pagamento, descartar fraude e liberar o valor — o que pode levar de 3 a 30 dias. Não se preocupe! A própria plataforma atualiza os ganhos pendentes para liberados automaticamente!</p>
               </div>
           </div>
 
           <!-- SITUAÇÃO DO MÊS FILTRADO -->
           <div id="secaoStatusFiltro" style="display:none">
-            <p class="rel-sec-lbl">Situação dos valores</p>
+            <p class="rel-sec-lbl" data-i18n="relatorio.situacao_valores">Situação dos valores</p>
             <div class="rel-g2">
               <div class="rel-st ok">
-                <p class="rel-st-lbl">Liberados no mês</p>
+                <p class="rel-st-lbl" data-i18n="relatorio.liberados_mes">Liberados no mês</p>
                 <strong class="rel-st-val" id="liberadoFiltroMes">R$ 0,00</strong>
               </div>
               <div class="rel-st hold">
-                <p class="rel-st-lbl">Pendentes no mês</p>
+                <p class="rel-st-lbl" data-i18n="relatorio.pendentes_mes">Pendentes no mês</p>
                 <strong class="rel-st-val" id="bloqueadoFiltroMes">R$ 0,00</strong>
               </div>
             </div>
-            <div class="pendentes"><p><strong>O que são valores pendentes?</strong></p>
-              <p>São valores pagos pelo cliente via cartão de crédito. Dependemos da operadora avaliar o pagamento, descartar fraude e liberar o valor — o que pode levar de 3 a 30 dias. Não se preocupe! A própria plataforma atualiza os ganhos pendentes para liberados automaticamente!</p>
+            <div class="pendentes"><p data-i18n="relatorio.pendentesT"><strong>O que são valores pendentes?</strong></p>
+              <p data-i18n="relatorio.pendentesS">São valores pagos pelo cliente via cartão de crédito. Dependemos da operadora avaliar o pagamento, descartar fraude e liberar o valor — o que pode levar de 3 a 30 dias. Não se preocupe! A própria plataforma atualiza os ganhos pendentes para liberados automaticamente!</p>
             </div>
           </div>
 
           <!-- MÊS ANTERIOR -->
           <div id="secaoMesAnterior">
             <hr class="separator">
-            <p class="rel-sec-lbl" id="labelMesAnterior">Mês anterior</p>
+            <p class="rel-sec-lbl" id="labelMesAnterior" data-i18n="relatorio.mes_anterior">Mês anterior</p>
 
             <div class="rel-hero rel-hero-sm">
               <div class="rel-hero-grid">
                 <div>
-                  <p class="rel-hero-sublabel">Mídias</p>
+                  <p class="rel-hero-sublabel" data-i18n="relatorio.midias">Mídias</p>
                   <span class="rel-hero-sub" id="mesAnteriorMidias">R$ 0,00</span>
                 </div>
                 <div>
-                  <p class="rel-hero-sublabel">Assinaturas</p>
+                  <p class="rel-hero-sublabel" data-i18n="relatorio.assinaturas">Assinaturas</p>
                   <span class="rel-hero-sub" id="mesAnteriorAssinaturas">R$ 0,00</span>
                 </div>
               </div>
               <div class="rel-hero-total-row">
-                <span class="rel-hero-total-lbl">Total bruto</span>
+                <span class="rel-hero-total-lbl" data-i18n="relatorio.total_bruto">Total bruto</span>
                 <strong class="rel-hero-total" style="font-size:20px" id="totalMesAnterior">R$ 0,00</strong>
               </div>
             </div>
 
             <div class="rel-g2" style="margin-top:8px">
               <div class="rel-st ok">
-                <p class="rel-st-lbl">Liberados Mês Anterior</p>
+                <p class="rel-st-lbl" data-i18n="relatorio.liberados_mes_anterior">Liberados Mês Anterior</p>
                 <strong class="rel-st-val" id="liberadoMesAnterior">R$ 0,00</strong>
               </div>
               <div class="rel-st hold">
-                <p class="rel-st-lbl">Pendentes Mês Anterior</p>
+                <p class="rel-st-lbl" data-i18n="relatorio.pendentes_mes_anterior">Pendentes Mês Anterior</p>
                 <strong class="rel-st-val" id="bloqueadoMesAnterior">R$ 0,00</strong>
               </div>
             </div>
@@ -191,12 +191,12 @@
       <!-- CHARGEBACKS -->
       <div class="acord-item">
         <button class="acord-btn" data-target="tab-chargebacks">
-          <span>Chargebacks</span>
+          <span data-i18n="relatorio.chargebacks">Chargebacks</span>
           <span class="acord-chevron">&#8964;</span>
         </button>
         <div class="acord-corpo" id="tab-chargebacks">
           <div id="resumoChargebacks" class="rel-cb-resumo"></div>
-          <div id="listaChargebacks">Carregando...</div>
+          <div id="listaChargebacks" data-i18n="relatorio.carregando">Carregando...</div>
           <div id="secaoChargebacksAnterior" style="display:none;margin-top:16px;">
             <p class="rel-sec-lbl" id="labelChargebacksAnterior"></p>
             <div id="resumoChargebacksAnterior" class="rel-cb-resumo"></div>

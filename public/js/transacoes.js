@@ -165,25 +165,26 @@ function styleInput() {
 
 function camposBase(extra = "") {
   return `
-    <label style="display:block;margin-bottom:5px;font-size:13px;font-weight:600;color:#5e5873;">Nome completo *</label>
-    <input id="oc-nome" type="text" placeholder="Seu nome completo" style="${styleInput()}" />
+    <label style="display:block;margin-bottom:5px;font-size:13px;font-weight:600;color:#5e5873;">${t("transacoes.campo_nome")}</label>
+    <input id="oc-nome" type="text" placeholder="${t("transacoes.placeholder_nome")}" style="${styleInput()}" />
 
-    <label style="display:block;margin-bottom:5px;font-size:13px;font-weight:600;color:#5e5873;">Data de nascimento *</label>
+    <label style="display:block;margin-bottom:5px;font-size:13px;font-weight:600;color:#5e5873;">${t("transacoes.campo_nasc")}</label>
     <input id="oc-nasc" type="date" style="${styleInput()}" />
 
-    <label style="display:block;margin-bottom:5px;font-size:13px;font-weight:600;color:#5e5873;">E-mail da conta *</label>
-    <input id="oc-email" type="email" placeholder="email@exemplo.com" style="${styleInput()}" />
+    <label style="display:block;margin-bottom:5px;font-size:13px;font-weight:600;color:#5e5873;">${t("transacoes.campo_email")}</label>
+    <input id="oc-email" type="email" placeholder="${t("transacoes.placeholder_email")}" style="${styleInput()}" />
 
-    <label style="display:block;margin-bottom:5px;font-size:13px;font-weight:600;color:#5e5873;">Data e hora do pagamento *</label>
+    <label style="display:block;margin-bottom:5px;font-size:13px;font-weight:600;color:#5e5873;">${t("transacoes.campo_dtpag")}</label>
     <input id="oc-dtpag" type="datetime-local" style="${styleInput()}" />
 
     ${extra}
   `;
 }
 
-function campoAnexo(label = "Print / Comprovante") {
+function campoAnexo(label) {
+  const lbl = label || t("transacoes.label_anexo");
   return `
-    <label style="display:block;margin-bottom:5px;font-size:13px;font-weight:600;color:#5e5873;">${label}</label>
+    <label style="display:block;margin-bottom:5px;font-size:13px;font-weight:600;color:#5e5873;">${lbl}</label>
     <input type="file" id="oc-anexo" accept="image/*,application/pdf" style="width:100%;font-size:13px;margin-bottom:14px;" />
   `;
 }
@@ -192,9 +193,9 @@ function btnEnviar(fn) {
   return `<button data-send onclick='${fn}' style="
     width:100%;background:#6f3cff;color:#fff;border:none;border-radius:12px;
     padding:13px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:4px;">
-    Enviar ocorrência
+    ${t("transacoes.btn_enviar_ocorrencia")}
   </button>
-  <p style="font-size:12px;color:#9b87b8;margin-top:10px;text-align:center;">⏰ Prazo de resposta: 24 a 48 horas úteis.</p>`;
+  <p style="font-size:12px;color:#9b87b8;margin-top:10px;text-align:center;">⏰ ${t("transacoes.prazo_resposta")}</p>`;
 }
 
 function valoresBase() {
@@ -219,7 +220,7 @@ async function lerAnexo() {
 
 async function enviarOcorrencia(payload) {
   const btn = document.querySelector("#modal-ocorrencia [data-send]");
-  if (btn) { btn.disabled = true; btn.textContent = "Enviando…"; }
+  if (btn) { btn.disabled = true; btn.textContent = t("transacoes.enviando"); }
   try {
     const res = await fetch("/api/cliente/ocorrencia", {
       method: "POST",
@@ -230,18 +231,18 @@ async function enviarOcorrencia(payload) {
     abrirModal(`
       <div style="text-align:center;padding:16px 0;">
         <div style="font-size:48px;margin-bottom:12px;">✅</div>
-        <h3 style="color:#6f3cff;margin:0 0 8px;">Ocorrência registrada!</h3>
-        <p style="color:#5e5873;line-height:1.6;">Nossa equipe analisará seu caso e responderá em até <strong>24–48 horas úteis</strong>.</p>
+        <h3 style="color:#6f3cff;margin:0 0 8px;">${t("transacoes.oc_registrada_titulo")}</h3>
+        <p style="color:#5e5873;line-height:1.6;">${t("transacoes.oc_registrada_texto")}</p>
         <button onclick="fecharModal()" style="
           margin-top:20px;background:#6f3cff;color:#fff;border:none;border-radius:10px;
           padding:11px 32px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">
-          Fechar
+          ${t("transacoes.btn_fechar")}
         </button>
       </div>
     `);
   } catch {
-    if (btn) { btn.disabled = false; btn.textContent = "Enviar ocorrência"; }
-    alert("Erro ao enviar. Tente novamente ou contacte contato@velvet.lat.");
+    if (btn) { btn.disabled = false; btn.textContent = t("transacoes.btn_enviar_ocorrencia"); }
+    alert(t("transacoes.err_enviar"));
   }
 }
 
@@ -350,25 +351,25 @@ function modalArrependimento(aceiteTimestamp, aceiteIp) {
 // MODAIS — REEMBOLSO VIP
 // ================================================
 window.modalCancelar = function(id, validaAte) {
-  const dtLabel = validaAte ? formatarData(validaAte) : "o fim do período atual";
+  const dtLabel = validaAte ? formatarData(validaAte) : t("transacoes.fim_periodo_atual");
   abrirModal(`
-    <h3 style="color:#c0392b;margin:0 0 14px;">⚠️ Cancelar assinatura</h3>
+    <h3 style="color:#c0392b;margin:0 0 14px;">⚠️ ${t("transacoes.cancelar_titulo")}</h3>
     <div style="background:#fff5f5;border-left:4px solid #e74c3c;border-radius:8px;padding:12px 16px;margin-bottom:16px;">
-      <p style="margin:0 0 6px;font-weight:700;color:#c0392b;">O cancelamento <u>não gera reembolso</u>.</p>
+      <p style="margin:0 0 6px;font-weight:700;color:#c0392b;">${t("transacoes.cancelamento_sem_reembolso")}</p>
       <p style="margin:0;color:#5e5873;font-size:13px;line-height:1.6;">
-        Seu acesso permanece ativo até <strong>${dtLabel}</strong> e não será renovado após essa data.
+        ${t("transacoes.cancelamento_acesso_ate").replace("{data}", `<strong>${dtLabel}</strong>`)}
       </p>
     </div>
     <div style="display:flex;gap:12px;">
       <button onclick="fecharModal()" style="
         flex:1;background:#f3eff5;color:#1e1b2e;border:none;border-radius:10px;
         padding:12px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;">
-        Voltar
+        ${t("transacoes.btn_voltar")}
       </button>
       <button onclick="confirmarCancelamento(${id})" style="
         flex:1;background:#c0392b;color:#fff;border:none;border-radius:10px;
         padding:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">
-        Sim, cancelar
+        ${t("transacoes.sim_cancelar")}
       </button>
     </div>
   `, { noClose: true });
@@ -376,47 +377,46 @@ window.modalCancelar = function(id, validaAte) {
 
 window.confirmarCancelamento = async function(id) {
   const btn = event?.target;
-  if (btn) { btn.disabled = true; btn.textContent = "Cancelando…"; }
+  if (btn) { btn.disabled = true; btn.textContent = t("transacoes.cancelando"); }
   try {
     const res = await fetch(`/api/cliente/subscricoes/${id}/cancelar`, {
       method: "PUT", headers: { Authorization: "Bearer " + getToken() }
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) { alert(data.error || "Erro ao cancelar."); fecharModal(); return; }
-    const ate = data.valida_ate ? formatarData(data.valida_ate) : "o fim do período";
+    if (!res.ok) { alert(data.error || t("transacoes.err_cancelar_msg")); fecharModal(); return; }
+    const ate = data.valida_ate ? formatarData(data.valida_ate) : t("transacoes.fim_periodo");
     abrirModal(`
       <div style="text-align:center;padding:16px 0;">
         <div style="font-size:44px;margin-bottom:12px;">📋</div>
-        <h3 style="color:#6f3cff;margin:0 0 8px;">Cancelamento registrado</h3>
+        <h3 style="color:#6f3cff;margin:0 0 8px;">${t("transacoes.cancelamento_registrado")}</h3>
         <p style="color:#5e5873;line-height:1.6;">
-          Seu acesso permanece <strong>ativo até ${ate}</strong>.<br>
-          Não será renovado após essa data.
+          ${t("transacoes.cancelamento_acesso_ate").replace("{data}", `<strong>${ate}</strong>`)}
         </p>
         <button onclick="fecharModal();carregarSubscricoes();" style="
           margin-top:20px;background:#6f3cff;color:#fff;border:none;border-radius:10px;
           padding:11px 32px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">
-          Entendido
+          ${t("transacoes.entendido")}
         </button>
       </div>
     `);
-  } catch { alert("Erro inesperado."); fecharModal(); }
+  } catch { alert(t("transacoes.err_inesperado_msg")); fecharModal(); }
 };
 
 function modalVipNaoLiberou(modeloNome) {
   abrirModal(`
-    <h3 style="color:#6f3cff;margin:0 0 4px;">VIP não liberou após pagamento</h3>
-    <p style="color:#9b87b8;font-size:13px;margin:0 0 16px;">Nossa equipe verificará e ativará seu acesso.</p>
+    <h3 style="color:#6f3cff;margin:0 0 4px;">${t("transacoes.vip_nao_liberou_titulo")}</h3>
+    <p style="color:#9b87b8;font-size:13px;margin:0 0 16px;">${t("transacoes.vip_nao_liberou_desc")}</p>
     ${camposBase(`
-      <label style="display:block;margin-bottom:5px;font-size:13px;font-weight:600;color:#5e5873;">Nome da criadora</label>
-      <input id="oc-modelo" type="text" value="${modeloNome || ""}" placeholder="Nome da criadora" style="${styleInput()}" />
-      ${campoAnexo("Print do perfil bloqueado / comprovante")}
+      <label style="display:block;margin-bottom:5px;font-size:13px;font-weight:600;color:#5e5873;">${t("transacoes.label_nome_criadora")}</label>
+      <input id="oc-modelo" type="text" value="${modeloNome || ""}" placeholder="${t("transacoes.placeholder_criadora")}" style="${styleInput()}" />
+      ${campoAnexo()}
     `)}
     ${btnEnviar("enviarVipNaoLiberou()")}
   `);
 }
 window.enviarVipNaoLiberou = async function() {
   const { nome, nasc, email, dtpag } = valoresBase();
-  if (!nome || !email || !dtpag) return alert("Preencha todos os campos obrigatórios (*).");
+  if (!nome || !email || !dtpag) return alert(t("transacoes.preencha_campos"));
   const { base64, filename } = await lerAnexo();
   await enviarOcorrencia({
     tipo: "vip_nao_liberou", subtipo: "assinatura",
@@ -429,21 +429,21 @@ window.enviarVipNaoLiberou = async function() {
 
 function modalPropaganda(modeloNome, subtipo) {
   abrirModal(`
-    <h3 style="color:#6f3cff;margin:0 0 4px;">Propaganda enganosa</h3>
-    <p style="color:#9b87b8;font-size:13px;margin:0 0 16px;">Descreva o que aconteceu com evidências.</p>
+    <h3 style="color:#6f3cff;margin:0 0 4px;">${t("transacoes.propaganda_titulo")}</h3>
+    <p style="color:#9b87b8;font-size:13px;margin:0 0 16px;">${t("transacoes.propaganda_desc")}</p>
     ${camposBase(`
-      <label style="display:block;margin-bottom:5px;font-size:13px;font-weight:600;color:#5e5873;">Nome da influencer</label>
-      <input id="oc-modelo" type="text" value="${modeloNome || ""}" placeholder="Nome da criadora" style="${styleInput()}" />
-      <label style="display:block;margin-bottom:5px;font-size:13px;font-weight:600;color:#5e5873;">Descreva o ocorrido</label>
-      <textarea id="oc-desc" rows="3" placeholder="Ex: o perfil prometia X mas entregou Y..." style="${styleInput()}resize:vertical;"></textarea>
-      ${campoAnexo("Print da propaganda / evidência")}
+      <label style="display:block;margin-bottom:5px;font-size:13px;font-weight:600;color:#5e5873;">${t("transacoes.label_nome_influencer")}</label>
+      <input id="oc-modelo" type="text" value="${modeloNome || ""}" placeholder="${t("transacoes.placeholder_criadora")}" style="${styleInput()}" />
+      <label style="display:block;margin-bottom:5px;font-size:13px;font-weight:600;color:#5e5873;">${t("transacoes.label_descricao_ocorrido")}</label>
+      <textarea id="oc-desc" rows="3" placeholder="${t("transacoes.placeholder_descricao_prop")}" style="${styleInput()}resize:vertical;"></textarea>
+      ${campoAnexo()}
     `)}
     ${btnEnviar(`enviarPropaganda("${subtipo || "assinatura"}")`)}
   `);
 }
 window.enviarPropaganda = async function(subtipo) {
   const { nome, nasc, email, dtpag } = valoresBase();
-  if (!nome || !email) return alert("Preencha todos os campos obrigatórios (*).");
+  if (!nome || !email) return alert(t("transacoes.preencha_campos"));
   const { base64, filename } = await lerAnexo();
   await enviarOcorrencia({
     tipo: "propaganda", subtipo,
@@ -456,21 +456,21 @@ window.enviarPropaganda = async function(subtipo) {
 
 function modalModeloErrada() {
   abrirModal(`
-    <h3 style="color:#6f3cff;margin:0 0 4px;">Assinei a influencer errada</h3>
-    <p style="color:#9b87b8;font-size:13px;margin:0 0 16px;">Vamos analisar para tentar trocar sua assinatura.</p>
+    <h3 style="color:#6f3cff;margin:0 0 4px;">${t("transacoes.modelo_errada_titulo")}</h3>
+    <p style="color:#9b87b8;font-size:13px;margin:0 0 16px;">${t("transacoes.modelo_errada_desc")}</p>
     ${camposBase(`
-      <label style="display:block;margin-bottom:5px;font-size:13px;font-weight:600;color:#5e5873;">influencer assinada por engano</label>
-      <input id="oc-modelo-engano" type="text" placeholder="Nome da criadora" style="${styleInput()}" />
-      <label style="display:block;margin-bottom:5px;font-size:13px;font-weight:600;color:#5e5873;">influencer que queria assinar</label>
-      <input id="oc-modelo-certa" type="text" placeholder="Nome da criadora correta" style="${styleInput()}" />
-      ${campoAnexo("Comprovante de pagamento (opcional)")}
+      <label style="display:block;margin-bottom:5px;font-size:13px;font-weight:600;color:#5e5873;">${t("transacoes.label_influencer_engano")}</label>
+      <input id="oc-modelo-engano" type="text" placeholder="${t("transacoes.placeholder_criadora")}" style="${styleInput()}" />
+      <label style="display:block;margin-bottom:5px;font-size:13px;font-weight:600;color:#5e5873;">${t("transacoes.label_influencer_certa")}</label>
+      <input id="oc-modelo-certa" type="text" placeholder="${t("transacoes.placeholder_criadora_certa")}" style="${styleInput()}" />
+      ${campoAnexo()}
     `)}
     ${btnEnviar("enviarModeloErrada()")}
   `);
 }
 window.enviarModeloErrada = async function() {
   const { nome, nasc, email, dtpag } = valoresBase();
-  if (!nome || !email || !dtpag) return alert("Preencha todos os campos obrigatórios (*).");
+  if (!nome || !email || !dtpag) return alert(t("transacoes.preencha_campos"));
   const engano = document.getElementById("oc-modelo-engano")?.value?.trim();
   const certa  = document.getElementById("oc-modelo-certa")?.value?.trim();
   const { base64, filename } = await lerAnexo();
@@ -488,19 +488,19 @@ window.enviarModeloErrada = async function() {
 // ================================================
 function modalMidiaNaoDesbloqueou(midiaId, modeloNome, subtipo) {
   abrirModal(`
-    <h3 style="color:#6f3cff;margin:0 0 4px;">Mídia não desbloqueou</h3>
-    <p style="color:#9b87b8;font-size:13px;margin:0 0 16px;">Nossa equipe verificará e liberará seu acesso.</p>
+    <h3 style="color:#6f3cff;margin:0 0 4px;">${t("transacoes.midia_nao_desbloqueou_titulo")}</h3>
+    <p style="color:#9b87b8;font-size:13px;margin:0 0 16px;">${t("transacoes.midia_nao_desbloqueou_desc")}</p>
     ${camposBase(`
-      <label style="display:block;margin-bottom:5px;font-size:13px;font-weight:600;color:#5e5873;">Nome da Influencer</label>
-      <input id="oc-modelo" type="text" value="${modeloNome || ""}" placeholder="Nome da criadora" style="${styleInput()}" />
-      ${campoAnexo("Print da mídia ainda bloqueada")}
+      <label style="display:block;margin-bottom:5px;font-size:13px;font-weight:600;color:#5e5873;">${t("transacoes.label_nome_influencer")}</label>
+      <input id="oc-modelo" type="text" value="${modeloNome || ""}" placeholder="${t("transacoes.placeholder_criadora")}" style="${styleInput()}" />
+      ${campoAnexo()}
     `)}
     ${btnEnviar(`enviarMidiaNaoDesbloqueou(${midiaId || "null"}, "${subtipo || "midia"}")`)}
   `);
 }
 window.enviarMidiaNaoDesbloqueou = async function(midiaId, subtipo) {
   const { nome, nasc, email, dtpag } = valoresBase();
-  if (!nome || !email || !dtpag) return alert("Preencha todos os campos obrigatórios (*).");
+  if (!nome || !email || !dtpag) return alert(t("transacoes.preencha_campos"));
   const { base64, filename } = await lerAnexo();
   await enviarOcorrencia({
     tipo: "midia_nao_desbloqueou", subtipo,
@@ -514,21 +514,21 @@ window.enviarMidiaNaoDesbloqueou = async function(midiaId, subtipo) {
 
 function modalMidiaErrada(midiaId, modeloNome) {
   abrirModal(`
-    <h3 style="color:#6f3cff;margin:0 0 4px;">Desbloqueei a mídia errada</h3>
-    <p style="color:#9b87b8;font-size:13px;margin:0 0 16px;">Vamos analisar para desbloquear a mídia correta.</p>
+    <h3 style="color:#6f3cff;margin:0 0 4px;">${t("transacoes.midia_errada_titulo")}</h3>
+    <p style="color:#9b87b8;font-size:13px;margin:0 0 16px;">${t("transacoes.midia_errada_desc")}</p>
     ${camposBase(`
-      <label style="display:block;margin-bottom:5px;font-size:13px;font-weight:600;color:#5e5873;">Nome da criadora</label>
-      <input id="oc-modelo" type="text" value="${modeloNome || ""}" placeholder="Nome da criadora" style="${styleInput()}" />
-      <label style="display:block;margin-bottom:5px;font-size:13px;font-weight:600;color:#5e5873;">Qual mídia queria desbloquear?</label>
-      <textarea id="oc-desc" rows="3" placeholder="Ex: vídeo do dia 10/04 no feed" style="${styleInput()}resize:vertical;"></textarea>
-      ${campoAnexo("Print da mídia paga")}
+      <label style="display:block;margin-bottom:5px;font-size:13px;font-weight:600;color:#5e5873;">${t("transacoes.label_nome_criadora")}</label>
+      <input id="oc-modelo" type="text" value="${modeloNome || ""}" placeholder="${t("transacoes.placeholder_criadora")}" style="${styleInput()}" />
+      <label style="display:block;margin-bottom:5px;font-size:13px;font-weight:600;color:#5e5873;">${t("transacoes.label_qual_midia")}</label>
+      <textarea id="oc-desc" rows="3" placeholder="${t("transacoes.placeholder_midia_desc")}" style="${styleInput()}resize:vertical;"></textarea>
+      ${campoAnexo()}
     `)}
     ${btnEnviar(`enviarMidiaErrada(${midiaId || "null"})`)}
   `);
 }
 window.enviarMidiaErrada = async function(midiaId) {
   const { nome, nasc, email, dtpag } = valoresBase();
-  if (!nome || !email || !dtpag) return alert("Preencha todos os campos obrigatórios (*).");
+  if (!nome || !email || !dtpag) return alert(t("transacoes.preencha_campos"));
   const { base64, filename } = await lerAnexo();
   await enviarOcorrencia({
     tipo: "midia_errada", subtipo: "midia",
@@ -549,7 +549,7 @@ function renderSubscricoes(subscricoes) {
   lista.innerHTML = "";
 
   if (!Array.isArray(subscricoes) || !subscricoes.length) {
-    lista.innerHTML = `<div class="estado-vazio">Nenhuma assinatura encontrada.</div>`;
+    lista.innerHTML = `<div class="estado-vazio">${t("transacoes.nenhuma_subscricao_encontrada")}</div>`;
     return;
   }
 
@@ -557,19 +557,21 @@ function renderSubscricoes(subscricoes) {
     const ativa    = Boolean(v.ativo) && new Date(v.expiration_at) > new Date() && !v.cancelado_em;
     const cancelada = Boolean(v.cancelado_em);
     const dias     = diasRestantes(v.expiration_at);
-    const expiraLabel = v.expiration_at ? `Expira em ${formatarData(v.expiration_at)}${dias !== null && dias >= 0 ? ` (${dias}d)` : ""}` : "—";
+    const expiraLabel = v.expiration_at
+      ? t("transacoes.expira_em").replace("{data}", formatarData(v.expiration_at)) + (dias !== null && dias >= 0 ? ` (${dias}${t("transacoes.dias_suffix")})` : "")
+      : "—";
 
     let badgeHtml, acoesHtml;
 
     if (ativa) {
-      badgeHtml = `<span class="sub-badge sub-ativa">Ativa</span>`;
+      badgeHtml = `<span class="sub-badge sub-ativa">${t("transacoes.badge_ativa")}</span>`;
       acoesHtml = `<button class="btn-opcoes" id="btn-sub-${v.id}">⁞</button>`;
     } else if (cancelada) {
-      badgeHtml = `<span class="sub-badge sub-cancelada">Cancelada</span>`;
-      acoesHtml = `<button class="btn-renovar" onclick="renovarSubscricao(${v.modelo_id})">Renovar</button>`;
+      badgeHtml = `<span class="sub-badge sub-cancelada">${t("transacoes.badge_cancelada")}</span>`;
+      acoesHtml = `<button class="btn-renovar" onclick="renovarSubscricao(${v.modelo_id})">${t("transacoes.btn_renovar")}</button>`;
     } else {
-      badgeHtml = `<span class="sub-badge sub-expirada">Expirada</span>`;
-      acoesHtml = `<button class="btn-renovar" onclick="renovarSubscricao(${v.modelo_id})">Renovar</button>`;
+      badgeHtml = `<span class="sub-badge sub-expirada">${t("transacoes.badge_expirada")}</span>`;
+      acoesHtml = `<button class="btn-renovar" onclick="renovarSubscricao(${v.modelo_id})">${t("transacoes.btn_renovar")}</button>`;
     }
 
     const row = document.createElement("div");
@@ -579,7 +581,7 @@ function renderSubscricoes(subscricoes) {
         <span class="sub-modelo">${v.modelo || "—"}</span>
         ${badgeHtml}
         <span class="sub-expira">${expiraLabel}</span>
-        ${cancelada ? `<span class="sub-aviso">Acesso mantido até ${formatarData(v.expiration_at)}</span>` : ""}
+        ${cancelada ? `<span class="sub-aviso">${t("transacoes.acesso_mantido_ate").replace("{data}", formatarData(v.expiration_at))}</span>` : ""}
       </div>
       <div class="sub-row-acao">${acoesHtml}</div>
     `;
@@ -590,17 +592,17 @@ function renderSubscricoes(subscricoes) {
       btn.addEventListener("click", e => {
         abrirDropdown(e, [
           {
-            label: "Cancelar assinatura", icon: "🚫", danger: true,
+            label: t("transacoes.cancelar_assinatura"), icon: "🚫", danger: true,
             action: () => window.modalCancelar(v.id, v.expiration_at)
           },
           { separator: true },
           {
-            label: "Reembolso", icon: "💬",
+            label: t("transacoes.reembolso"), icon: "💬",
             sub: [
-              { label: "VIP não liberou após pagamento", icon: "⚠️", action: () => modalVipNaoLiberou(v.modelo) },
-              { label: "Propaganda enganosa",    icon: "🚨", action: () => modalPropaganda(v.modelo, "assinatura") },
-              { label: "Arrependimento",      icon: "📋", action: () => modalArrependimento(v.aceite_timestamp, v.aceite_ip) },
-              { label: "Assinei a influencer errada",      icon: "🔄", action: () => modalModeloErrada() },
+              { label: t("transacoes.vip_nao_liberou_label"), icon: "⚠️", action: () => modalVipNaoLiberou(v.modelo) },
+              { label: t("transacoes.propaganda_enganosa"),    icon: "🚨", action: () => modalPropaganda(v.modelo, "assinatura") },
+              { label: t("transacoes.arrependimento_label"),   icon: "📋", action: () => modalArrependimento(v.aceite_timestamp, v.aceite_ip) },
+              { label: t("transacoes.assinei_influencer_errada"), icon: "🔄", action: () => modalModeloErrada() },
             ]
           },
         ]);
@@ -614,14 +616,14 @@ function renderSubscricoes(subscricoes) {
 // ================================================
 function tipoLabel(tipo) {
   const map = {
-    vip: "Assinatura VIP",
-    assinatura: "Assinatura VIP",
-    midia_premium: "Mídia Premium",
-    midia_chat: "Mídia Chat",
-    midia: "Mídia",
-    conteudo: "Conteúdo",
+    vip:          () => t("transacoes.tipo_subscricao_vip"),
+    assinatura:   () => t("transacoes.tipo_subscricao_vip"),
+    midia_premium:() => t("transacoes.tipo_midia_premium"),
+    midia_chat:   () => t("transacoes.tipo_midia_chat"),
+    midia:        () => t("transacoes.tipo_midia"),
+    conteudo:     () => t("transacoes.tipo_conteudo"),
   };
-  return map[tipo] || tipo || "—";
+  return map[tipo] ? map[tipo]() : tipo || "—";
 }
 
 function tipoClasse(tipo) {
@@ -637,7 +639,7 @@ function renderTransacoes(transacoes) {
   if (!lista || !paginacao) return;
 
   if (!Array.isArray(transacoes) || !transacoes.length) {
-    lista.innerHTML = `<div class="estado-vazio">Nenhuma transação encontrada.</div>`;
+    lista.innerHTML = `<div class="estado-vazio">${t("transacoes.nenhuma_transacao")}</div>`;
     paginacao.innerHTML = "";
     return;
   }
@@ -675,12 +677,12 @@ function renderTransacoes(transacoes) {
       btn.addEventListener("click", e => {
         abrirDropdown(e, [
           {
-            label: "Reembolso", icon: "💬",
+            label: t("transacoes.reembolso"), icon: "💬",
             sub: [
-              { label: "VIP não liberou após pagamento", icon: "⚠️", action: () => modalVipNaoLiberou(tr.modelo_nome) },
-              { label: "Propaganda enganosa",    icon: "🚨", action: () => modalPropaganda(tr.modelo_nome, "assinatura") },
-              { label: "Arrependimento",      icon: "📋", action: () => modalArrependimento(tr.aceite_timestamp, tr.aceite_ip) },
-              { label: "Assinei influencer errada",      icon: "🔄", action: () => modalModeloErrada() },
+              { label: t("transacoes.vip_nao_liberou_label"), icon: "⚠️", action: () => modalVipNaoLiberou(tr.modelo_nome) },
+              { label: t("transacoes.propaganda_enganosa"),   icon: "🚨", action: () => modalPropaganda(tr.modelo_nome, "assinatura") },
+              { label: t("transacoes.arrependimento_label"),  icon: "📋", action: () => modalArrependimento(tr.aceite_timestamp, tr.aceite_ip) },
+              { label: t("transacoes.assinei_influencer_errada"), icon: "🔄", action: () => modalModeloErrada() },
             ]
           }
         ]);
@@ -689,12 +691,12 @@ function renderTransacoes(transacoes) {
       btn.addEventListener("click", e => {
         abrirDropdown(e, [
           {
-            label: "Reembolso", icon: "💬",
+            label: t("transacoes.reembolso"), icon: "💬",
             sub: [
-              { label: "Mídia não desbloqueou",       icon: "⚠️", action: () => modalMidiaNaoDesbloqueou(tr.id, tr.modelo_nome, subtipoMidia) },
-              { label: "Propaganda enganosa", icon: "🚨", action: () => modalPropaganda(tr.modelo_nome, subtipoMidia) },
-              { label: "Arrependimento",   icon: "📋", action: () => modalArrependimento(tr.aceite_timestamp, tr.aceite_ip) },
-              { label: "Desbloqueei a mídia errada",  icon: "🔄", action: () => modalMidiaErrada(tr.id, tr.modelo_nome) },
+              { label: t("transacoes.midia_nao_desbloqueou_label"), icon: "⚠️", action: () => modalMidiaNaoDesbloqueou(tr.id, tr.modelo_nome, subtipoMidia) },
+              { label: t("transacoes.propaganda_enganosa"),         icon: "🚨", action: () => modalPropaganda(tr.modelo_nome, subtipoMidia) },
+              { label: t("transacoes.arrependimento_label"),        icon: "📋", action: () => modalArrependimento(tr.aceite_timestamp, tr.aceite_ip) },
+              { label: t("transacoes.desbloqueei_midia_errada"),   icon: "🔄", action: () => modalMidiaErrada(tr.id, tr.modelo_nome) },
             ]
           }
         ]);
@@ -745,17 +747,17 @@ async function carregarTransacoes() {
   const lista = document.getElementById("listaTransacoes");
   if (!lista) return;
   lista.removeAttribute("data-i18n");
-  lista.innerHTML = `<div class="estado-vazio">Carregando…</div>`;
+  lista.innerHTML = `<div class="estado-vazio">${t("transacoes.carregando")}</div>`;
   try {
     const res = await fetch("/api/cliente/transacoes", {
       headers: { Authorization: "Bearer " + getToken() }
     });
-    if (!res.ok) { lista.innerHTML = `<div class="estado-vazio">Erro ao carregar transações.</div>`; return; }
+    if (!res.ok) { lista.innerHTML = `<div class="estado-vazio">${t("transacoes.erro_transacoes")}</div>`; return; }
     todasTransacoes = await res.json();
     if (!Array.isArray(todasTransacoes)) todasTransacoes = [];
     aplicarFiltros();
   } catch {
-    lista.innerHTML = `<div class="estado-vazio">Erro ao carregar transações.</div>`;
+    lista.innerHTML = `<div class="estado-vazio">${t("transacoes.erro_transacoes")}</div>`;
   }
 }
 
@@ -763,16 +765,16 @@ async function carregarSubscricoes() {
   const lista = document.getElementById("listaSubscricoes");
   if (!lista) return;
   lista.removeAttribute("data-i18n");
-  lista.innerHTML = `<div class="estado-vazio">Carregando…</div>`;
+  lista.innerHTML = `<div class="estado-vazio">${t("transacoes.carregando")}</div>`;
   try {
     const res = await fetch("/api/cliente/subscricoes", {
       headers: { Authorization: "Bearer " + getToken() }
     });
-    if (!res.ok) { lista.innerHTML = `<div class="estado-vazio">Erro ao carregar assinaturas.</div>`; return; }
+    if (!res.ok) { lista.innerHTML = `<div class="estado-vazio">${t("transacoes.erro_subscricoes")}</div>`; return; }
     const data = await res.json();
     renderSubscricoes(Array.isArray(data) ? data : []);
   } catch {
-    lista.innerHTML = `<div class="estado-vazio">Erro ao carregar assinaturas.</div>`;
+    lista.innerHTML = `<div class="estado-vazio">${t("transacoes.erro_subscricoes")}</div>`;
   }
 }
 
@@ -782,21 +784,27 @@ window.renovarSubscricao = id => { window.location.href = `/perfil.html?id=${id}
 // ================================================
 // OCORRÊNCIAS DO CLIENTE
 // ================================================
-const OC_TIPO_LABEL = {
-  vip_nao_liberou:       "VIP não liberou",
-  propaganda:            "Propaganda enganosa",
-  arrependimento:        "Arrependimento",
-  modelo_errada:         "Influencer errada",
-  midia_nao_desbloqueou: "Mídia não desbloqueou",
-  midia_errada:          "Mídia errada",
-  cancelamento_vip:      "Cancelamento VIP",
-};
+function OC_TIPO_LABEL(tipo) {
+  const map = {
+    vip_nao_liberou:       "transacoes.oc_tipo_vip_nao_liberou",
+    propaganda:            "transacoes.oc_tipo_propaganda",
+    arrependimento:        "transacoes.oc_tipo_arrependimento",
+    modelo_errada:         "transacoes.oc_tipo_influencer_errada",
+    midia_nao_desbloqueou: "transacoes.oc_tipo_midia_nao_desbloqueou",
+    midia_errada:          "transacoes.oc_tipo_midia_errada",
+    cancelamento_vip:      "transacoes.oc_tipo_cancelamento_vip",
+  };
+  return map[tipo] ? t(map[tipo]) : tipo;
+}
 
-const OC_STATUS_LABEL = {
-  aberta:   "Aberta",
-  pendente: "Em análise",
-  fechada:  "Encerrada",
-};
+function OC_STATUS_LABEL(status) {
+  const map = {
+    aberta:   "transacoes.oc_aberta",
+    pendente: "transacoes.oc_em_analise",
+    fechada:  "transacoes.oc_encerrada",
+  };
+  return map[status] ? t(map[status]) : status;
+}
 
 function renderOcorrencias(ocorrencias) {
   const lista = document.getElementById("listaOcorrencias");
@@ -804,7 +812,7 @@ function renderOcorrencias(ocorrencias) {
   lista.innerHTML = "";
 
   if (!Array.isArray(ocorrencias) || !ocorrencias.length) {
-    lista.innerHTML = `<div class="estado-vazio">Nenhuma ocorrência encontrada.</div>`;
+    lista.innerHTML = `<div class="estado-vazio">${t("transacoes.nenhuma_ocorrencia")}</div>`;
     return;
   }
 
@@ -814,11 +822,11 @@ function renderOcorrencias(ocorrencias) {
     card.className = "oc-card";
     card.innerHTML = `
       <div class="oc-header">
-        <span class="oc-tipo">${OC_TIPO_LABEL[oc.tipo] || oc.tipo}</span>
-        <span class="oc-badge ${statusClass}">${OC_STATUS_LABEL[oc.status] || oc.status}</span>
+        <span class="oc-tipo">${OC_TIPO_LABEL(oc.tipo)}</span>
+        <span class="oc-badge ${statusClass}">${OC_STATUS_LABEL(oc.status)}</span>
         <span class="oc-data">${formatarData(oc.criado_em)}</span>
       </div>
-      ${oc.modelo_nome ? `<div class="oc-meta">Influencer: <strong>${oc.modelo_nome}</strong></div>` : ""}
+      ${oc.modelo_nome ? `<div class="oc-meta">${t("transacoes.oc_influencer_label")} <strong>${oc.modelo_nome}</strong></div>` : ""}
       ${oc.descricao    ? `<div class="oc-desc">${oc.descricao}</div>` : ""}
       ${oc.anexo_filename ? `<div class="oc-meta">📎 Anexo enviado: ${oc.anexo_filename}</div>` : ""}
       ${oc.resposta ? `
@@ -827,7 +835,7 @@ function renderOcorrencias(ocorrencias) {
           <div class="oc-resposta-texto">${oc.resposta}</div>
           ${oc.anexo_resposta_filename ? `<div style="margin-top:6px;font-size:12px;">📎 ${oc.anexo_resposta_filename}</div>` : ""}
         </div>
-      ` : (oc.status !== "fechada" ? `<div class="oc-aguardando">⏳ Aguardando análise — prazo: 24–48 horas úteis</div>` : "")}
+      ` : (oc.status !== "fechada" ? `<div class="oc-aguardando">⏳ ${t("transacoes.oc_aguardando")}</div>` : "")}
     `;
     lista.appendChild(card);
   });
@@ -837,15 +845,15 @@ async function carregarOcorrencias() {
   const lista = document.getElementById("listaOcorrencias");
   if (!lista) return;
   lista.removeAttribute("data-i18n");
-  lista.innerHTML = `<div class="estado-vazio">Carregando…</div>`;
+  lista.innerHTML = `<div class="estado-vazio">${t("transacoes.carregando")}</div>`;
   try {
     const res = await fetch("/api/cliente/ocorrencias", {
       headers: { Authorization: "Bearer " + getToken() }
     });
-    if (!res.ok) { lista.innerHTML = `<div class="estado-vazio">Erro ao carregar ocorrências.</div>`; return; }
+    if (!res.ok) { lista.innerHTML = `<div class="estado-vazio">${t("transacoes.erro_ocorrencias")}</div>`; return; }
     renderOcorrencias(await res.json());
   } catch {
-    lista.innerHTML = `<div class="estado-vazio">Erro ao carregar ocorrências.</div>`;
+    lista.innerHTML = `<div class="estado-vazio">${t("transacoes.erro_ocorrencias")}</div>`;
   }
 }
 
@@ -970,9 +978,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     const aviso = document.createElement("div");
     aviso.style.cssText = "text-align:center;padding:32px 16px;color:#555;line-height:1.7;font-size:15px;";
     aviso.innerHTML = `
-      <p>Aqui ficam apenas pagamentos feitos quando o perfil é de cliente.</p>
-      <p>Modelos ainda não podem assinar ou comprar mídias de outras modelos.</p>
-      <p>Suas transações podem ser vistas em <a href="/relatorio.html" style="color:#6f3cff;font-weight:600;">Ganhos</a>.</p>
+      <p>${t("transacoes.modelo_aviso1")}</p>
+      <p>${t("transacoes.modelo_aviso2")}</p>
+      <p>${t("transacoes.modelo_aviso3")} <a href="/relatorio.html" style="color:#6f3cff;font-weight:600;">${t("transacoes.ganhos_link")}</a>.</p>
     `;
     document.querySelector(".tabs")?.after(aviso);
     return;

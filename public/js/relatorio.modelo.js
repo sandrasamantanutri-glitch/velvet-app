@@ -97,7 +97,7 @@ async function carregarResumoModelo(mes = null) {
 
     // Label hero
     const label = document.getElementById("labelMesAtual");
-    if (label) label.textContent = mes ? `Total — ${nomeMes(mes)}` : `Total do mês`;
+    if (label) label.textContent = mes ? nomeMes(mes) : t("relatorio.total_do_mes");
 
     const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
 
@@ -127,7 +127,7 @@ async function carregarResumoModelo(mes = null) {
       const hojeAss  = data.assinantes?.hoje  ?? 0;
       set("totalAssinantes", totalAss);
       const badgeEl = document.getElementById("assinantesHoje");
-      if (badgeEl) badgeEl.textContent = `+${hojeAss} hoje`;
+      if (badgeEl) badgeEl.textContent = t("relatorio.assinantes_hoje_badge").replace("{n}", hojeAss);
 
       // SITUAÇÃO VALORES
       set("liberadoHoje",  emReais(libHoje));
@@ -293,7 +293,7 @@ async function carregarPagamentos() {
       fim.setMonth(fim.getMonth() + 1);
       fim.setDate(fim.getDate() - 1);
 
-      const statusTexto = p.status === "pago" ? "Pago" : "Pendente";
+      const statusTexto = p.status === "pago" ? t("relatorio.status_pago") : t("relatorio.status_pendente");
       const statusCor   = p.status === "pago" ? "#22c55e" : "#f59e0b";
       const pagoEm = p.pago_em ? new Date(p.pago_em).toLocaleDateString("pt-BR") : "—";
 
@@ -321,19 +321,19 @@ async function carregarPagamentos() {
           </div>
           <div style="font-size:14px;line-height:2;">
             <div style="display:flex;justify-content:space-between;">
-              <span style="font-weight:600;">Saldo Bruto</span><span style="font-weight:600;">${emReais(saldoBruto)}</span>
+              <span style="font-weight:600;">${t("relatorio.saldo_bruto")}</span><span style="font-weight:600;">${emReais(saldoBruto)}</span>
             </div>
             <div style="display:flex;justify-content:space-between;padding-left:12px;color:#555;">
-              <span>Mídias</span><span>${emReais(midias)}</span>
+              <span>${t("relatorio.midias")}</span><span>${emReais(midias)}</span>
             </div>
             <div style="display:flex;justify-content:space-between;padding-left:12px;color:#555;">
-              <span>Assinaturas</span><span>${emReais(assinaturas)}</span>
+              <span>${t("relatorio.assinaturas")}</span><span>${emReais(assinaturas)}</span>
             </div>
-            ${chargebacks > 0 ? `<div style="display:flex;justify-content:space-between;padding-left:12px;color:#e53e3e;"><span>Chargebacks</span><span>− ${emReais(chargebacks)}</span></div>` : ''}
+            ${chargebacks > 0 ? `<div style="display:flex;justify-content:space-between;padding-left:12px;color:#e53e3e;"><span>${t("relatorio.chargebacks")}</span><span>− ${emReais(chargebacks)}</span></div>` : ''}
             <hr style="border:none;border-top:1px solid #eee;margin:6px 0;">
-            ${bonus > 0 ? `<div style="display:flex;justify-content:space-between;color:#7c3aed;"><span>Bônus</span><span>+ ${emReais(bonus)}</span></div>` : ''}
+            ${bonus > 0 ? `<div style="display:flex;justify-content:space-between;color:#7c3aed;"><span>${t("relatorio.bonus")}</span><span>+ ${emReais(bonus)}</span></div>` : ''}
             <div style="display:flex;justify-content:space-between;font-weight:700;font-size:15px;margin-top:4px;">
-              <span>Pago Líquido</span><span style="color:#22c55e;">${emReais(pagoLiquido)}</span>
+              <span>${t("relatorio.pago_liquido")}</span><span style="color:#22c55e;">${emReais(pagoLiquido)}</span>
             </div>
           </div>
           ${pdfBtn}
@@ -388,7 +388,7 @@ async function carregarChargebacks() {
   const resumo = document.getElementById("resumoChargebacks");
   if (!lista) return;
 
-  lista.innerHTML = "Carregando chargebacks...";
+  lista.innerHTML = t("relatorio.carregando_chargebacks");
 
   const token   = localStorage.getItem("token");
   const headers = { Authorization: "Bearer " + token };
@@ -400,7 +400,7 @@ async function carregarChargebacks() {
       fetch(`/api/modelo/chargebacks?mes=${mesAnt}`, { headers })
     ]);
 
-    if (!resAtual.ok) { lista.innerHTML = "Erro ao carregar chargebacks."; return; }
+    if (!resAtual.ok) { lista.innerHTML = t("relatorio.erro_chargebacks"); return; }
 
     const dados    = await resAtual.json();
     const dadosAnt = resAnt.ok ? await resAnt.json() : [];
@@ -412,17 +412,17 @@ async function carregarChargebacks() {
     if (resumo) {
       resumo.innerHTML = `
         <div class="rel-cb-res-card">
-          <p>Qtd. este mês</p>
+          <p>${t("relatorio.qtd_este_mes")}</p>
           <strong>${dados.length}</strong>
         </div>
         <div class="rel-cb-res-card">
-          <p>Valor este mês</p>
+          <p>${t("relatorio.valor_este_mes")}</p>
           <strong>${emReais(totalMes)}</strong>
         </div>
       `;
     }
 
-    renderChargebackCards(dados, lista, "Nenhum chargeback este mês.");
+    renderChargebackCards(dados, lista, t("relatorio.nenhum_chargeback_mes"));
 
     // Mês anterior
     const secaoAnt = document.getElementById("secaoChargebacksAnterior");
@@ -436,23 +436,23 @@ async function carregarChargebacks() {
       if (resumoAnt) {
         resumoAnt.innerHTML = `
           <div class="rel-cb-res-card">
-            <p>Qtd. mês anterior</p>
+            <p>${t("relatorio.qtd_mes_anterior")}</p>
             <strong>${dadosAnt.length}</strong>
           </div>
           <div class="rel-cb-res-card">
-            <p>Valor mês anterior</p>
+            <p>${t("relatorio.valor_mes_anterior")}</p>
             <strong>${emReais(totalAnt)}</strong>
           </div>
         `;
       }
 
       const listaAnt = document.getElementById("listaChargebacksAnterior");
-      if (listaAnt) renderChargebackCards(dadosAnt, listaAnt, "Nenhum chargeback no mês anterior.");
+      if (listaAnt) renderChargebackCards(dadosAnt, listaAnt, t("relatorio.nenhum_chargeback_anterior"));
     }
 
   } catch (err) {
     console.error("Erro chargebacks:", err);
-    lista.innerHTML = "Erro ao carregar chargebacks.";
+    lista.innerHTML = t("relatorio.erro_chargebacks");
   }
 }
 

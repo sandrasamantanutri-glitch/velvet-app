@@ -145,7 +145,7 @@ router.get("/overview", authAgencia, async (req, res) => {
         SELECT COALESCE(SUM(agency_fee), 0) AS total
         FROM vw_transacoes_agencia
         WHERE agencia_id = $1
-          AND (CASE WHEN disponivel_em IS NOT NULL THEN DATE(disponivel_em) ELSE DATE(created_at AT TIME ZONE 'America/Sao_Paulo') END) = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
+          AND (CASE WHEN disponivel_em IS NOT NULL THEN DATE(disponivel_em AT TIME ZONE 'America/Sao_Paulo') ELSE DATE(created_at AT TIME ZONE 'America/Sao_Paulo') END) = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
           AND status = 'pago'
           AND (gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW()))
       `, [agenciaId]),
@@ -155,7 +155,7 @@ router.get("/overview", authAgencia, async (req, res) => {
         SELECT COALESCE(SUM(agency_fee), 0) AS total
         FROM vw_transacoes_agencia
         WHERE agencia_id = $1
-          AND DATE_TRUNC('month', CASE WHEN disponivel_em IS NOT NULL THEN DATE(disponivel_em)::timestamp ELSE created_at AT TIME ZONE 'America/Sao_Paulo' END) = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
+          AND DATE_TRUNC('month', CASE WHEN disponivel_em IS NOT NULL THEN disponivel_em AT TIME ZONE 'America/Sao_Paulo' ELSE created_at AT TIME ZONE 'America/Sao_Paulo' END) = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
           AND status = 'pago'
           AND (gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW()))
       `, [agenciaId]),
@@ -177,7 +177,7 @@ router.get("/overview", authAgencia, async (req, res) => {
             AND status = 'pago'
             AND (gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW()))
         ) t
-          ON DATE_TRUNC('month', CASE WHEN t.disponivel_em IS NOT NULL THEN DATE(t.disponivel_em)::timestamp ELSE t.created_at AT TIME ZONE 'America/Sao_Paulo' END) = meses.mes
+          ON DATE_TRUNC('month', CASE WHEN t.disponivel_em IS NOT NULL THEN t.disponivel_em AT TIME ZONE 'America/Sao_Paulo' ELSE t.created_at AT TIME ZONE 'America/Sao_Paulo' END) = meses.mes
         GROUP BY meses.mes
         ORDER BY meses.mes ASC
       `, [agenciaId]),
@@ -229,7 +229,7 @@ router.get("/overview", authAgencia, async (req, res) => {
         FROM vw_transacoes_agencia t
         JOIN modelos m ON m.id = t.modelo_id
         WHERE t.agencia_id = $1
-          AND DATE_TRUNC('month', CASE WHEN t.disponivel_em IS NOT NULL THEN DATE(t.disponivel_em)::timestamp ELSE t.created_at AT TIME ZONE 'America/Sao_Paulo' END) = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
+          AND DATE_TRUNC('month', CASE WHEN t.disponivel_em IS NOT NULL THEN t.disponivel_em AT TIME ZONE 'America/Sao_Paulo' ELSE t.created_at AT TIME ZONE 'America/Sao_Paulo' END) = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
           AND t.status = 'pago'
           AND (t.gateway IS DISTINCT FROM 'stripe' OR (t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()))
         GROUP BY t.modelo_id, m.nome_exibicao, m.nome
@@ -548,8 +548,8 @@ async function calcularFechamentoAgencia(agenciaId, ano, mes) {
     WHERE t.agencia_id = $1
       AND t.status = 'pago'
       AND (t.gateway IS DISTINCT FROM 'stripe' OR (t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()))
-      AND EXTRACT(YEAR  FROM CASE WHEN t.disponivel_em IS NOT NULL THEN t.disponivel_em ELSE t.created_at AT TIME ZONE 'America/Sao_Paulo' END) = $2
-      AND EXTRACT(MONTH FROM CASE WHEN t.disponivel_em IS NOT NULL THEN t.disponivel_em ELSE t.created_at AT TIME ZONE 'America/Sao_Paulo' END) = $3
+      AND EXTRACT(YEAR  FROM CASE WHEN t.disponivel_em IS NOT NULL THEN t.disponivel_em AT TIME ZONE 'America/Sao_Paulo' ELSE t.created_at AT TIME ZONE 'America/Sao_Paulo' END) = $2
+      AND EXTRACT(MONTH FROM CASE WHEN t.disponivel_em IS NOT NULL THEN t.disponivel_em AT TIME ZONE 'America/Sao_Paulo' ELSE t.created_at AT TIME ZONE 'America/Sao_Paulo' END) = $3
   `, [agenciaId, ano, mes]);
 
   const porModeloQ = await db.query(`
@@ -562,8 +562,8 @@ async function calcularFechamentoAgencia(agenciaId, ano, mes) {
     WHERE t.agencia_id = $1
       AND t.status = 'pago'
       AND (t.gateway IS DISTINCT FROM 'stripe' OR (t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()))
-      AND EXTRACT(YEAR  FROM CASE WHEN t.disponivel_em IS NOT NULL THEN t.disponivel_em ELSE t.created_at AT TIME ZONE 'America/Sao_Paulo' END) = $2
-      AND EXTRACT(MONTH FROM CASE WHEN t.disponivel_em IS NOT NULL THEN t.disponivel_em ELSE t.created_at AT TIME ZONE 'America/Sao_Paulo' END) = $3
+      AND EXTRACT(YEAR  FROM CASE WHEN t.disponivel_em IS NOT NULL THEN t.disponivel_em AT TIME ZONE 'America/Sao_Paulo' ELSE t.created_at AT TIME ZONE 'America/Sao_Paulo' END) = $2
+      AND EXTRACT(MONTH FROM CASE WHEN t.disponivel_em IS NOT NULL THEN t.disponivel_em AT TIME ZONE 'America/Sao_Paulo' ELSE t.created_at AT TIME ZONE 'America/Sao_Paulo' END) = $3
     GROUP BY t.modelo_id
   `, [agenciaId, ano, mes]);
 
@@ -1244,12 +1244,12 @@ router.get("/ranking", authAgencia, async (req, res) => {
       }
       params.push(Number(match[1]), Number(match[2]));
       whereMes = `
-        EXTRACT(YEAR  FROM CASE WHEN t.disponivel_em IS NOT NULL THEN t.disponivel_em ELSE t.created_at AT TIME ZONE 'America/Sao_Paulo' END) = $2
-        AND EXTRACT(MONTH FROM CASE WHEN t.disponivel_em IS NOT NULL THEN t.disponivel_em ELSE t.created_at AT TIME ZONE 'America/Sao_Paulo' END) = $3
+        EXTRACT(YEAR  FROM CASE WHEN t.disponivel_em IS NOT NULL THEN t.disponivel_em AT TIME ZONE 'America/Sao_Paulo' ELSE t.created_at AT TIME ZONE 'America/Sao_Paulo' END) = $2
+        AND EXTRACT(MONTH FROM CASE WHEN t.disponivel_em IS NOT NULL THEN t.disponivel_em AT TIME ZONE 'America/Sao_Paulo' ELSE t.created_at AT TIME ZONE 'America/Sao_Paulo' END) = $3
       `;
     } else {
       whereMes = `
-        DATE_TRUNC('month', CASE WHEN t.disponivel_em IS NOT NULL THEN DATE(t.disponivel_em)::timestamp ELSE t.created_at AT TIME ZONE 'America/Sao_Paulo' END) = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
+        DATE_TRUNC('month', CASE WHEN t.disponivel_em IS NOT NULL THEN t.disponivel_em AT TIME ZONE 'America/Sao_Paulo' ELSE t.created_at AT TIME ZONE 'America/Sao_Paulo' END) = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
       `;
     }
 
