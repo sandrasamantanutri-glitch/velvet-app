@@ -642,7 +642,9 @@
     "sucesso_envio": "Data submitted for validation",
     "erro_envio": "Error sending data",
     "erro_envio_console": "Error sending data. Check console",
-    "resposta_invalida_servidor": "Invalid server response"
+    "resposta_invalida_servidor": "Invalid server response",
+    "pendentesT": "What are pending earnings?",
+    "pendentesS": "These are payments made by customers using a credit card. The payment processor must review the transaction, check for possible fraud, and release the funds, which can take 3 to 30 days. Don't worry! Once the payment is approved, the platform automatically updates your earnings from pending to available."
   },
   "contato": {
     "contact_page_title": "Contact Us",

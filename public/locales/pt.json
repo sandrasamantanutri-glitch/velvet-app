@@ -642,7 +642,9 @@
     "sucesso_envio": "Dados enviados para validação",
     "erro_envio": "Erro ao enviar dados",
     "erro_envio_console": "Erro ao enviar os dados. Veja o console",
-    "resposta_invalida_servidor": "Resposta inválida do servidor"
+    "resposta_invalida_servidor": "Resposta inválida do servidor",
+    "pendentesT": "O QUE SÃO VALORES PENDENTES?",
+    "pendentesS": "São valores pagos pelo cliente via cartão de crédito. Dependemos da operadora avaliar o pagamento, descartar fraude e liberar o valor — o que pode levar de 3 a 30 dias. Não se preocupe! A própria plataforma atualiza os ganhos pendentes para liberados automaticamente!"
   },
   "contato": {
     "contact_page_title": "Fale Conosco",

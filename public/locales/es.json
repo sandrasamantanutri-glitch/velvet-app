@@ -642,7 +642,9 @@
     "sucesso_envio": "Datos enviados para validación",
     "erro_envio": "Error al enviar los datos",
     "erro_envio_console": "Error al enviar los datos. Revisa la consola",
-    "resposta_invalida_servidor": "Respuesta inválida del servidor"
+    "resposta_invalida_servidor": "Respuesta inválida del servidor",
+    "pendentesT": "¿Qué son los valores pendientes?",
+    "pendentesS": "Son importes pagados por el cliente con tarjeta de crédito. La operadora de pagos debe analizar la transacción, verificar posibles fraudes y liberar el importe, lo que puede tardar entre 3 y 30 días. ¡No te preocupes! Una vez aprobado el pago, la plataforma actualiza automáticamente tus ganancias de pendientes a disponibles."
   },
   "contato": {
     "contact_page_title": "Contáctanos",
