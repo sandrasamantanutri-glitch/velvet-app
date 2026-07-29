@@ -65,6 +65,10 @@ function popularFiltroMes() {
       const el = document.getElementById(id);
       if (el) el.style.display = eh_atual ? "" : "none";
     });
+
+    // seção de situação só para mês filtrado
+    const secaoFiltro = document.getElementById("secaoStatusFiltro");
+    if (secaoFiltro) secaoFiltro.style.display = eh_atual ? "none" : "";
   });
 }
 
@@ -100,6 +104,13 @@ async function carregarResumoModelo(mes = null) {
     set("totalMesAtual",   emReais(totalMes));
     set("mesMidias",       emReais(midias));
     set("mesAssinaturas",  emReais(assinaturas));
+
+    if (mes) {
+      // SITUAÇÃO DO MÊS FILTRADO
+      const bloqFiltro = Number(data.bloqueado?.mes || 0);
+      set("liberadoFiltroMes",  emReais(liberadoMes));
+      set("bloqueadoFiltroMes", emReais(bloqFiltro));
+    }
 
     if (!mes) {
       // HOJE
