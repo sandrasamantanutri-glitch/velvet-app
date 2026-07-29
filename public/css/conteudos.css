@@ -360,6 +360,15 @@ body {
   padding-bottom: 100px;
 }
 
+.aviso-conteudos {
+  font-size: 0.85rem;
+  color: #555;
+  text-align: center;
+  max-width: 500px;
+  margin: 0 auto 16px;
+  line-height: 1.5;
+}
+
 .paginacao{
   display:flex;
   justify-content:center;

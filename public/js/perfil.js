@@ -386,9 +386,37 @@ btnEnviarFeed?.addEventListener("click", async () => {
 const filePremium = document.getElementById("filePremium");
 const previewPremium = document.getElementById("previewPremium");
 
-document.getElementById("uploadAreaPremium")
-?.addEventListener("click", () => {
+const uploadAreaPremium = document.getElementById("uploadAreaPremium");
+
+uploadAreaPremium?.addEventListener("click", () => {
   filePremium.click();
+});
+
+uploadAreaPremium?.addEventListener("dragover", (e) => {
+  e.preventDefault();
+  uploadAreaPremium.style.borderColor = "#7c3aed";
+  uploadAreaPremium.style.background = "#f3e8ff";
+});
+
+uploadAreaPremium?.addEventListener("dragleave", () => {
+  uploadAreaPremium.style.borderColor = "";
+  uploadAreaPremium.style.background = "";
+});
+
+uploadAreaPremium?.addEventListener("drop", (e) => {
+  e.preventDefault();
+  uploadAreaPremium.style.borderColor = "";
+  uploadAreaPremium.style.background = "";
+
+  const droppedFiles = Array.from(e.dataTransfer.files).filter(f =>
+    f.type.startsWith("image/") || f.type.startsWith("video/")
+  );
+  if (!droppedFiles.length) return;
+
+  const dataTransfer = new DataTransfer();
+  droppedFiles.forEach(f => dataTransfer.items.add(f));
+  filePremium.files = dataTransfer.files;
+  filePremium.dispatchEvent(new Event("change"));
 });
 
 filePremium?.addEventListener("change", () => {
