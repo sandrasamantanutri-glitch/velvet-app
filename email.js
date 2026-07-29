@@ -16,6 +16,20 @@ const FOOTER = `
   </div>
 `;
 
+// Rodapé para campanhas Brevo — inclui link de descadastro via merge tag {{contact.UNSUB_TOKEN}}
+const FOOTER_CAMPANHA = `
+  <div style="margin-top:28px;padding-top:18px;border-top:1px solid #f0ebfa;text-align:center;">
+    <p style="margin:0 0 4px;color:#6b5a7d;">Equipe Velvet</p>
+    <p style="margin:0;font-size:13px;color:#9b87b8;">
+      Dúvidas? <a href="mailto:contato@velvet.lat" style="color:#7B2CFF;">contato@velvet.lat</a>
+    </p>
+    <p style="margin:10px 0 0;font-size:11px;color:#c0aed8;">
+      Não quer mais receber esse tipo de email?
+      <a href="https://velvet.lat/api/email/desinscrever?token={{contact.UNSUB_TOKEN}}" style="color:#c0aed8;text-decoration:underline;">Cancelar inscrição</a>
+    </p>
+  </div>
+`;
+
 function wrapEmail(content) {
   return `
     <div style="font-family:Arial,Helvetica,sans-serif;background:#f0ebfa;padding:32px 16px;color:#2d1f3d;">
@@ -24,6 +38,21 @@ function wrapEmail(content) {
         <div style="background:#fff;padding:32px;border-radius:0 0 14px 14px;border:1px solid #e5d9ff;border-top:none;">
           ${content}
           ${FOOTER}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// Wrapper para campanhas Brevo (usa rodapé com link de descadastro)
+function wrapEmailCampanha(content) {
+  return `
+    <div style="font-family:Arial,Helvetica,sans-serif;background:#f0ebfa;padding:32px 16px;color:#2d1f3d;">
+      <div style="max-width:600px;margin:0 auto;">
+        ${HEADER}
+        <div style="background:#fff;padding:32px;border-radius:0 0 14px 14px;border:1px solid #e5d9ff;border-top:none;">
+          ${content}
+          ${FOOTER_CAMPANHA}
         </div>
       </div>
     </div>
@@ -852,7 +881,7 @@ async function enviarEmailOfertaExpirando({ email, nome_modelo, nome_oferta, dat
 async function enviarCampanhaNovidadeFeed({ audience_id, nome_modelo, modelo_id, qtd }) {
   const plural = Number(qtd) === 1 ? "foto nova" : "fotos novas";
 
-  const html = wrapEmail(`
+  const html = wrapEmailCampanha(`
     <h2 style="color:#7B2CFF;text-align:center;margin:0 0 6px;">📸 ${nome_modelo} postou novidades!</h2>
     <p style="text-align:center;color:#6b5a7d;margin:0 0 24px;">
       ${qtd} ${plural} exclusivas no feed VIP, só pra quem já é assinante.
@@ -872,7 +901,7 @@ async function enviarCampanhaNovidadePremium({ audience_id, nome_modelo, modelo_
   const precoFmt = Number(preco || 0).toFixed(2).replace(".", ",");
   const plural = Number(qtd) === 1 ? "mídia exclusiva" : `${qtd} mídias exclusivas`;
 
-  const html = wrapEmail(`
+  const html = wrapEmailCampanha(`
     <h2 style="color:#7B2CFF;text-align:center;margin:0 0 6px;">💎 ${nome_modelo} lançou um conteúdo Premium</h2>
     ${infoBox("purple", `
       <p style="margin:0 0 8px;">${descricao || plural}</p>
@@ -892,7 +921,7 @@ async function enviarCampanhaNovidadePremium({ audience_id, nome_modelo, modelo_
 async function enviarCampanhaNovidadeChat({ audience_id, nome_modelo, modelo_id, qtd }) {
   const plural = Number(qtd) === 1 ? "mídia nova" : "mídias novas";
 
-  const html = wrapEmail(`
+  const html = wrapEmailCampanha(`
     <h2 style="color:#7B2CFF;text-align:center;margin:0 0 6px;">🔥 ${nome_modelo} tem fotos novas no chat</h2>
     <p style="text-align:center;color:#6b5a7d;margin:0 0 24px;">
       ${qtd} ${plural} disponíveis para desbloqueio direto na sua conversa.
@@ -911,7 +940,7 @@ async function enviarCampanhaNovidadeChat({ audience_id, nome_modelo, modelo_id,
 async function enviarCampanhaNovidadeOferta({ audience_id, nome_modelo, modelo_id, desconto_percentual, mensagem, data_fim }) {
   const dataFmt = new Date(data_fim).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
 
-  const html = wrapEmail(`
+  const html = wrapEmailCampanha(`
     <h2 style="color:#7B2CFF;text-align:center;margin:0 0 6px;">🎉 ${nome_modelo} lançou uma oferta especial</h2>
     ${infoBox("pink", `
       <p style="margin:0 0 8px;font-weight:bold;">${desconto_percentual}% de desconto na assinatura</p>
@@ -974,7 +1003,7 @@ async function enviarCampanhaDigestDiario({ audience_id, nome_modelo, modelo_id,
 
   if (!secoes.length) return null;
 
-  const html = wrapEmail(`
+  const html = wrapEmailCampanha(`
     <h2 style="color:#7B2CFF;text-align:center;margin:0 0 6px;">✨ Novidades de hoje de ${nome_modelo}</h2>
     <p style="text-align:center;color:#6b5a7d;margin:0 0 24px;">
       Confira tudo que foi publicado hoje só para você, assinante VIP.
@@ -1051,7 +1080,7 @@ function blocoDestaqueModelo(d) {
 async function enviarCampanhaNovidadesSemanais({ audience_id, destaques }) {
   const corpo = destaques.map(blocoDestaqueModelo).filter(Boolean).join("");
 
-  const html = wrapEmail(`
+  const html = wrapEmailCampanha(`
     <h2 style="color:#7B2CFF;text-align:center;margin:0 0 6px;">✨ As novidades da semana na Velvet</h2>
     <p style="text-align:center;color:#6b5a7d;margin:0 0 28px;">
       Separamos o que rolou de melhor essa semana pra você não perder nada.
