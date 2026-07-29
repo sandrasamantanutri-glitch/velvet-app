@@ -156,12 +156,14 @@ function registrarEventosMenu() {
 }
 
 function postarFeed() {
+  fecharMenu();
   const popup = document.getElementById("popupUploadFeed");
   if (!popup) return;
   popup.classList.remove("hidden");
 }
 
 function postarPremium() {
+  fecharMenu();
   const popup = document.getElementById("popupUploadPremium");
   if (!popup) return;
   popup.classList.remove("hidden");

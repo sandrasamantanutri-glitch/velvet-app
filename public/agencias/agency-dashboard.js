@@ -1457,7 +1457,45 @@ function carregarLinksAgency() {
 pageLoaders['avatar-capa'] = async function () {
   await popularSelectModeloSeVazio('avatarCapaModeloSelect');
   carregarAvatarCapaAgency();
+  iniciarCapaEditorAgency();
 };
+
+let _capaEditorIniciado = false;
+function iniciarCapaEditorAgency() {
+  if (_capaEditorIniciado) return;
+  _capaEditorIniciado = true;
+
+  const btnCapa = $('btnCapaAgency');
+  const inputCapa = $('inputCapaAgency');
+  const imgCapa = $('previewCapaAgency');
+
+  btnCapa?.addEventListener('click', () => inputCapa.click());
+  imgCapa?.addEventListener('click', () => inputCapa.click());
+
+  inputCapa?.addEventListener('change', async () => {
+    const file = inputCapa.files[0];
+    if (!file) return;
+    inputCapa.value = '';
+
+    const blob = await openCapaEditor(file);
+    if (!blob) return;
+
+    const modeloId = Number($('avatarCapaModeloSelect').value);
+    const fd = new FormData();
+    fd.append('capa', blob, 'capa.jpg');
+    fd.set('modelo_id', modeloId);
+
+    try {
+      const res = await authFetch('/agency/dashboard/capa', { method: 'POST', body: fd });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.erro || `HTTP ${res.status}`);
+      toast('Capa atualizada!', 'success');
+      imgCapa.src = data.capa + '?t=' + Date.now();
+    } catch (err) {
+      toast('Erro: ' + err.message, 'error');
+    }
+  });
+}
 
 async function carregarAvatarCapaAgency() {
   const modeloId = Number($('avatarCapaModeloSelect').value);
@@ -1465,8 +1503,8 @@ async function carregarAvatarCapaAgency() {
 
   try {
     const data = await fetchJSON(`/agency/dashboard/perfil?modelo_id=${modeloId}`);
-    $('previewAvatarAgency').src = data.avatar || '';
-    $('previewCapaAgency').src = data.capa || '';
+    $('previewAvatarAgency').src = data.avatar || '/assets/avatar.png';
+    $('previewCapaAgency').src = (data.capa || '/assets/capa.png') + '?t=' + Date.now();
   } catch (err) {
     toast('Erro ao carregar avatar/capa: ' + err.message, 'error');
   }
@@ -1483,24 +1521,7 @@ async function salvarAvatarAgency(e) {
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.erro || `HTTP ${res.status}`);
     toast('Avatar atualizado!', 'success');
-    $('previewAvatarAgency').src = data.avatar;
-  } catch (err) {
-    toast('Erro: ' + err.message, 'error');
-  }
-}
-
-async function salvarCapaAgency(e) {
-  e.preventDefault();
-  const modeloId = Number($('avatarCapaModeloSelect').value);
-  const form = new FormData(e.target);
-  form.set('modelo_id', modeloId);
-
-  try {
-    const res = await authFetch('/agency/dashboard/capa', { method: 'POST', body: form });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.erro || `HTTP ${res.status}`);
-    toast('Capa atualizada!', 'success');
-    $('previewCapaAgency').src = data.capa;
+    $('previewAvatarAgency').src = data.avatar + '?t=' + Date.now();
   } catch (err) {
     toast('Erro: ' + err.message, 'error');
   }

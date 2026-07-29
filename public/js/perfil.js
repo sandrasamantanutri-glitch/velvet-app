@@ -1165,6 +1165,38 @@ uploadArea?.addEventListener("click", () => {
   fileInput.click();
 });
 
+uploadArea?.addEventListener("dragover", (e) => {
+  e.preventDefault();
+  uploadArea.style.borderColor = "#7c3aed";
+  uploadArea.style.background = "#f3e8ff";
+});
+
+uploadArea?.addEventListener("dragleave", () => {
+  uploadArea.style.borderColor = "";
+  uploadArea.style.background = "";
+});
+
+uploadArea?.addEventListener("drop", (e) => {
+  e.preventDefault();
+  uploadArea.style.borderColor = "";
+  uploadArea.style.background = "";
+
+  const file = e.dataTransfer.files[0];
+  if (!file) return;
+
+  const dataTransfer = new DataTransfer();
+  dataTransfer.items.add(file);
+  fileInput.files = dataTransfer.files;
+
+  preview.innerHTML = "";
+  const url = URL.createObjectURL(file);
+  if (file.type.startsWith("video")) {
+    preview.innerHTML = `<video src="${url}" controls></video>`;
+  } else {
+    preview.innerHTML = `<img src="${url}">`;
+  }
+});
+
 fileInput?.addEventListener("change", () => {
 
   const file = fileInput.files[0];

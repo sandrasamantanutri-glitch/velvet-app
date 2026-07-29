@@ -509,11 +509,14 @@
   <div class="tab-content" id="tab-capa-tab">
     <div class="card">
       <h3>Capa</h3>
-      <img id="previewCapaAgency" style="width:100%;max-height:200px;object-fit:cover;display:block;margin-bottom:12px;border-radius:8px;">
-      <form id="formCapaAgency" onsubmit="salvarCapaAgency(event)">
-        <input type="file" name="capa" accept="image/*" required>
-        <button type="submit" class="btn btn-primary" style="margin-top:10px;">Salvar Capa</button>
-      </form>
+      <div class="agency-perfil-capa">
+        <img id="previewCapaAgency" src="/assets/capa.png" alt="Capa">
+        <button class="agency-btn-camera capa" id="btnCapaAgency" type="button" title="Alterar capa">
+          <img src="/assets/download.png" alt="Alterar capa">
+        </button>
+        <input type="file" id="inputCapaAgency" accept="image/*" hidden>
+      </div>
+      <p class="agency-capa-hint">Clique na capa para alterar · Proporção recomendada 3:1 (ex: 1500×500 px)</p>
     </div>
   </div>
 </section>
@@ -673,6 +676,7 @@
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
+<script src="/js/capa-editor.js"></script>
 <script src="agency-dashboard.js"></script>
 </body>
 </html>
