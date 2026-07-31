@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Perfil da Modelo — Velvet</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --purple: #7B2CFF;
+      --purple-light: #9B5CFF;
+      --purple-dim: rgba(123,44,255,.08);
+      --bg: #f5f4f8;
+      --card: #ffffff;
+      --text: #1a1a2e;
+      --muted: #6b6b80;
+      --border: #e4e2f0;
+      --radius: 14px;
+      --sidebar: 230px;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── TOPO ── */
+    .topo {
+      background: linear-gradient(135deg, var(--purple), var(--purple-light));
+      color: #fff;
+      padding: 20px 28px 18px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 16px rgba(123,44,255,.3);
+    }
+    .topo img { height: 30px; }
+    .topo-info { flex: 1; }
+    .topo-info h1 { font-size: 17px; font-weight: 700; }
+    .topo-info p  { font-size: 12px; opacity: .8; margin-top: 2px; }
+    .badge-readonly {
+      background: rgba(255,255,255,.2);
+      border: 1px solid rgba(255,255,255,.35);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+
+    /* ── LAYOUT ── */
+    .layout {
+      display: flex;
+      gap: 0;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 24px 16px;
+      align-items: flex-start;
+    }
+
+    /* ── SIDEBAR NAV ── */
+    .sidebar-nav {
+      width: var(--sidebar);
+      flex-shrink: 0;
+      position: sticky;
+      top: 74px;
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: 0 2px 12px rgba(0,0,0,.06);
+      overflow: hidden;
+      margin-right: 20px;
+    }
+    .sidebar-nav .nav-titulo {
+      background: var(--purple-dim);
+      color: var(--purple);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .5px;
+      text-transform: uppercase;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sidebar-nav a {
+      display: block;
+      padding: 9px 16px;
+      font-size: 13px;
+      color: var(--muted);
+      text-decoration: none;
+      border-left: 3px solid transparent;
+      transition: all .15s;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .sidebar-nav a:hover,
+    .sidebar-nav a.ativo {
+      color: var(--purple);
+      background: var(--purple-dim);
+      border-left-color: var(--purple);
+    }
+
+    /* ── CONTEÚDO ── */
+    .conteudo { flex: 1; min-width: 0; }
+
+    .secao {
+      background: var(--card);
+      border-radius: var(--radius);
+      margin-bottom: 16px;
+      box-shadow: 0 2px 12px rgba(0,0,0,.05);
+      overflow: hidden;
+      scroll-margin-top: 84px;
+    }
+    .secao-titulo {
+      background: var(--purple-dim);
+      border-bottom: 1.5px solid var(--border);
+      padding: 14px 20px;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--purple);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* ── GRID DE CAMPOS ── */
+    .campos-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+    }
+    .campo-item {
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+    }
+    .campo-item:nth-child(2n) { border-right: none; }
+    .campo-item:last-child,
+    .campo-item:nth-last-child(2):nth-child(odd) { border-bottom: none; }
+
+    /* campos que ocupam largura total */
+    .campo-full {
+      grid-column: 1 / -1;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .campo-full:last-child { border-bottom: none; }
+
+    .campo-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .4px;
+      margin-bottom: 5px;
+    }
+    .campo-valor {
+      font-size: 14px;
+      color: var(--text);
+      line-height: 1.5;
+    }
+    .campo-valor.vazio {
+      color: #c0bfd0;
+      font-style: italic;
+      font-size: 13px;
+    }
+
+    /* ── BADGES (multi-select) ── */
+    .badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 2px;
+    }
+    .badge {
+      background: var(--purple-dim);
+      color: var(--purple);
+      border: 1px solid rgba(123,44,255,.2);
+      border-radius: 20px;
+      padding: 3px 11px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    /* ── DESTAQUE (seção chat / limites) ── */
+    .secao.destaque-chat { border: 2px solid var(--purple); }
+    .secao.destaque-limites { border: 2px solid #f5a623; }
+    .secao.destaque-limites .secao-titulo { background: #fff8ee; color: #b36b00; }
+
+    /* ── LOADING ── */
+    .loading {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--muted);
+    }
+    .spinner {
+      width: 36px; height: 36px;
+      border: 3px solid var(--border);
+      border-top-color: var(--purple);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      margin: 0 auto 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 760px) {
+      .sidebar-nav { display: none; }
+      .layout { padding: 12px; }
+      .campos-grid { grid-template-columns: 1fr; }
+      .campo-item { border-right: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="topo">
+  <img src="/assets/velvet-white.webp" onerror="this.style.display='none'" alt="Velvet">
+  <div class="topo-info">
+    <h1 id="tituloNome">Carregando...</h1>
+    <p>Ficha de gestão de chat — uso interno</p>
+  </div>
+  <span class="badge-readonly">🔒 Somente leitura</span>
+</div>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar-nav" id="sidebarNav">
+    <div class="nav-titulo">Seções</div>
+  </nav>
+
+  <!-- CONTEÚDO -->
+  <div class="conteudo" id="conteudo">
+    <div class="loading"><div class="spinner"></div><p>A carregar ficha...</p></div>
+  </div>
+
+</div>
+
+<script>
+const SECOES = [
+  { id: "chat",       titulo: "💬 Estilo do Chat",           destaque: "destaque-chat",
+    campos: ["como_escrever","nivel_intimidade","chamar_pelo_nome","girias"] },
+  { id: "limites",    titulo: "🚫 Limites",                  destaque: "destaque-limites",
+    campos: ["assuntos_proibidos","mentiras_manter","palavras_nao_gosta","promessas_nao_fazer"] },
+  { id: "fas",        titulo: "❤️ Relacionamento com Fãs",
+    campos: ["preferencia_tratamento","apelidos","apelidos_custom","conversa_nao_gosta"] },
+  { id: "pessoal",    titulo: "👤 Informações Pessoais",
+    campos: ["nome","apelido","data_nascimento","signo","estado_civil","filhos","cidade_estado","mora_atualmente","mora_sozinha","estuda","trabalha_alem","numero_calcado"] },
+  { id: "personalidade", titulo: "💜 Personalidade",
+    campos: ["personalidade_5_palavras","timida_extrovertida","estilo_personalidade","ciumenta","caseira_sair","praia_piscina","campo_cidade","frio_calor","manha_noite","maior_sonho"] },
+  { id: "gostos",     titulo: "🎵 Gostos Pessoais",
+    campos: ["hobbies","esportes_favoritos","musica_favorita","artistas_favoritos","filmes_favoritos","series_favoritas","livros_favoritos","jogos_favoritos","cor_favorita","estacao_favorita","marca_roupa"] },
+  { id: "comida",     titulo: "🍔 Comida",
+    campos: ["comida_favorita","sobremesa_favorita","bebida_favorita","bebida_alcoolica","fast_food","doce_salgado","cafe_cha","cozinha"] },
+  { id: "viagens",    titulo: "✈️ Viagens",
+    campos: ["melhor_viagem","proximo_destino","pais_conhecer","lugar_nao_moraria"] },
+  { id: "animais",    titulo: "🐶 Animais",
+    campos: ["tem_animais","nome_animais","animal_favorito","alergia_animal"] },
+  { id: "lifestyle",  titulo: "🎮 Lifestyle",
+    campos: ["atividade_fisica","assiste_futebol","time_favorito","gosta_videogames","assiste_anime","assiste_streamers","redes_sociais"] },
+  { id: "aparencia",  titulo: "💄 Aparência",
+    campos: ["cor_cabelo","usa_extensoes","tatuagens","piercings","altura","peso"] },
+  { id: "conteudo",   titulo: "💎 Conteúdo",
+    campos: ["faria_personalizados","conteudo_favorito"] },
+  { id: "obs",        titulo: "📝 Observações",
+    campos: ["perguntas_frequentes","curiosidades","informacao_importante"] }
+];
+
+const LABELS = {
+  nome:"Nome", apelido:"Apelido", data_nascimento:"Data de nascimento", signo:"Signo",
+  estado_civil:"Estado civil", filhos:"Filhos", cidade_estado:"Cidade / Estado",
+  mora_atualmente:"Mora atualmente", mora_sozinha:"Mora sozinha?", estuda:"Estuda?",
+  trabalha_alem:"Trabalha além da Velvet?", numero_calcado:"Nº do calçado",
+  personalidade_5_palavras:"Personalidade em 5 palavras", timida_extrovertida:"Tímida ou extrovertida?",
+  estilo_personalidade:"Estilo", ciumenta:"Ciumenta?", caseira_sair:"Caseira ou sai?",
+  praia_piscina:"Praia ou piscina?", campo_cidade:"Campo ou cidade?", frio_calor:"Frio ou calor?",
+  manha_noite:"Manhã ou noite?", maior_sonho:"Maior sonho",
+  hobbies:"Hobbies", esportes_favoritos:"Esportes", musica_favorita:"Música favorita",
+  artistas_favoritos:"Artistas favoritos", filmes_favoritos:"Filmes favoritos",
+  series_favoritas:"Séries favoritas", livros_favoritos:"Livros favoritos",
+  jogos_favoritos:"Jogos favoritos", cor_favorita:"Cor favorita",
+  estacao_favorita:"Estação favorita", marca_roupa:"Marca de roupa",
+  comida_favorita:"Comida favorita", sobremesa_favorita:"Sobremesa favorita",
+  bebida_favorita:"Bebida (sem álcool)", bebida_alcoolica:"Bebida alcoólica",
+  fast_food:"Fast food favorito", doce_salgado:"Doce ou salgado?",
+  cafe_cha:"Café ou chá?", cozinha:"Cozinha?",
+  melhor_viagem:"Melhor viagem", proximo_destino:"Próximo destino",
+  pais_conhecer:"País a conhecer", lugar_nao_moraria:"Nunca moraria em",
+  tem_animais:"Tem animais?", nome_animais:"Nome dos animais",
+  animal_favorito:"Animal favorito", alergia_animal:"Alergia a animais?",
+  atividade_fisica:"Atividade física", assiste_futebol:"Assiste futebol?",
+  time_favorito:"Time favorito", gosta_videogames:"Videogames?",
+  assiste_anime:"Anime?", assiste_streamers:"Streamers?", redes_sociais:"Redes sociais",
+  cor_cabelo:"Cor do cabelo", usa_extensoes:"Usa extensões?",
+  tatuagens:"Tatuagens", piercings:"Piercings", altura:"Altura", peso:"Peso",
+  preferencia_tratamento:"Como trata os fãs", apelidos:"Apelidos com fãs",
+  apelidos_custom:"Apelidos personalizados", conversa_nao_gosta:"Conversa que não gosta",
+  assuntos_proibidos:"Assuntos PROIBIDOS", mentiras_manter:"Mentiras a manter",
+  palavras_nao_gosta:"Palavras que não usa", promessas_nao_fazer:"Promessas a NUNCA fazer",
+  faria_personalizados:"Faria personalizados?", conteudo_favorito:"Conteúdo que mais gosta",
+  como_escrever:"Como escrever pelo chat", nivel_intimidade:"Nível de intimidade",
+  chamar_pelo_nome:"Chamar pelo nome?", girias:"Gírias",
+  perguntas_frequentes:"Perguntas frequentes dos fãs",
+  curiosidades:"Curiosidades sobre ela",
+  informacao_importante:"Informação importante para chatear como ela"
+};
+
+// campos que são multi-select (array)
+const MULTI = new Set(["redes_sociais","apelidos","nivel_intimidade"]);
+
+// campos que precisam de largura total (texto longo)
+const FULL = new Set([
+  "maior_sonho","como_escrever","conteudo_favorito","preferencia_tratamento",
+  "conversa_nao_gosta","assuntos_proibidos","mentiras_manter","palavras_nao_gosta",
+  "promessas_nao_fazer","personalidade_5_palavras","perguntas_frequentes",
+  "curiosidades","informacao_importante","apelidos_custom"
+]);
+
+function renderValor(campo, val) {
+  if (MULTI.has(campo)) {
+    const arr = Array.isArray(val) ? val : (val ? [val] : []);
+    if (!arr.length) return `<span class="campo-valor vazio">Não informado</span>`;
+    return `<div class="badges">${arr.map(v => `<span class="badge">${v}</span>`).join("")}</div>`;
+  }
+  if (!val || val.toString().trim() === "") {
+    return `<span class="campo-valor vazio">Não informado</span>`;
+  }
+  return `<span class="campo-valor">${val}</span>`;
+}
+
+function renderSecao(sec, respostas) {
+  const destaque = sec.destaque ? ` ${sec.destaque}` : "";
+
+  const itens = sec.campos.map(campo => {
+    const val = respostas[campo];
+    const isFull = FULL.has(campo);
+    const cls = isFull ? "campo-full" : "campo-item";
+    return `<div class="${cls}">
+      <div class="campo-label">${LABELS[campo] || campo}</div>
+      ${renderValor(campo, val)}
+    </div>`;
+  }).join("");
+
+  return `<section class="secao${destaque}" id="sec-${sec.id}">
+    <div class="secao-titulo">${sec.titulo}</div>
+    <div class="campos-grid">${itens}</div>
+  </section>`;
+}
+
+async function init() {
+  const params = new URLSearchParams(location.search);
+  const modeloId = Number(params.get("modelo"));
+
+  if (!modeloId) {
+    document.getElementById("conteudo").innerHTML =
+      `<div class="loading"><p>❌ Link inválido.</p></div>`;
+    return;
+  }
+
+  try {
+    const res = await fetch(`/api/chat-form/${modeloId}`);
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    const respostas = data.respostas || {};
+
+    document.getElementById("tituloNome").textContent =
+      `${data.nome_modelo || "Modelo"} — Ficha de Chat`;
+
+    // sidebar
+    const nav = document.getElementById("sidebarNav");
+    nav.innerHTML = `<div class="nav-titulo">Seções</div>` +
+      SECOES.map(s => `<a href="#sec-${s.id}">${s.titulo}</a>`).join("");
+
+    // conteúdo
+    document.getElementById("conteudo").innerHTML =
+      SECOES.map(s => renderSecao(s, respostas)).join("");
+
+    // highlight ativo na sidebar ao scrollar
+    const links = nav.querySelectorAll("a");
+    const secoes = document.querySelectorAll(".secao");
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          links.forEach(l => l.classList.remove("ativo"));
+          const ativo = nav.querySelector(`a[href="#${entry.target.id}"]`);
+          if (ativo) ativo.classList.add("ativo");
+        }
+      });
+    }, { rootMargin: "-80px 0px -60% 0px" });
+    secoes.forEach(s => observer.observe(s));
+
+  } catch {
+    document.getElementById("conteudo").innerHTML =
+      `<div class="loading"><p>❌ Ficha não encontrada ou ainda não preenchida.</p></div>`;
+  }
+}
+
+init();
+</script>
+</body>
+</html>
