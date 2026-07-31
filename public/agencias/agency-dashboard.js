@@ -1604,7 +1604,7 @@ async function carregarChatForms() {
         <td style="display:flex;gap:6px;flex-wrap:wrap;">
           <button class="btn btn-sm btn-ghost" onclick="copiarLinkForm('${link}', this)">📋 Copiar link</button>
           ${r.preenchido
-            ? `<button class="btn btn-sm btn-primary" onclick="verFormularioChat(${r.id}, '${r.nome.replace(/'/g,"\\'")}')">👁 Ver</button>`
+            ? `<a class="btn btn-sm btn-primary" href="/formulario-chat.html?modelo=${r.id}" target="_blank" rel="noopener noreferrer">👁 Ver</a>`
             : ""}
         </td>
       </tr>`;

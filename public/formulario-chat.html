@@ -453,13 +453,13 @@
     <section class="bloco" style="border: 1.5px solid var(--purple);">
       <h2>💬 Estilo do Chat <span style="font-size:12px;font-weight:400;color:var(--muted);">(a parte mais importante)</span></h2>
       <div class="campo"><label>Como gostaria que a chatter escrevesse por si?</label><textarea name="como_escrever" placeholder="Ex: de forma descontraída, com emojis, linguagem jovem, como se fosse a própria modelo..."></textarea></div>
-      <div class="campo"><label>Nível de intimidade</label>
+      <div class="campo"><label>Nível de intimidade <span style="font-size:11px;color:var(--muted);font-weight:400">(pode escolher mais de um)</span></label>
         <div class="radio-group">
-          <label><input type="radio" name="nivel_intimidade" value="Muito educado"> Muito educado</label>
-          <label><input type="radio" name="nivel_intimidade" value="Carinhoso"> Carinhoso</label>
-          <label><input type="radio" name="nivel_intimidade" value="Romântico"> Romântico</label>
-          <label><input type="radio" name="nivel_intimidade" value="Sedutor"> Sedutor</label>
-          <label><input type="radio" name="nivel_intimidade" value="Muito provocador"> Muito provocador</label>
+          <label><input type="checkbox" name="nivel_intimidade" value="Muito educado"> Muito educado</label>
+          <label><input type="checkbox" name="nivel_intimidade" value="Carinhoso"> Carinhoso</label>
+          <label><input type="checkbox" name="nivel_intimidade" value="Romântico"> Romântico</label>
+          <label><input type="checkbox" name="nivel_intimidade" value="Sedutor"> Sedutor</label>
+          <label><input type="checkbox" name="nivel_intimidade" value="Muito provocador"> Muito provocador</label>
         </div>
       </div>
       <div class="campo"><label>Gosta de chamar os fãs pelo nome?</label>
@@ -578,7 +578,7 @@
     const radios = ["timida_extrovertida","estilo_personalidade","ciumenta","caseira_sair",
       "praia_piscina","campo_cidade","frio_calor","manha_noite","doce_salgado","cafe_cha","cozinha",
       "assiste_futebol","gosta_videogames","assiste_anime","assiste_streamers",
-      "usa_extensoes","faria_personalizados","nivel_intimidade","chamar_pelo_nome","tem_animais"
+      "usa_extensoes","faria_personalizados","chamar_pelo_nome","tem_animais"
     ];
 
     radios.forEach(name => {
@@ -587,7 +587,7 @@
     });
 
     // Checkboxes múltiplos
-    const multiCheck = ["redes_sociais","apelidos"];
+    const multiCheck = ["redes_sociais","apelidos","nivel_intimidade"];
     multiCheck.forEach(name => {
       respostas[name] = Array.from(
         form.querySelectorAll(`input[name="${name}"]:checked`)
