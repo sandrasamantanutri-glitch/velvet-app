@@ -1474,6 +1474,7 @@ async function carregarPremium() {
 
         carousel.addEventListener("pointerdown", (e) => {
           if (e.pointerType === "mouse" && e.button !== 0) return;
+          if (e.target.closest(".carousel-arrow, .carousel-dot")) return;
 
           houveArraste = false;
           isDragging = true;
