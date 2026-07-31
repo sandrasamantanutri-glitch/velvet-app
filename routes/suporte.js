@@ -4,7 +4,6 @@ const db = require("../db");
 const authCliente = require("../middleware/authCliente");
 const auth = require("../middleware/auth");
 const authAdmin = require("../middleware/authAdmin");
-const { criarNotificacaoAdmin } = require("../utils/notificacoesAdmin");
 
 // ─── AUTO-RESPOSTA (lógica server-side) ─────────────────────────────────────
 const RESPOSTAS_AUTO = [
@@ -101,13 +100,6 @@ router.post("/conversa", async (req, res) => {
       [cliente_id, nome || null, email || null]
     );
 
-    await criarNotificacaoAdmin(db, req.app.get("io"), {
-      tipo: "chat_suporte",
-      referencia_id: rows[0].id,
-      titulo: "Novo chat de suporte aberto",
-      mensagem: `${nome || email || "Visitante"} abriu um novo chat de suporte.`
-    });
-
     const io = req.app.get("io");
     if (io) {
       io.to("suporte_admin").emit("suporte:nova_conversa", { conversa_id: rows[0].id });
@@ -187,7 +179,7 @@ router.post("/conversa/:id/mensagem", async (req, res) => {
           [conversa_id, autoTexto]
         );
         await db.query(
-          "UPDATE suporte_conversas SET updated_at = NOW(), status = 'respondida' WHERE id = $1",
+          "UPDATE suporte_conversas SET updated_at = NOW(), status = 'fechada' WHERE id = $1",
           [conversa_id]
         );
         if (io) {
@@ -278,6 +270,7 @@ router.get("/admin/conversas", auth, authAdmin, async (req, res) => {
         (SELECT COUNT(*) FROM suporte_mensagens sm WHERE sm.conversa_id = sc.id AND sm.lida = false AND sm.remetente = 'cliente') AS nao_lidas,
         (SELECT texto FROM suporte_mensagens sm WHERE sm.conversa_id = sc.id ORDER BY sm.criado_em DESC LIMIT 1) AS ultima_mensagem
       FROM suporte_conversas sc
+      WHERE sc.created_at >= NOW() - INTERVAL '15 days'
       ORDER BY sc.updated_at DESC
     `);
     res.json(rows);
@@ -396,5 +389,24 @@ router.patch("/admin/conversa/:id/fechar", auth, authAdmin, async (req, res) => 
     res.status(500).json({ error: "Erro interno" });
   }
 });
+
+// Auto-fecha conversas do bot-tree que ficaram abertas sem clicar "Não encontrei minha dúvida"
+setInterval(async () => {
+  try {
+    await db.query(`
+      UPDATE suporte_conversas
+      SET status = 'fechada', updated_at = NOW()
+      WHERE status = 'aberta'
+      AND updated_at < NOW() - INTERVAL '30 minutes'
+      AND id NOT IN (
+        SELECT DISTINCT conversa_id FROM suporte_mensagens
+        WHERE LOWER(texto) LIKE '%encontrei minha duvida%'
+           OR LOWER(texto) LIKE '%encontrei minha dúvida%'
+      )
+    `);
+  } catch (e) {
+    console.error("Auto-close suporte erro:", e);
+  }
+}, 10 * 60 * 1000);
 
 module.exports = router;

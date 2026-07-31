@@ -8779,16 +8779,33 @@ app.post("/api/cliente/ocorrencia", auth, async (req, res) => {
     );
     const clienteId = clienteRes.rows[0]?.id || null;
 
-    await db.query(
+    const { rows: ocRows } = await db.query(
       `INSERT INTO logs_ocorrencias
          (cliente_id, tipo, subtipo, nome_completo, nascimento, email,
           data_pagamento, modelo_nome, midia_id, descricao, anexo_base64, anexo_filename)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING id`,
       [clienteId, tipo, subtipo || null, nome_completo,
        nascimento || null, email, data_pagamento || null,
        modelo_nome || null, midia_id || null, descricao || null,
        anexo_base64 || null, anexo_filename || null]
     );
+
+    const tipoLabelNotif = {
+      vip_nao_liberou: "VIP não liberou",
+      propaganda: "Propaganda enganosa / Golpe",
+      arrependimento: "Arrependimento",
+      modelo_errada: "Assinei modelo errada",
+      midia_nao_desbloqueou: "Mídia não desbloqueou",
+      midia_errada: "Desbloqueio de mídia errada",
+      cancelamento_vip: "Cancelamento VIP",
+    }[tipo] || tipo;
+
+    await criarNotificacaoAdmin(db, req.app.get("io"), {
+      tipo: "ocorrencia",
+      referencia_id: ocRows[0]?.id || null,
+      titulo: "Nova ocorrência aberta",
+      mensagem: `${nome_completo} — ${tipoLabelNotif}`
+    });
 
     // Envia email interno para a equipe Velvet
     try {

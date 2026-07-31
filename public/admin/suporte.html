@@ -109,8 +109,8 @@
     <button id="btn-registro-manual" title="Registrar atendimento por email" style="margin-left:auto;background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;">+ E-mail</button>
   </div>
   <div id="filtros">
-    <button class="filtro-btn ativo" data-status="todas">Todas</button>
-    <button class="filtro-btn" data-status="aberta">Abertas</button>
+    <button class="filtro-btn" data-status="todas">Todas</button>
+    <button class="filtro-btn ativo" data-status="aberta">Abertas</button>
     <button class="filtro-btn" data-status="respondida">Respondidas</button>
     <button class="filtro-btn" data-status="fechada">Fechadas</button>
   </div>
@@ -157,7 +157,7 @@
   // Autenticação via cookie httpOnly (enviado automaticamente em requests same-origin)
 
   let conversaAtiva = null;
-  let filtroAtual = "todas";
+  let filtroAtual = "aberta";
   let socket = null;
   let todasConversas = [];
 

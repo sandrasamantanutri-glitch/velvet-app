@@ -108,6 +108,11 @@ function assinarArquivoPrivado(key) {
 
 // ========== 1. OVERVIEW ==========
 
+// Cache simples em memória para o overview (5 minutos)
+let _overviewCache = null;
+let _overviewCacheAt = 0;
+const OVERVIEW_CACHE_TTL = 5 * 60 * 1000;
+
 router.get("/name-admin", auth, authAdmin, async (req, res) => {
   try {
     const { rows } = await db.query(
@@ -123,6 +128,11 @@ router.get("/name-admin", auth, authAdmin, async (req, res) => {
 
 router.get("/overview", auth, authAdmin, async (req, res) => {
   try {
+    // Serve do cache se ainda for válido
+    if (_overviewCache && Date.now() - _overviewCacheAt < OVERVIEW_CACHE_TTL) {
+      return res.json(_overviewCache);
+    }
+
     const [modelos, clientes, vips, fatd, fatm, fat12m, acessos, top] = await Promise.all([
       db.query(`
         SELECT COUNT(*) AS total
@@ -230,7 +240,7 @@ ORDER BY total DESC;
       `)
     ]);
 
-    res.json({
+    const payload = {
       total_modelos: Number(modelos.rows[0]?.total || 0),
       total_clientes: Number(clientes.rows[0]?.total || 0),
       vips_ativos: Number(vips.rows[0]?.total || 0),
@@ -250,7 +260,11 @@ ORDER BY total DESC;
         ganhos: Number(r.ganhos || 0),
         assinantes: Number(r.assinantes || 0)
       }))
-    });
+    };
+
+    _overviewCache = payload;
+    _overviewCacheAt = Date.now();
+    res.json(payload);
   } catch (err) {
     console.error("Erro overview:", err);
     res.status(500).json({ erro: "Erro interno" });

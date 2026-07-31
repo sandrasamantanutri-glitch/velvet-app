@@ -5502,7 +5502,7 @@ const NOTIF_PAGINA_POR_TIPO = {
   verificacao_modelo: 'verificacoes',
   verificacao_cliente: 'verificacoes',
   dados_bancarios: 'bancarios',
-  chat_suporte: 'suporte',
+  ocorrencia: 'ocorrencias',
   email: 'emails'
 };
 
@@ -5604,6 +5604,8 @@ function initNotificacoes() {
   const wrap = $('notifBellWrap');
 
   carregarNotificacoes();
+  // Polling de 60s como fallback caso o socket caia
+  setInterval(carregarNotificacoes, 60 * 1000);
 
   bellBtn.addEventListener('click', (e) => {
     e.stopPropagation();
