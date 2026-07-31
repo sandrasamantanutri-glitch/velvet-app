@@ -2088,6 +2088,52 @@ async function gerarFechamentosTodasAgencias(ano, mes) {
   return resultado;
 }
 
+// ========== FORMULÁRIO CHAT ==========
+
+router.get("/chat-forms", async (req, res) => {
+  try {
+    const agenciaId = req.agencia.id;
+    const { rows } = await db.query(`
+      SELECT
+        m.id,
+        m.nome,
+        f.preenchido_em,
+        f.updated_at AS atualizado_em,
+        CASE WHEN f.id IS NOT NULL THEN true ELSE false END AS preenchido
+      FROM modelos m
+      LEFT JOIN agency_chat_forms f ON f.modelo_id = m.id
+      WHERE m.agencia_id = $1 AND m.ativo = true
+      ORDER BY m.nome
+    `, [agenciaId]);
+    res.json(rows);
+  } catch (err) {
+    console.error("Erro chat-forms lista:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+router.get("/chat-form/:modelo_id", async (req, res) => {
+  try {
+    const agenciaId = req.agencia.id;
+    const modeloId = Number(req.params.modelo_id);
+
+    const m = await db.query(
+      "SELECT id, nome FROM modelos WHERE id=$1 AND agencia_id=$2",
+      [modeloId, agenciaId]
+    );
+    if (!m.rowCount) return res.status(404).json({ erro: "Modelo não encontrado nesta agência" });
+
+    const { rows } = await db.query(
+      "SELECT * FROM agency_chat_forms WHERE modelo_id=$1",
+      [modeloId]
+    );
+    res.json({ modelo: m.rows[0], form: rows[0] || null });
+  } catch (err) {
+    console.error("Erro chat-form get:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
 module.exports = router;
 module.exports.gerarFechamentoAgencia = gerarFechamentoAgencia;
 module.exports.gerarFechamentosTodasAgencias = gerarFechamentosTodasAgencias;

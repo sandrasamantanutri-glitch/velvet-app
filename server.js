@@ -9776,6 +9776,84 @@ app.post("/api/logout", auth, async (req, res) => {
 });
 
 // ===========================
+// FORMULÁRIO CHAT (público)
+// ===========================
+
+// Rodar migração na inicialização
+db.query(`
+  CREATE TABLE IF NOT EXISTS agency_chat_forms (
+    id            SERIAL PRIMARY KEY,
+    modelo_id     INTEGER NOT NULL UNIQUE,
+    agencia_id    INTEGER,
+    respostas     JSONB NOT NULL DEFAULT '{}',
+    preenchido_em TIMESTAMP WITH TIME ZONE,
+    created_at    TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at    TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  )
+`).catch(err => console.error("Migração agency_chat_forms:", err.message));
+
+// Buscar form existente (pré-preenchimento)
+app.get("/api/chat-form/:modelo_id", async (req, res) => {
+  try {
+    const modeloId = Number(req.params.modelo_id);
+    if (!modeloId) return res.status(400).json({ erro: "modelo_id inválido" });
+
+    const { rows } = await db.query(
+      "SELECT respostas, preenchido_em FROM agency_chat_forms WHERE modelo_id=$1",
+      [modeloId]
+    );
+
+    const modeloRes = await db.query(
+      "SELECT nome FROM modelos WHERE id=$1 AND ativo=true",
+      [modeloId]
+    );
+    if (!modeloRes.rowCount) return res.status(404).json({ erro: "Modelo não encontrado" });
+
+    res.json({
+      nome_modelo: modeloRes.rows[0].nome,
+      respostas: rows[0]?.respostas || null,
+      preenchido_em: rows[0]?.preenchido_em || null
+    });
+  } catch (err) {
+    console.error("Erro GET chat-form:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+// Salvar/actualizar formulário (sem auth — modelo preenche via link)
+app.post("/api/chat-form/salvar", async (req, res) => {
+  try {
+    const { modelo_id, respostas } = req.body;
+    if (!modelo_id || !respostas) return res.status(400).json({ erro: "Dados incompletos" });
+
+    const modeloId = Number(modelo_id);
+
+    const modeloRes = await db.query(
+      "SELECT id, agencia_id FROM modelos WHERE id=$1 AND ativo=true",
+      [modeloId]
+    );
+    if (!modeloRes.rowCount) return res.status(404).json({ erro: "Modelo não encontrado" });
+
+    const agenciaId = modeloRes.rows[0].agencia_id;
+
+    await db.query(`
+      INSERT INTO agency_chat_forms (modelo_id, agencia_id, respostas, preenchido_em, updated_at)
+      VALUES ($1, $2, $3, NOW(), NOW())
+      ON CONFLICT (modelo_id) DO UPDATE
+        SET respostas     = EXCLUDED.respostas,
+            agencia_id    = EXCLUDED.agencia_id,
+            preenchido_em = NOW(),
+            updated_at    = NOW()
+    `, [modeloId, agenciaId, JSON.stringify(respostas)]);
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("Erro POST chat-form:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+// ===========================
 // LOGIN
 // ===========================
 app.post("/api/agencia/login", authLimiter, async (req, res) => {

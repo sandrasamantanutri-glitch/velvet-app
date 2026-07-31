@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Formulário de Gestão de Chat — Velvet</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --purple: #7B2CFF;
+      --purple-light: #9B5CFF;
+      --bg: #f5f4f8;
+      --card: #ffffff;
+      --text: #1a1a2e;
+      --muted: #6b6b80;
+      --border: #e0dff0;
+      --radius: 14px;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 0 0 60px;
+    }
+    header {
+      background: linear-gradient(135deg, var(--purple), var(--purple-light));
+      color: #fff;
+      padding: 28px 24px 20px;
+      text-align: center;
+    }
+    header img { height: 36px; margin-bottom: 12px; display: block; margin-inline: auto; }
+    header h1 { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+    header p  { font-size: 13px; opacity: .85; max-width: 480px; margin-inline: auto; line-height: 1.5; }
+
+    .container { max-width: 680px; margin: 0 auto; padding: 0 16px; }
+
+    .nome-modelo-badge {
+      display: flex; align-items: center; gap: 8px;
+      background: #fff; border: 1.5px solid var(--purple);
+      border-radius: 40px; padding: 8px 18px;
+      color: var(--purple); font-weight: 600; font-size: 14px;
+      width: fit-content; margin: 20px auto 0;
+    }
+
+    section.bloco {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 24px 22px;
+      margin-top: 18px;
+      box-shadow: 0 2px 12px rgba(0,0,0,.06);
+    }
+    section.bloco h2 {
+      font-size: 15px; font-weight: 700;
+      color: var(--purple);
+      margin-bottom: 18px;
+      display: flex; align-items: center; gap: 8px;
+      border-bottom: 1.5px solid var(--border);
+      padding-bottom: 10px;
+    }
+
+    .campo { margin-bottom: 16px; }
+    .campo label {
+      display: block; font-size: 13px; font-weight: 600;
+      color: var(--muted); margin-bottom: 6px;
+    }
+    .campo input,
+    .campo textarea,
+    .campo select {
+      width: 100%; padding: 10px 13px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px; font-size: 14px;
+      background: #fafafa; color: var(--text);
+      transition: border-color .2s;
+      font-family: inherit;
+    }
+    .campo input:focus,
+    .campo textarea:focus,
+    .campo select:focus {
+      outline: none; border-color: var(--purple);
+      background: #fff;
+    }
+    .campo textarea { min-height: 72px; resize: vertical; }
+
+    .radio-group {
+      display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px;
+    }
+    .radio-group label {
+      display: flex; align-items: center; gap: 6px;
+      background: #f2f0fb; border: 1.5px solid var(--border);
+      border-radius: 30px; padding: 6px 14px;
+      font-size: 13px; font-weight: 500; color: var(--text);
+      cursor: pointer; transition: all .15s;
+    }
+    .radio-group input[type=radio],
+    .radio-group input[type=checkbox] { display: none; }
+    .radio-group label:has(input:checked) {
+      background: var(--purple); border-color: var(--purple); color: #fff;
+    }
+
+    .duas-colunas { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 480px) { .duas-colunas { grid-template-columns: 1fr; } }
+
+    .btn-submit {
+      display: block; width: 100%; max-width: 400px;
+      margin: 28px auto 0; padding: 16px;
+      background: linear-gradient(135deg, var(--purple), var(--purple-light));
+      color: #fff; font-size: 16px; font-weight: 700;
+      border: none; border-radius: 14px; cursor: pointer;
+      box-shadow: 0 4px 16px rgba(123,44,255,.35);
+      transition: transform .15s, box-shadow .15s;
+    }
+    .btn-submit:hover { transform: translateY(-1px); box-shadow: 0 6px 22px rgba(123,44,255,.45); }
+    .btn-submit:active { transform: translateY(0); }
+    .btn-submit:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+
+    #mensagemSucesso {
+      display: none; text-align: center;
+      background: #edfaf1; border: 1.5px solid #34c76e;
+      border-radius: var(--radius); padding: 28px 20px;
+      margin-top: 24px;
+    }
+    #mensagemSucesso .check { font-size: 48px; margin-bottom: 10px; }
+    #mensagemSucesso h3 { color: #1a7a40; font-size: 18px; margin-bottom: 6px; }
+    #mensagemSucesso p  { color: #2d8c50; font-size: 14px; }
+
+    #erroModelo {
+      display: none; text-align: center;
+      background: #fff3f3; border: 1.5px solid #f44;
+      border-radius: var(--radius); padding: 28px 20px; margin-top: 24px;
+    }
+    #erroModelo h3 { color: #c00; font-size: 16px; }
+
+    .loading-spinner {
+      display: flex; justify-content: center; padding: 40px;
+    }
+    .spinner {
+      width: 36px; height: 36px;
+      border: 3px solid var(--border);
+      border-top-color: var(--purple);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<header>
+  <img src="/assets/velvet-white.webp" onerror="this.style.display='none'" alt="Velvet">
+  <h1>Informações para Gestão de Chat Velvet</h1>
+  <p>Este formulário recolhe o máximo de informações para que possamos interagir de forma natural com os seus fãs.</p>
+</header>
+
+<div class="container">
+
+  <div id="nomeModeloBadge" style="display:none" class="nome-modelo-badge">
+    <span>👤</span><span id="nomeModeloTexto"></span>
+  </div>
+
+  <div id="loadingInicial" class="loading-spinner"><div class="spinner"></div></div>
+
+  <div id="erroModelo">
+    <h3>❌ Link inválido ou modelo não encontrado.</h3>
+  </div>
+
+  <form id="formChat" style="display:none" onsubmit="salvarFormulario(event)">
+
+    <!-- INFORMAÇÕES PESSOAIS -->
+    <section class="bloco">
+      <h2>👤 Informações Pessoais</h2>
+      <div class="duas-colunas">
+        <div class="campo"><label>Nome *</label><input name="nome" placeholder="Seu nome completo"></div>
+        <div class="campo"><label>Apelido (se tiver)</label><input name="apelido" placeholder="Apelido"></div>
+        <div class="campo"><label>Data de nascimento</label><input name="data_nascimento" type="date"></div>
+        <div class="campo"><label>Signo</label><input name="signo" placeholder="Ex: Escorpião"></div>
+        <div class="campo"><label>Estado civil</label>
+          <select name="estado_civil">
+            <option value="">Selecione...</option>
+            <option>Solteira</option><option>Namorando</option>
+            <option>Casada</option><option>Divorciada</option><option>Prefere não dizer</option>
+          </select>
+        </div>
+        <div class="campo"><label>De onde é (cidade/estado)</label><input name="cidade_estado" placeholder="Ex: São Paulo, SP"></div>
+        <div class="campo"><label>Onde mora atualmente</label><input name="mora_atualmente" placeholder="Cidade atual"></div>
+        <div class="campo"><label>Número do calçado</label><input name="numero_calcado" placeholder="Ex: 37"></div>
+      </div>
+      <div class="campo"><label>Tem filhos? Quantos? (Se prefere não divulgar, informar)</label><input name="filhos" placeholder="Ex: Sim, 1 filho / Não / Prefiro não dizer"></div>
+      <div class="campo"><label>Mora sozinha? Se não, com quem?</label><input name="mora_sozinha" placeholder="Ex: Sim / Não, moro com minha mãe"></div>
+      <div class="campo"><label>Estuda? O quê?</label><input name="estuda" placeholder="Ex: Sim, Psicologia / Não"></div>
+      <div class="campo"><label>Trabalha além da Velvet?</label><input name="trabalha_alem" placeholder="Ex: Sim, sou enfermeira / Não"></div>
+    </section>
+
+    <!-- PERSONALIDADE -->
+    <section class="bloco">
+      <h2>💜 Personalidade</h2>
+      <div class="campo"><label>Como descreveria a sua personalidade em 5 palavras?</label><input name="personalidade_5_palavras" placeholder="Ex: divertida, carinhosa, determinada, curiosa, leal"></div>
+      <div class="campo"><label>É mais tímida ou extrovertida?</label>
+        <div class="radio-group">
+          <label><input type="radio" name="timida_extrovertida" value="Tímida"> Tímida</label>
+          <label><input type="radio" name="timida_extrovertida" value="Extrovertida"> Extrovertida</label>
+          <label><input type="radio" name="timida_extrovertida" value="Meio a meio"> Meio a meio</label>
+        </div>
+      </div>
+      <div class="campo"><label>É romântica, divertida, provocadora ou mais carinhosa?</label>
+        <div class="radio-group">
+          <label><input type="radio" name="estilo_personalidade" value="Romântica"> Romântica</label>
+          <label><input type="radio" name="estilo_personalidade" value="Divertida"> Divertida</label>
+          <label><input type="radio" name="estilo_personalidade" value="Provocadora"> Provocadora</label>
+          <label><input type="radio" name="estilo_personalidade" value="Carinhosa"> Carinhosa</label>
+          <label><input type="radio" name="estilo_personalidade" value="Todas"> Todas</label>
+        </div>
+      </div>
+      <div class="campo"><label>É ciumenta?</label>
+        <div class="radio-group">
+          <label><input type="radio" name="ciumenta" value="Sim"> Sim</label>
+          <label><input type="radio" name="ciumenta" value="Não"> Não</label>
+          <label><input type="radio" name="ciumenta" value="Depende"> Depende</label>
+        </div>
+      </div>
+      <div class="duas-colunas">
+        <div class="campo"><label>Caseira ou gosta de sair?</label>
+          <div class="radio-group">
+            <label><input type="radio" name="caseira_sair" value="Caseira"> Caseira</label>
+            <label><input type="radio" name="caseira_sair" value="Gosta de sair"> Gosta de sair</label>
+            <label><input type="radio" name="caseira_sair" value="As duas"> As duas</label>
+          </div>
+        </div>
+        <div class="campo"><label>Praia ou piscina?</label>
+          <div class="radio-group">
+            <label><input type="radio" name="praia_piscina" value="Praia"> Praia</label>
+            <label><input type="radio" name="praia_piscina" value="Piscina"> Piscina</label>
+            <label><input type="radio" name="praia_piscina" value="As duas"> As duas</label>
+          </div>
+        </div>
+        <div class="campo"><label>Campo ou cidade?</label>
+          <div class="radio-group">
+            <label><input type="radio" name="campo_cidade" value="Campo"> Campo</label>
+            <label><input type="radio" name="campo_cidade" value="Cidade"> Cidade</label>
+            <label><input type="radio" name="campo_cidade" value="Os dois"> Os dois</label>
+          </div>
+        </div>
+        <div class="campo"><label>Frio ou calor?</label>
+          <div class="radio-group">
+            <label><input type="radio" name="frio_calor" value="Frio"> Frio</label>
+            <label><input type="radio" name="frio_calor" value="Calor"> Calor</label>
+            <label><input type="radio" name="frio_calor" value="Tanto faz"> Tanto faz</label>
+          </div>
+        </div>
+        <div class="campo"><label>Matutina ou noturna?</label>
+          <div class="radio-group">
+            <label><input type="radio" name="manha_noite" value="Manhã"> Manhã</label>
+            <label><input type="radio" name="manha_noite" value="Noite"> Noite</label>
+            <label><input type="radio" name="manha_noite" value="As duas"> As duas</label>
+          </div>
+        </div>
+      </div>
+      <div class="campo"><label>Qual é o seu maior sonho?</label><textarea name="maior_sonho" placeholder="Conte-nos..."></textarea></div>
+    </section>
+
+    <!-- GOSTOS PESSOAIS -->
+    <section class="bloco">
+      <h2>🎵 Gostos Pessoais</h2>
+      <div class="duas-colunas">
+        <div class="campo"><label>Hobbies</label><input name="hobbies" placeholder="Ex: dançar, cozinhar, viajar"></div>
+        <div class="campo"><label>Esportes favoritos</label><input name="esportes_favoritos" placeholder="Ex: natação, yoga"></div>
+        <div class="campo"><label>Música favorita</label><input name="musica_favorita" placeholder="Ex: funk, sertanejo, pop"></div>
+        <div class="campo"><label>Artistas favoritos</label><input name="artistas_favoritos" placeholder="Ex: Anitta, The Weeknd"></div>
+        <div class="campo"><label>Filmes favoritos</label><input name="filmes_favoritos" placeholder="Ex: La La Land, Titanic"></div>
+        <div class="campo"><label>Séries favoritas</label><input name="series_favoritas" placeholder="Ex: Grey's Anatomy, Friends"></div>
+        <div class="campo"><label>Livros favoritos</label><input name="livros_favoritos" placeholder="Ex: não gosta / título"></div>
+        <div class="campo"><label>Jogos favoritos</label><input name="jogos_favoritos" placeholder="Ex: não joga / título"></div>
+        <div class="campo"><label>Cor favorita</label><input name="cor_favorita" placeholder="Ex: roxo, rosa"></div>
+        <div class="campo"><label>Estação do ano favorita</label>
+          <select name="estacao_favorita">
+            <option value="">Selecione...</option>
+            <option>Verão</option><option>Outono</option><option>Inverno</option><option>Primavera</option>
+          </select>
+        </div>
+        <div class="campo"><label>Marca de roupa favorita</label><input name="marca_roupa" placeholder="Ex: Zara, Farm, sem preferência"></div>
+      </div>
+    </section>
+
+    <!-- COMIDA -->
+    <section class="bloco">
+      <h2>🍔 Comida</h2>
+      <div class="duas-colunas">
+        <div class="campo"><label>Comida favorita</label><input name="comida_favorita" placeholder="Ex: pizza, sushi"></div>
+        <div class="campo"><label>Sobremesa favorita</label><input name="sobremesa_favorita" placeholder="Ex: brownie, sorvete"></div>
+        <div class="campo"><label>Bebida favorita (sem álcool)</label><input name="bebida_favorita" placeholder="Ex: suco de laranja, refrigerante"></div>
+        <div class="campo"><label>Bebida alcoólica favorita</label><input name="bebida_alcoolica" placeholder="Ex: vinho, não bebo"></div>
+        <div class="campo"><label>Fast food favorito</label><input name="fast_food" placeholder="Ex: McDonald's, Burger King"></div>
+      </div>
+      <div class="duas-colunas">
+        <div class="campo"><label>Doce ou salgado?</label>
+          <div class="radio-group">
+            <label><input type="radio" name="doce_salgado" value="Doce"> Doce</label>
+            <label><input type="radio" name="doce_salgado" value="Salgado"> Salgado</label>
+            <label><input type="radio" name="doce_salgado" value="Os dois"> Os dois</label>
+          </div>
+        </div>
+        <div class="campo"><label>Café ou chá?</label>
+          <div class="radio-group">
+            <label><input type="radio" name="cafe_cha" value="Café"> Café</label>
+            <label><input type="radio" name="cafe_cha" value="Chá"> Chá</label>
+            <label><input type="radio" name="cafe_cha" value="Nenhum"> Nenhum</label>
+            <label><input type="radio" name="cafe_cha" value="Os dois"> Os dois</label>
+          </div>
+        </div>
+        <div class="campo"><label>Cozinha?</label>
+          <div class="radio-group">
+            <label><input type="radio" name="cozinha" value="Sim, adoro"> Sim, adoro</label>
+            <label><input type="radio" name="cozinha" value="Às vezes"> Às vezes</label>
+            <label><input type="radio" name="cozinha" value="Não"> Não</label>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIAGENS -->
+    <section class="bloco">
+      <h2>✈️ Viagens</h2>
+      <div class="campo"><label>Melhor viagem que já fez</label><input name="melhor_viagem" placeholder="Ex: Disney em Orlando"></div>
+      <div class="campo"><label>Próximo destino dos sonhos</label><input name="proximo_destino" placeholder="Ex: Japão, Paris"></div>
+      <div class="campo"><label>País que gostaria de conhecer</label><input name="pais_conhecer" placeholder="Ex: Itália"></div>
+      <div class="campo"><label>Lugar onde nunca moraria</label><input name="lugar_nao_moraria" placeholder="Ex: uma cidade muito fria"></div>
+    </section>
+
+    <!-- ANIMAIS -->
+    <section class="bloco">
+      <h2>🐶 Animais</h2>
+      <div class="duas-colunas">
+        <div class="campo"><label>Tem animais?</label>
+          <div class="radio-group">
+            <label><input type="radio" name="tem_animais" value="Sim"> Sim</label>
+            <label><input type="radio" name="tem_animais" value="Não"> Não</label>
+          </div>
+        </div>
+        <div class="campo"><label>Nome dos animais</label><input name="nome_animais" placeholder="Ex: Bob e Luna / —"></div>
+        <div class="campo"><label>Animal favorito</label><input name="animal_favorito" placeholder="Ex: gato, cachorro"></div>
+        <div class="campo"><label>Tem alergia a algum animal?</label><input name="alergia_animal" placeholder="Ex: Sim, gato / Não"></div>
+      </div>
+    </section>
+
+    <!-- LIFESTYLE -->
+    <section class="bloco">
+      <h2>🎮 Lifestyle</h2>
+      <div class="duas-colunas">
+        <div class="campo"><label>Faz alguma atividade física?</label><input name="atividade_fisica" placeholder="Ex: academia, corrida / Não"></div>
+        <div class="campo"><label>Time favorito</label><input name="time_favorito" placeholder="Ex: Flamengo / Não assisto futebol"></div>
+      </div>
+      <div class="duas-colunas">
+        <div class="campo"><label>Assiste futebol?</label>
+          <div class="radio-group">
+            <label><input type="radio" name="assiste_futebol" value="Sim"> Sim</label>
+            <label><input type="radio" name="assiste_futebol" value="Às vezes"> Às vezes</label>
+            <label><input type="radio" name="assiste_futebol" value="Não"> Não</label>
+          </div>
+        </div>
+        <div class="campo"><label>Gosta de videogames?</label>
+          <div class="radio-group">
+            <label><input type="radio" name="gosta_videogames" value="Sim"> Sim</label>
+            <label><input type="radio" name="gosta_videogames" value="Às vezes"> Às vezes</label>
+            <label><input type="radio" name="gosta_videogames" value="Não"> Não</label>
+          </div>
+        </div>
+        <div class="campo"><label>Assiste anime?</label>
+          <div class="radio-group">
+            <label><input type="radio" name="assiste_anime" value="Sim"> Sim</label>
+            <label><input type="radio" name="assiste_anime" value="Não"> Não</label>
+          </div>
+        </div>
+        <div class="campo"><label>Assiste streamers?</label>
+          <div class="radio-group">
+            <label><input type="radio" name="assiste_streamers" value="Sim"> Sim</label>
+            <label><input type="radio" name="assiste_streamers" value="Às vezes"> Às vezes</label>
+            <label><input type="radio" name="assiste_streamers" value="Não"> Não</label>
+          </div>
+        </div>
+      </div>
+      <div class="campo"><label>Redes sociais que usa</label>
+        <div class="radio-group">
+          <label><input type="checkbox" name="redes_sociais" value="TikTok"> TikTok</label>
+          <label><input type="checkbox" name="redes_sociais" value="Instagram"> Instagram</label>
+          <label><input type="checkbox" name="redes_sociais" value="X (Twitter)"> X (Twitter)</label>
+          <label><input type="checkbox" name="redes_sociais" value="Threads"> Threads</label>
+          <label><input type="checkbox" name="redes_sociais" value="YouTube"> YouTube</label>
+          <label><input type="checkbox" name="redes_sociais" value="Nenhuma"> Nenhuma das acima</label>
+        </div>
+      </div>
+    </section>
+
+    <!-- APARÊNCIA -->
+    <section class="bloco">
+      <h2>💄 Aparência</h2>
+      <div class="duas-colunas">
+        <div class="campo"><label>Cor natural do cabelo</label><input name="cor_cabelo" placeholder="Ex: castanho escuro"></div>
+        <div class="campo"><label>Usa extensões?</label>
+          <div class="radio-group">
+            <label><input type="radio" name="usa_extensoes" value="Sim"> Sim</label>
+            <label><input type="radio" name="usa_extensoes" value="Não"> Não</label>
+          </div>
+        </div>
+        <div class="campo"><label>Tatuagens? Quantas?</label><input name="tatuagens" placeholder="Ex: Sim, 3 / Não"></div>
+        <div class="campo"><label>Piercings? Quantos?</label><input name="piercings" placeholder="Ex: Sim, 2 / Não"></div>
+        <div class="campo"><label>Altura</label><input name="altura" placeholder="Ex: 1,65 m"></div>
+        <div class="campo"><label>Peso (opcional)</label><input name="peso" placeholder="Ex: 55 kg / Prefiro não dizer"></div>
+      </div>
+    </section>
+
+    <!-- RELACIONAMENTO COM OS FÃS -->
+    <section class="bloco">
+      <h2>❤️ Relacionamento com os Fãs</h2>
+      <div class="campo"><label>Como prefere tratar os fãs?</label><input name="preferencia_tratamento" placeholder="Ex: com carinho mas com limites claros"></div>
+      <div class="campo"><label>Quais apelidos gosta de usar com os fãs?</label>
+        <div class="radio-group">
+          <label><input type="checkbox" name="apelidos" value="amor"> amor</label>
+          <label><input type="checkbox" name="apelidos" value="lindo"> lindo</label>
+          <label><input type="checkbox" name="apelidos" value="bebê"> bebê</label>
+          <label><input type="checkbox" name="apelidos" value="gatinho"> gatinho</label>
+          <label><input type="checkbox" name="apelidos" value="gato"> gato</label>
+          <label><input type="checkbox" name="apelidos" value="meu bem"> meu bem</label>
+          <label><input type="checkbox" name="apelidos" value="sem apelidos"> sem apelidos</label>
+        </div>
+      </div>
+      <div class="campo"><label>Apelidos personalizados (opcional)</label><input name="apelidos_custom" placeholder="Outros apelidos que usa..."></div>
+      <div class="campo"><label>Que tipo de conversa não gosta?</label><textarea name="conversa_nao_gosta" placeholder="Ex: conversas muito agressivas, pedidos de conteúdo explícito sem pagamento..."></textarea></div>
+    </section>
+
+    <!-- LIMITES -->
+    <section class="bloco" style="border: 1.5px solid #f5c2c7;">
+      <h2>🚫 Limites <span style="font-size:12px;font-weight:400;color:#c00;">(muito importante)</span></h2>
+      <div class="campo"><label>Quais assuntos a chatter nunca deve abordar?</label><textarea name="assuntos_proibidos" placeholder="Ex: família, relacionamentos passados, localização, trabalho anterior..."></textarea></div>
+      <div class="campo"><label>Existe alguma mentira que devemos manter? (idade, profissão, cidade, etc.)</label><textarea name="mentiras_manter" placeholder="Ex: dizer que tenho 22 anos / que moro no Rio / nenhuma"></textarea></div>
+      <div class="campo"><label>Existem palavras que não gosta de utilizar?</label><textarea name="palavras_nao_gosta" placeholder="Ex: palavrões específicos, termos depreciavos..."></textarea></div>
+      <div class="campo"><label>Existem promessas que nunca devemos fazer?</label><textarea name="promessas_nao_fazer" placeholder="Ex: nunca prometer encontros / ligações / conteúdos de graça..."></textarea></div>
+    </section>
+
+    <!-- CONTEÚDO -->
+    <section class="bloco">
+      <h2>💎 Conteúdo</h2>
+      <div class="campo"><label>Faria conteúdos personalizados?</label>
+        <div class="radio-group">
+          <label><input type="radio" name="faria_personalizados" value="Sim"> Sim</label>
+          <label><input type="radio" name="faria_personalizados" value="Não"> Não</label>
+          <label><input type="radio" name="faria_personalizados" value="Depende do pedido"> Depende do pedido</label>
+        </div>
+      </div>
+      <div class="campo"><label>Qual conteúdo gosta mais de produzir?</label><textarea name="conteudo_favorito" placeholder="Ex: fotos sensuais, vídeos de dança, bastidores do dia a dia..."></textarea></div>
+    </section>
+
+    <!-- ESTILO DO CHAT -->
+    <section class="bloco" style="border: 1.5px solid var(--purple);">
+      <h2>💬 Estilo do Chat <span style="font-size:12px;font-weight:400;color:var(--muted);">(a parte mais importante)</span></h2>
+      <div class="campo"><label>Como gostaria que a chatter escrevesse por si?</label><textarea name="como_escrever" placeholder="Ex: de forma descontraída, com emojis, linguagem jovem, como se fosse a própria modelo..."></textarea></div>
+      <div class="campo"><label>Nível de intimidade</label>
+        <div class="radio-group">
+          <label><input type="radio" name="nivel_intimidade" value="Muito educado"> Muito educado</label>
+          <label><input type="radio" name="nivel_intimidade" value="Carinhoso"> Carinhoso</label>
+          <label><input type="radio" name="nivel_intimidade" value="Romântico"> Romântico</label>
+          <label><input type="radio" name="nivel_intimidade" value="Sedutor"> Sedutor</label>
+          <label><input type="radio" name="nivel_intimidade" value="Muito provocador"> Muito provocador</label>
+        </div>
+      </div>
+      <div class="campo"><label>Gosta de chamar os fãs pelo nome?</label>
+        <div class="radio-group">
+          <label><input type="radio" name="chamar_pelo_nome" value="Sim, sempre"> Sim, sempre</label>
+          <label><input type="radio" name="chamar_pelo_nome" value="Às vezes"> Às vezes</label>
+          <label><input type="radio" name="chamar_pelo_nome" value="Prefiro apelidos"> Prefiro apelidos</label>
+        </div>
+      </div>
+      <div class="campo"><label>Usa gírias? Quais?</label><input name="girias" placeholder="Ex: 'bb', 'né', 'tipo assim' / Não uso gírias"></div>
+    </section>
+
+    <!-- OBSERVAÇÕES -->
+    <section class="bloco">
+      <h2>📝 Observações Finais</h2>
+      <div class="campo"><label>Há algo que os fãs costumam perguntar frequentemente?</label><textarea name="perguntas_frequentes" placeholder="Ex: se tenho namorado, quando faço live..."></textarea></div>
+      <div class="campo"><label>Existe alguma curiosidade sobre si que os fãs adorariam saber?</label><textarea name="curiosidades" placeholder="Ex: que sou formada em medicina, que viajei para 10 países..."></textarea></div>
+      <div class="campo"><label>Alguma informação importante para que a chatter consiga responder como se fosse realmente você?</label><textarea name="informacao_importante" placeholder="Escreva à vontade — quanto mais detalhes, melhor!"></textarea></div>
+    </section>
+
+    <button type="submit" class="btn-submit" id="btnSubmit">Enviar Formulário</button>
+
+  </form>
+
+  <div id="mensagemSucesso">
+    <div class="check">✅</div>
+    <h3>Formulário enviado com sucesso!</h3>
+    <p>As suas informações foram guardadas. A equipa da Velvet irá utilizá-las para gerir o chat de forma personalizada.</p>
+  </div>
+
+</div>
+
+<script>
+  const params = new URLSearchParams(location.search);
+  const modeloId = Number(params.get("modelo"));
+
+  async function init() {
+    if (!modeloId) {
+      document.getElementById("loadingInicial").style.display = "none";
+      document.getElementById("erroModelo").style.display = "block";
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/chat-form/${modeloId}`);
+      if (!res.ok) throw new Error("não encontrado");
+      const data = await res.json();
+
+      document.getElementById("nomeModeloTexto").textContent = data.nome_modelo;
+      document.getElementById("nomeModeloBadge").style.display = "flex";
+      document.getElementById("loadingInicial").style.display = "none";
+      document.getElementById("formChat").style.display = "block";
+
+      if (data.respostas) preencherFormulario(data.respostas);
+
+    } catch (e) {
+      document.getElementById("loadingInicial").style.display = "none";
+      document.getElementById("erroModelo").style.display = "block";
+    }
+  }
+
+  function preencherFormulario(r) {
+    const form = document.getElementById("formChat");
+
+    for (const [key, val] of Object.entries(r)) {
+      if (Array.isArray(val)) {
+        // checkboxes
+        form.querySelectorAll(`input[name="${key}"]`).forEach(el => {
+          el.checked = val.includes(el.value);
+        });
+      } else {
+        const el = form.elements[key];
+        if (!el) continue;
+        if (el.type === "radio") {
+          form.querySelectorAll(`input[name="${key}"]`).forEach(r => {
+            if (r.value === val) r.checked = true;
+          });
+        } else {
+          el.value = val || "";
+        }
+      }
+    }
+  }
+
+  async function salvarFormulario(e) {
+    e.preventDefault();
+    const btn = document.getElementById("btnSubmit");
+    btn.disabled = true;
+    btn.textContent = "A guardar...";
+
+    const form = e.target;
+    const respostas = {};
+
+    // Campos simples
+    const simples = ["nome","apelido","data_nascimento","signo","estado_civil","cidade_estado",
+      "mora_atualmente","filhos","mora_sozinha","estuda","trabalha_alem","numero_calcado",
+      "personalidade_5_palavras","maior_sonho",
+      "hobbies","esportes_favoritos","musica_favorita","artistas_favoritos","filmes_favoritos",
+      "series_favoritas","livros_favoritos","jogos_favoritos","cor_favorita","estacao_favorita","marca_roupa",
+      "comida_favorita","sobremesa_favorita","bebida_favorita","bebida_alcoolica","fast_food",
+      "melhor_viagem","proximo_destino","pais_conhecer","lugar_nao_moraria",
+      "nome_animais","animal_favorito","alergia_animal","atividade_fisica","time_favorito",
+      "cor_cabelo","tatuagens","piercings","altura","peso",
+      "preferencia_tratamento","apelidos_custom","conversa_nao_gosta",
+      "assuntos_proibidos","mentiras_manter","palavras_nao_gosta","promessas_nao_fazer",
+      "conteudo_favorito","como_escrever","girias",
+      "perguntas_frequentes","curiosidades","informacao_importante"
+    ];
+
+    simples.forEach(name => {
+      const el = form.elements[name];
+      if (el) respostas[name] = el.value.trim();
+    });
+
+    // Radios
+    const radios = ["timida_extrovertida","estilo_personalidade","ciumenta","caseira_sair",
+      "praia_piscina","campo_cidade","frio_calor","manha_noite","doce_salgado","cafe_cha","cozinha",
+      "assiste_futebol","gosta_videogames","assiste_anime","assiste_streamers",
+      "usa_extensoes","faria_personalizados","nivel_intimidade","chamar_pelo_nome","tem_animais"
+    ];
+
+    radios.forEach(name => {
+      const checked = form.querySelector(`input[name="${name}"]:checked`);
+      if (checked) respostas[name] = checked.value;
+    });
+
+    // Checkboxes múltiplos
+    const multiCheck = ["redes_sociais","apelidos"];
+    multiCheck.forEach(name => {
+      respostas[name] = Array.from(
+        form.querySelectorAll(`input[name="${name}"]:checked`)
+      ).map(el => el.value);
+    });
+
+    try {
+      const res = await fetch("/api/chat-form/salvar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ modelo_id: modeloId, respostas })
+      });
+      if (!res.ok) throw new Error("Erro ao guardar");
+
+      document.getElementById("formChat").style.display = "none";
+      document.getElementById("mensagemSucesso").style.display = "block";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (err) {
+      btn.disabled = false;
+      btn.textContent = "Enviar Formulário";
+      alert("Erro ao guardar. Por favor tente novamente.");
+    }
+  }
+
+  init();
+</script>
+</body>
+</html>

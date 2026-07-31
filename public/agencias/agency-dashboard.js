@@ -1573,6 +1573,195 @@ async function salvarPerfilAgency(e) {
   }
 }
 
+// ========== FORMULÁRIOS CHAT ==========
+
+pageLoaders["formularios-chat"] = function () {
+  carregarChatForms();
+};
+
+async function carregarChatForms() {
+  const loading = $("loadingChatForms");
+  const table   = $("tableChatForms");
+  try {
+    loading.style.display = "block";
+    table.style.display   = "none";
+
+    const rows = await fetchJSON("/agency/dashboard/chat-forms");
+
+    const tbody = table.querySelector("tbody");
+    tbody.innerHTML = rows.map(r => {
+      const link = `${location.origin}/formulario-chat.html?modelo=${r.id}`;
+      const estado = r.preenchido
+        ? `<span class="badge-preenchido">✅ Preenchido</span>`
+        : `<span class="badge-vazio">⏳ Pendente</span>`;
+      const data = r.preenchido_em ? new Date(r.preenchido_em).toLocaleDateString("pt-BR") : "—";
+
+      return `<tr>
+        <td>${r.id}</td>
+        <td><strong>${r.nome}</strong></td>
+        <td>${estado}</td>
+        <td>${data}</td>
+        <td style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button class="btn btn-sm btn-ghost" onclick="copiarLinkForm('${link}', this)">📋 Copiar link</button>
+          ${r.preenchido
+            ? `<button class="btn btn-sm btn-primary" onclick="verFormularioChat(${r.id}, '${r.nome.replace(/'/g,"\\'")}')">👁 Ver</button>`
+            : ""}
+        </td>
+      </tr>`;
+    }).join("") || `<tr><td colspan="5" style="text-align:center;color:#888;">Nenhuma modelo encontrada</td></tr>`;
+
+    loading.style.display = "none";
+    table.style.display   = "table";
+  } catch (err) {
+    loading.textContent = "Erro ao carregar formulários.";
+    console.error(err);
+  }
+}
+
+function copiarLinkForm(link, btn) {
+  navigator.clipboard.writeText(link).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = "✅ Copiado!";
+    setTimeout(() => { btn.textContent = orig; }, 2000);
+  });
+}
+
+const LABELS_FORM = {
+  nome: "Nome",
+  apelido: "Apelido",
+  data_nascimento: "Data de nascimento",
+  signo: "Signo",
+  estado_civil: "Estado civil",
+  filhos: "Filhos",
+  cidade_estado: "Cidade / Estado",
+  mora_atualmente: "Mora atualmente",
+  mora_sozinha: "Mora sozinha?",
+  estuda: "Estuda?",
+  trabalha_alem: "Trabalha além da Velvet?",
+  numero_calcado: "Número do calçado",
+  personalidade_5_palavras: "Personalidade em 5 palavras",
+  timida_extrovertida: "Tímida ou extrovertida?",
+  estilo_personalidade: "Estilo de personalidade",
+  ciumenta: "Ciumenta?",
+  caseira_sair: "Caseira ou gosta de sair?",
+  praia_piscina: "Praia ou piscina?",
+  campo_cidade: "Campo ou cidade?",
+  frio_calor: "Frio ou calor?",
+  manha_noite: "Matutina ou noturna?",
+  maior_sonho: "Maior sonho",
+  hobbies: "Hobbies",
+  esportes_favoritos: "Esportes favoritos",
+  musica_favorita: "Música favorita",
+  artistas_favoritos: "Artistas favoritos",
+  filmes_favoritos: "Filmes favoritos",
+  series_favoritas: "Séries favoritas",
+  livros_favoritos: "Livros favoritos",
+  jogos_favoritos: "Jogos favoritos",
+  cor_favorita: "Cor favorita",
+  estacao_favorita: "Estação favorita",
+  marca_roupa: "Marca de roupa favorita",
+  comida_favorita: "Comida favorita",
+  sobremesa_favorita: "Sobremesa favorita",
+  bebida_favorita: "Bebida favorita",
+  bebida_alcoolica: "Bebida alcoólica",
+  fast_food: "Fast food favorito",
+  doce_salgado: "Doce ou salgado?",
+  cafe_cha: "Café ou chá?",
+  cozinha: "Cozinha?",
+  melhor_viagem: "Melhor viagem",
+  proximo_destino: "Próximo destino dos sonhos",
+  pais_conhecer: "País que gostaria de conhecer",
+  lugar_nao_moraria: "Lugar onde nunca moraria",
+  tem_animais: "Tem animais?",
+  nome_animais: "Nome dos animais",
+  animal_favorito: "Animal favorito",
+  alergia_animal: "Alergia a animais?",
+  atividade_fisica: "Atividade física",
+  assiste_futebol: "Assiste futebol?",
+  time_favorito: "Time favorito",
+  gosta_videogames: "Gosta de videogames?",
+  assiste_anime: "Assiste anime?",
+  assiste_streamers: "Assiste streamers?",
+  redes_sociais: "Redes sociais",
+  cor_cabelo: "Cor natural do cabelo",
+  usa_extensoes: "Usa extensões?",
+  tatuagens: "Tatuagens",
+  piercings: "Piercings",
+  altura: "Altura",
+  peso: "Peso",
+  preferencia_tratamento: "Como trata os fãs",
+  apelidos: "Apelidos com fãs",
+  apelidos_custom: "Apelidos personalizados",
+  conversa_nao_gosta: "Conversa que não gosta",
+  assuntos_proibidos: "Assuntos proibidos",
+  mentiras_manter: "Mentiras a manter",
+  palavras_nao_gosta: "Palavras que não gosta",
+  promessas_nao_fazer: "Promessas a nunca fazer",
+  faria_personalizados: "Faria conteúdos personalizados?",
+  conteudo_favorito: "Conteúdo que mais gosta de produzir",
+  como_escrever: "Como escrever pelo chat",
+  nivel_intimidade: "Nível de intimidade",
+  chamar_pelo_nome: "Chamar pelo nome?",
+  girias: "Gírias",
+  perguntas_frequentes: "Perguntas frequentes dos fãs",
+  curiosidades: "Curiosidades",
+  informacao_importante: "Informação importante"
+};
+
+const SECOES_FORM = [
+  { titulo: "👤 Informações Pessoais", campos: ["nome","apelido","data_nascimento","signo","estado_civil","filhos","cidade_estado","mora_atualmente","mora_sozinha","estuda","trabalha_alem","numero_calcado"] },
+  { titulo: "💜 Personalidade", campos: ["personalidade_5_palavras","timida_extrovertida","estilo_personalidade","ciumenta","caseira_sair","praia_piscina","campo_cidade","frio_calor","manha_noite","maior_sonho"] },
+  { titulo: "🎵 Gostos Pessoais", campos: ["hobbies","esportes_favoritos","musica_favorita","artistas_favoritos","filmes_favoritos","series_favoritas","livros_favoritos","jogos_favoritos","cor_favorita","estacao_favorita","marca_roupa"] },
+  { titulo: "🍔 Comida", campos: ["comida_favorita","sobremesa_favorita","bebida_favorita","bebida_alcoolica","fast_food","doce_salgado","cafe_cha","cozinha"] },
+  { titulo: "✈️ Viagens", campos: ["melhor_viagem","proximo_destino","pais_conhecer","lugar_nao_moraria"] },
+  { titulo: "🐶 Animais", campos: ["tem_animais","nome_animais","animal_favorito","alergia_animal"] },
+  { titulo: "🎮 Lifestyle", campos: ["atividade_fisica","assiste_futebol","time_favorito","gosta_videogames","assiste_anime","assiste_streamers","redes_sociais"] },
+  { titulo: "💄 Aparência", campos: ["cor_cabelo","usa_extensoes","tatuagens","piercings","altura","peso"] },
+  { titulo: "❤️ Relacionamento com Fãs", campos: ["preferencia_tratamento","apelidos","apelidos_custom","conversa_nao_gosta"] },
+  { titulo: "🚫 Limites", campos: ["assuntos_proibidos","mentiras_manter","palavras_nao_gosta","promessas_nao_fazer"] },
+  { titulo: "💎 Conteúdo", campos: ["faria_personalizados","conteudo_favorito"] },
+  { titulo: "💬 Estilo do Chat", campos: ["como_escrever","nivel_intimidade","chamar_pelo_nome","girias"] },
+  { titulo: "📝 Observações", campos: ["perguntas_frequentes","curiosidades","informacao_importante"] }
+];
+
+async function verFormularioChat(modeloId, nomeModelo) {
+  try {
+    const data = await fetchJSON(`/agency/dashboard/chat-form/${modeloId}`);
+    const r = data.form?.respostas || {};
+
+    $("modalFormChatTitulo").textContent = `Formulário — ${nomeModelo}`;
+
+    const html = SECOES_FORM.map(sec => {
+      const linhas = sec.campos.map(campo => {
+        const val = r[campo];
+        const valorTexto = Array.isArray(val)
+          ? (val.length ? val.join(", ") : "")
+          : (val || "");
+        return `<div class="form-chat-row">
+          <span class="form-chat-label">${LABELS_FORM[campo] || campo}</span>
+          <span class="form-chat-valor">${valorTexto}</span>
+        </div>`;
+      }).join("");
+
+      return `<div class="form-chat-section">
+        <h4>${sec.titulo}</h4>
+        ${linhas}
+      </div>`;
+    }).join("");
+
+    $("modalFormChatConteudo").innerHTML = html;
+    $("overlayFormChat").classList.remove("hidden");
+    $("modalFormChat").classList.remove("hidden");
+  } catch (err) {
+    toast("Erro ao carregar formulário: " + err.message, "error");
+  }
+}
+
+function fecharModalFormChat() {
+  $("overlayFormChat").classList.add("hidden");
+  $("modalFormChat").classList.add("hidden");
+}
+
 // ========== INIT ==========
 
 document.addEventListener('DOMContentLoaded', () => {
