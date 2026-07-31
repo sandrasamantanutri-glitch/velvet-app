@@ -1101,12 +1101,15 @@ app.post("/api/webhook/ipag", express.raw({ type: "*/*" }), async (req, res) => 
         );
 
         if (primeiraAssinatura) {
+          const _boasVindas1109 = modelo_id === 859
+            ? "¡Hola!! Bienvenido(a), cuál es tu nombre?🥰🔥"
+            : "Oii!! Bem vindo(a), qual seu nome?🥰🔥";
           await client.query(
             `INSERT INTO messages
                (cliente_id, modelo_id, text, sender, tipo,
                 created_at, lida, visto, deletada)
              VALUES ($1,$2,$3,'modelo','texto',NOW(),false,false,false)`,
-            [cliente_id, modelo_id, "Oii!! Bem vindo(a), qual seu nome?🥰🔥"]
+            [cliente_id, modelo_id, _boasVindas1109]
           );
         }
 
@@ -2017,6 +2020,9 @@ await client.query(
       console.log("transacoes_agency (vip) inserido");
 
       if (primeiraAssinatura) {
+        const _boasVindas2038 = modelo_id === 859
+          ? "¡Hola!! Bienvenido(a), cuál es tu nombre?🥰"
+          : "Oii!! Bem vindo(a), qual seu nome?🥰";
         await client.query(
           `
           INSERT INTO messages (
@@ -2035,7 +2041,7 @@ await client.query(
           [
             cliente_id,
             modelo_id,
-            "Oii!! Bem vindo(a), qual seu nome?🥰"
+            _boasVindas2038
           ]
         );
         console.log("Mensagem de boas-vindas enviada");
@@ -3059,7 +3065,9 @@ if (valorEsperado > 0 && Math.abs(Number(valorPago) - Number(valorEsperado)) > 0
           [
             cliente_id,
             modelo_id,
-            "Oii!! Bem vindo(a), qual seu nome?🥰"
+            modelo_id === 859
+              ? "¡Hola!! Bienvenido(a), cuál es tu nombre?🥰"
+              : "Oii!! Bem vindo(a), qual seu nome?🥰"
           ]
         );
       }
@@ -12327,11 +12335,14 @@ app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
       );
 
       if (primeiraAssinatura) {
+        const _boasVindas12334 = modeloIdNum === 859
+          ? "¡Hola!! Bienvenido(a), cuál es tu nombre?🥰"
+          : "Oii!! Bem vindo(a), qual seu nome?🥰";
         await client.query(
           `INSERT INTO messages
              (cliente_id, modelo_id, text, sender, tipo, created_at, lida, visto, deletada)
            VALUES ($1,$2,$3,'modelo','texto',NOW(),false,false,false)`,
-          [cliente_id, modeloIdNum, "Oii!! Bem vindo(a), qual seu nome?🥰"]
+          [cliente_id, modeloIdNum, _boasVindas12334]
         );
       }
     }
