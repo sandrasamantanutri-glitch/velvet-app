@@ -755,6 +755,7 @@ function abrirMidia(item) {
     areaInteracao.onpointerdown = (e) => {
       if (midias.length <= 1) return;
       if (e.pointerType === "mouse" && e.button !== 0) return;
+      if (e.target.closest(".modal-dot")) return;
 
       houveArraste = false;
       isDragging = true;
