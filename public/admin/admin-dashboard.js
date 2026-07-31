@@ -195,7 +195,8 @@ const pageTitles = {
   midias: 'Gestão de Mídias',
   'usuarios-confiaveis': 'Usuários Confiáveis',
   'pix-modelos': 'PIX por Modelo',
-  contestacoes: 'Contestações'
+  contestacoes: 'Contestações',
+  ocorrencias: 'Ocorrências'
 };
 
 const pageLoaders = {};
@@ -5664,10 +5665,6 @@ function initNotificacoes() {
 // ========== INIT ==========
 
 document.addEventListener('DOMContentLoaded', () => {
-  if (!token) {
-    window.location.href = '/admin/login';
-    return;
-  }
   pageLoaders.overview();
   initNotificacoes();
   document.addEventListener('click', destravarAudioNotificacao, { once: true });
