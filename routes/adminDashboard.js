@@ -2505,14 +2505,13 @@ router.get("/fechamento/detalhe/:ano/:mes", async (req, res) => {
     const agRate = bruto > 0 ? (Number(f.total_agency) / bruto * 100) : 0;
     if (agRate > 15) analise.push({ tipo: 'info', texto: `Fees de agências representam ${agRate.toFixed(1)}% do bruto.` });
 
-    // Distribuição financeira recomendada sobre o saldo real do banco
-    const saldoReal = banco.saldo;
-    const distrib = saldoReal > 0 ? {
-      base:         saldoReal,
-      caixa:        Math.round(saldoReal * 0.20 * 100) / 100,
-      prolabore:    Math.round(saldoReal * 0.50 * 100) / 100,
-      reinvestimento: Math.round(saldoReal * 0.15 * 100) / 100,
-      investimento: Math.round(saldoReal * 0.15 * 100) / 100,
+    // Distribuição financeira recomendada sobre o Velvet líquido estimado
+    const distrib = velvet_liquido > 0 ? {
+      base:           velvet_liquido,
+      caixa:          Math.round(velvet_liquido * 0.20 * 100) / 100,
+      prolabore:      Math.round(velvet_liquido * 0.50 * 100) / 100,
+      reinvestimento: Math.round(velvet_liquido * 0.15 * 100) / 100,
+      investimento:   Math.round(velvet_liquido * 0.15 * 100) / 100,
     } : null;
 
     res.json({ fechamento: f, chargebacks: { qtd: cbQ.rows[0].qtd, total: cbQ.rows[0].total }, banco, ajustes, total_taxas_reais, total_retencoes, velvet_liquido, diferenca, difInexplicada, analise, distrib });

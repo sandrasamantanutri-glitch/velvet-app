@@ -3138,7 +3138,7 @@ function renderFechamento(d) {
           </div>
         </div>
         <div style="font-size:11px;color:var(--text-muted);margin-top:8px;padding:0 2px;">
-          Base: ${money(dist.base)} saldo banco real · Percentuais são referência — ajuste conforme mês e metas pessoais.
+          Base: ${money(dist.base)} Velvet líquido estimado · Percentuais são referência — ajuste conforme mês e metas pessoais.
         </div>
       </div>`;
   }
