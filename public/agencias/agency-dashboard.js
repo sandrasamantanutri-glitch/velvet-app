@@ -631,6 +631,25 @@ async function abrirDetalheFechamentoAgency(id) {
   }
 }
 
+async function recalcularFechamentoAgency() {
+  const f = fechamentoDetalheAtual;
+  if (!f) return;
+  const btn = $('btnRecalcularFechamento');
+  btn.disabled = true;
+  btn.textContent = 'Recalculando...';
+  try {
+    await postJSON(`/agency/dashboard/fechamentos-agency/${f.id}/recalcular`, {});
+    toast('Fechamento recalculado!', 'success');
+    await abrirDetalheFechamentoAgency(f.id);
+    carregarFechamentosAgency();
+  } catch (err) {
+    toast('Erro ao recalcular: ' + err.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '↺ Recalcular';
+  }
+}
+
 function imprimirFechamentoAgency() {
   const f = fechamentoDetalheAtual;
   if (!f) return;

@@ -665,6 +665,48 @@ router.post("/fechamentos-agency", authAgencia, async (req, res) => {
   }
 });
 
+router.post("/fechamentos-agency/:id/recalcular", authAgencia, async (req, res) => {
+  try {
+    const agenciaId = req.agencia.id;
+
+    const fechQ = await db.query(
+      "SELECT * FROM fechamento_mensal_agency WHERE id = $1 AND agencia_id = $2",
+      [req.params.id, agenciaId]
+    );
+    if (!fechQ.rows.length) return res.status(404).json({ erro: "Fechamento não encontrado" });
+
+    const { ano, mes } = fechQ.rows[0];
+    const { totais, porModelo } = await calcularFechamentoAgencia(agenciaId, ano, mes);
+
+    await db.query(`
+      UPDATE fechamento_mensal_agency SET
+        total_bruto             = $1,
+        total_agencia           = $2,
+        total_modelo            = $3,
+        total_bruto_midia       = $4,
+        total_bruto_assinatura  = $5
+      WHERE id = $6
+    `, [totais.total_bruto, totais.total_agencia, totais.total_modelo,
+        totais.total_bruto_midia, totais.total_bruto_assinatura, req.params.id]);
+
+    await db.query("DELETE FROM fechamento_mensal_agency_modelos WHERE fechamento_id = $1", [req.params.id]);
+    for (const m of porModelo) {
+      await db.query(`
+        INSERT INTO fechamento_mensal_agency_modelos (fechamento_id, modelo_id, total_midias, total_assinaturas, total_geral)
+        VALUES ($1, $2, $3, $4, $5)
+      `, [req.params.id, m.modelo_id, m.total_midias, m.total_assinaturas, m.total_geral]);
+    }
+
+    const updated = await db.query(
+      "SELECT * FROM fechamento_mensal_agency WHERE id = $1", [req.params.id]
+    );
+    res.json(updated.rows[0]);
+  } catch (err) {
+    console.error("Erro ao recalcular fechamento de agência:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
 router.get("/fechamentos-agency/:id", authAgencia, async (req, res) => {
   try {
     const agenciaId = req.agencia.id;
