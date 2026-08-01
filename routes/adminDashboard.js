@@ -4839,6 +4839,52 @@ router.put("/modelo-pagamentos/:id", authAdmin, async (req, res) => {
 
 // ========== 16. PAGAMENTOS DE AGÊNCIAS ==========
 
+router.get("/ganhos-agencias", async (req, res) => {
+  try {
+    const mes = parseInt(req.query.mes) || new Date().getMonth() + 1;
+    const ano = parseInt(req.query.ano) || new Date().getFullYear();
+
+    const { rows } = await db.query(`
+      SELECT
+        a.id AS agencia_id,
+        a.nome AS agencia_nome,
+        COALESCE(SUM(
+          CASE
+            WHEN t.gateway IS DISTINCT FROM 'stripe'
+              OR (t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW())
+            THEN t.agency_fee
+            ELSE 0
+          END
+        ), 0) AS ganho_mes,
+        COALESCE((
+          SELECT SUM(p.valor)
+          FROM pagamentos_agencias p
+          WHERE p.agencia_id = a.id AND p.mes = $1 AND p.ano = $2
+        ), 0) AS pago_mes
+      FROM agencias a
+      LEFT JOIN modelos m ON m.agencia_id = a.id
+      LEFT JOIN transacoes_agency t
+        ON t.modelo_id = m.id
+        AND t.status = 'pago'
+        AND EXTRACT(MONTH FROM t.created_at) = $1
+        AND EXTRACT(YEAR FROM t.created_at) = $2
+      GROUP BY a.id, a.nome
+      ORDER BY ganho_mes DESC
+    `, [mes, ano]);
+
+    res.json(rows.map(r => ({
+      agencia_id: r.agencia_id,
+      agencia_nome: r.agencia_nome,
+      ganho_mes: parseFloat(r.ganho_mes),
+      pago_mes: parseFloat(r.pago_mes),
+      saldo: parseFloat(r.ganho_mes) - parseFloat(r.pago_mes),
+    })));
+  } catch (err) {
+    console.error("Erro ganhos-agencias:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
 router.get("/pagamentos-agencias", async (req, res) => {
   try {
     const mes = parseInt(req.query.mes) || new Date().getMonth() + 1;

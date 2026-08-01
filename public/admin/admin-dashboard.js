@@ -4524,6 +4524,7 @@ pageLoaders.agencias = async function () {
       $('pagAgMes')._init = true;
     }
     carregarPagamentosAgencias();
+    carregarGanhosAgencias();
 
     const tbody = $('tableAgencias').querySelector('tbody');
     tbody.innerHTML = (data || []).map(r => `
@@ -4562,6 +4563,33 @@ pageLoaders.agencias = async function () {
     console.error('Erro agências:', err);
   }
 };
+
+async function carregarGanhosAgencias() {
+  const mes = $('pagAgMes').value;
+  const ano = $('pagAgAno').value;
+  try {
+    const rows = await fetchJSON(`/admin/dashboard/ganhos-agencias?mes=${mes}&ano=${ano}`);
+    const tbody = $('tableGanhosAgencias').querySelector('tbody');
+    tbody.innerHTML = (rows || []).map(r => {
+      const saldoColor = r.saldo > 0.005 ? '#e53935' : '#43a047';
+      const saldoText = r.saldo > 0.005 ? money(r.saldo) : 'Em dia ✓';
+      return `
+        <tr>
+          <td style="font-weight:600;">${r.agencia_nome}</td>
+          <td style="font-weight:600;">${money(r.ganho_mes)}</td>
+          <td style="color:#43a047;">${money(r.pago_mes)}</td>
+          <td style="font-weight:700;color:${saldoColor};">${saldoText}</td>
+        </tr>
+      `;
+    }).join('') || emptyRow(4);
+
+    const totalGanho = (rows || []).reduce((s, r) => s + r.ganho_mes, 0);
+    const totalSaldo = (rows || []).reduce((s, r) => s + r.saldo, 0);
+    $('totalGanhosAgencias').textContent = totalGanho > 0
+      ? `Total a pagar no mês: ${money(totalSaldo)} (de ${money(totalGanho)} gerados)`
+      : '';
+  } catch (err) { console.error('Erro ganhos agências:', err); }
+}
 
 async function carregarPagamentosAgencias() {
   const mes = $('pagAgMes').value;
