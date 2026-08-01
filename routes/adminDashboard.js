@@ -2392,6 +2392,7 @@ router.post("/fechamento", async (req, res) => {
       WHERE status = 'pago'
       AND EXTRACT(YEAR  FROM created_at AT TIME ZONE 'America/Sao_Paulo') = $1
       AND EXTRACT(MONTH FROM created_at AT TIME ZONE 'America/Sao_Paulo') = $2
+      AND (gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW()))
     `, [ano, mes]);
 
     const r = result.rows[0];
@@ -2558,17 +2559,18 @@ router.post("/fechamento/:id/recalcular", async (req, res) => {
     const fq = await db.query("SELECT ano, mes FROM fechamento_mensal WHERE id=$1", [req.params.id]);
     if (!fq.rows.length) return res.status(404).json({ erro: "Não encontrado" });
     const { ano, mes } = fq.rows[0];
-    const brtYear  = `EXTRACT(YEAR  FROM created_at AT TIME ZONE 'America/Sao_Paulo') = $1`;
-    const brtMonth = `EXTRACT(MONTH FROM created_at AT TIME ZONE 'America/Sao_Paulo') = $2`;
+    const brtYear   = `EXTRACT(YEAR  FROM created_at AT TIME ZONE 'America/Sao_Paulo') = $1`;
+    const brtMonth  = `EXTRACT(MONTH FROM created_at AT TIME ZONE 'America/Sao_Paulo') = $2`;
+    const stripeOk  = `(gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW()))`;
     const { rows } = await db.query(`
       UPDATE fechamento_mensal SET
-        total_bruto        = (SELECT COALESCE(SUM(valor_bruto),0)  FROM transacoes_agency WHERE status='pago'       AND ${brtYear} AND ${brtMonth}),
-        total_taxas        = (SELECT COALESCE(SUM(taxa_gateway),0) FROM transacoes_agency WHERE status='pago'       AND ${brtYear} AND ${brtMonth}),
-        total_agency       = (SELECT COALESCE(SUM(agency_fee),0)   FROM transacoes_agency WHERE status='pago'       AND ${brtYear} AND ${brtMonth}),
-        total_velvet       = (SELECT COALESCE(SUM(velvet_fee),0)   FROM transacoes_agency WHERE status='pago'       AND ${brtYear} AND ${brtMonth}),
-        total_modelos      = (SELECT COALESCE(SUM(valor_modelo),0) FROM transacoes_agency WHERE status='pago'       AND ${brtYear} AND ${brtMonth}),
-        total_assinaturas  = (SELECT COALESCE(SUM(CASE WHEN tipo='assinatura'  THEN valor_bruto ELSE 0 END),0) FROM transacoes_agency WHERE status='pago' AND ${brtYear} AND ${brtMonth}),
-        total_midias       = (SELECT COALESCE(SUM(CASE WHEN tipo!='assinatura' THEN valor_bruto ELSE 0 END),0) FROM transacoes_agency WHERE status='pago' AND ${brtYear} AND ${brtMonth}),
+        total_bruto        = (SELECT COALESCE(SUM(valor_bruto),0)  FROM transacoes_agency WHERE status='pago' AND ${brtYear} AND ${brtMonth} AND ${stripeOk}),
+        total_taxas        = (SELECT COALESCE(SUM(taxa_gateway),0) FROM transacoes_agency WHERE status='pago' AND ${brtYear} AND ${brtMonth} AND ${stripeOk}),
+        total_agency       = (SELECT COALESCE(SUM(agency_fee),0)   FROM transacoes_agency WHERE status='pago' AND ${brtYear} AND ${brtMonth} AND ${stripeOk}),
+        total_velvet       = (SELECT COALESCE(SUM(velvet_fee),0)   FROM transacoes_agency WHERE status='pago' AND ${brtYear} AND ${brtMonth} AND ${stripeOk}),
+        total_modelos      = (SELECT COALESCE(SUM(valor_modelo),0) FROM transacoes_agency WHERE status='pago' AND ${brtYear} AND ${brtMonth} AND ${stripeOk}),
+        total_assinaturas  = (SELECT COALESCE(SUM(CASE WHEN tipo='assinatura'  THEN valor_bruto ELSE 0 END),0) FROM transacoes_agency WHERE status='pago' AND ${brtYear} AND ${brtMonth} AND ${stripeOk}),
+        total_midias       = (SELECT COALESCE(SUM(CASE WHEN tipo!='assinatura' THEN valor_bruto ELSE 0 END),0) FROM transacoes_agency WHERE status='pago' AND ${brtYear} AND ${brtMonth} AND ${stripeOk}),
         total_chargebacks  = (SELECT COALESCE(SUM(valor),0) FROM chargebacks WHERE EXTRACT(YEAR FROM criado_em AT TIME ZONE 'America/Sao_Paulo')=$1 AND EXTRACT(MONTH FROM criado_em AT TIME ZONE 'America/Sao_Paulo')=$2),
         total_despesas     = (SELECT COALESCE(SUM(valor),0) FROM despesas WHERE EXTRACT(YEAR FROM data)=$1 AND EXTRACT(MONTH FROM data)=$2)
       WHERE id=$3 RETURNING *
