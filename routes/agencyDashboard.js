@@ -139,24 +139,26 @@ router.get("/overview", authAgencia, async (req, res) => {
           AND agencia_id = $1
       `, [agenciaId]),
 
-      // FATURAMENTO DIA (via view) — só conta Stripe já liberado; mês/dia sempre por created_at
+      // FATURAMENTO DIA (via view) — liberado + pendente Stripe separados
       db.query(`
-        SELECT COALESCE(SUM(agency_fee), 0) AS total
+        SELECT
+          COALESCE(SUM(agency_fee) FILTER (WHERE gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW())), 0) AS total,
+          COALESCE(SUM(agency_fee) FILTER (WHERE gateway = 'stripe' AND (disponivel_em IS NULL OR disponivel_em > NOW())), 0) AS pendente
         FROM vw_transacoes_agencia
         WHERE agencia_id = $1
           AND DATE(created_at AT TIME ZONE 'America/Sao_Paulo') = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
           AND status = 'pago'
-          AND (gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW()))
       `, [agenciaId]),
 
       // FATURAMENTO MÊS (via view)
       db.query(`
-        SELECT COALESCE(SUM(agency_fee), 0) AS total
+        SELECT
+          COALESCE(SUM(agency_fee) FILTER (WHERE gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW())), 0) AS total,
+          COALESCE(SUM(agency_fee) FILTER (WHERE gateway = 'stripe' AND (disponivel_em IS NULL OR disponivel_em > NOW())), 0) AS pendente
         FROM vw_transacoes_agencia
         WHERE agencia_id = $1
           AND DATE_TRUNC('month', created_at AT TIME ZONE 'America/Sao_Paulo') = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
           AND status = 'pago'
-          AND (gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW()))
       `, [agenciaId]),
 
       // FATURAMENTO 12 MESES (via view)
@@ -215,8 +217,10 @@ router.get("/overview", authAgencia, async (req, res) => {
         SELECT
           t.modelo_id,
           COALESCE(m.nome_exibicao, m.nome) AS nome,
-          ROUND(COALESCE(SUM(t.valor_modelo), 0)::numeric, 2) AS ganhos,
-          ROUND(COALESCE(SUM(t.agency_fee), 0)::numeric, 2) AS ganhos_agencia,
+          ROUND(COALESCE(SUM(t.valor_modelo) FILTER (WHERE t.gateway IS DISTINCT FROM 'stripe' OR (t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW())), 0)::numeric, 2) AS ganhos,
+          ROUND(COALESCE(SUM(t.valor_modelo) FILTER (WHERE t.gateway = 'stripe' AND (t.disponivel_em IS NULL OR t.disponivel_em > NOW())), 0)::numeric, 2) AS ganhos_pendente,
+          ROUND(COALESCE(SUM(t.agency_fee) FILTER (WHERE t.gateway IS DISTINCT FROM 'stripe' OR (t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW())), 0)::numeric, 2) AS ganhos_agencia,
+          ROUND(COALESCE(SUM(t.agency_fee) FILTER (WHERE t.gateway = 'stripe' AND (t.disponivel_em IS NULL OR t.disponivel_em > NOW())), 0)::numeric, 2) AS ganhos_agencia_pendente,
           MAX(t.created_at) AS atualizado_em,
           (
             SELECT COUNT(*)
@@ -230,7 +234,6 @@ router.get("/overview", authAgencia, async (req, res) => {
         WHERE t.agencia_id = $1
           AND DATE_TRUNC('month', t.created_at AT TIME ZONE 'America/Sao_Paulo') = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
           AND t.status = 'pago'
-          AND (t.gateway IS DISTINCT FROM 'stripe' OR (t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()))
         GROUP BY t.modelo_id, m.nome_exibicao, m.nome
         ORDER BY ganhos DESC, atualizado_em DESC
         LIMIT 5
@@ -242,7 +245,9 @@ router.get("/overview", authAgencia, async (req, res) => {
       total_modelos: Number(modelos.rows[0]?.total || 0),
       vips_ativos: Number(vips.rows[0]?.total || 0),
       faturamento_dia: Number(fatd.rows[0]?.total || 0),
+      faturamento_dia_pendente: Number(fatd.rows[0]?.pendente || 0),
       faturamento_mes: Number(fatm.rows[0]?.total || 0),
+      faturamento_mes_pendente: Number(fatm.rows[0]?.pendente || 0),
       faturamento_12m: (fat12m.rows || []).map(r => ({
         mes: r.mes,
         total: Number(r.total || 0)
@@ -255,7 +260,9 @@ router.get("/overview", authAgencia, async (req, res) => {
         modelo_id: r.modelo_id,
         nome: r.nome,
         ganhos: Number(r.ganhos || 0),
+        ganhos_pendente: Number(r.ganhos_pendente || 0),
         ganhos_agencia: Number(r.ganhos_agencia || 0),
+        ganhos_agencia_pendente: Number(r.ganhos_agencia_pendente || 0),
         assinantes: Number(r.assinantes || 0)
       }))
     });
