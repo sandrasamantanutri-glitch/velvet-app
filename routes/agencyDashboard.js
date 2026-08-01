@@ -536,7 +536,17 @@ async function obterDespesaChatterPadrao(agenciaId) {
 }
 
 // Calcula os totais (agência + por modelo) de um ano/mês para uma agência, sem gravar nada.
+// Mês/ano sempre determinado por created_at (quando a transação ocorreu).
+// Stripe só conta se disponivel_em <= NOW() (dinheiro liberado).
 async function calcularFechamentoAgencia(agenciaId, ano, mes) {
+  const baseWhere = `
+    t.agencia_id = $1
+    AND t.status = 'pago'
+    AND (t.gateway IS DISTINCT FROM 'stripe' OR (t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()))
+    AND EXTRACT(YEAR  FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $2
+    AND EXTRACT(MONTH FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $3
+  `;
+
   const totaisQ = await db.query(`
     SELECT
       COALESCE(SUM(t.valor_bruto), 0) AS total_bruto,
@@ -545,11 +555,7 @@ async function calcularFechamentoAgencia(agenciaId, ano, mes) {
       COALESCE(SUM(CASE WHEN t.tipo != 'assinatura' THEN t.valor_bruto ELSE 0 END), 0) AS total_bruto_midia,
       COALESCE(SUM(CASE WHEN t.tipo = 'assinatura' THEN t.valor_bruto ELSE 0 END), 0) AS total_bruto_assinatura
     FROM vw_transacoes_agencia t
-    WHERE t.agencia_id = $1
-      AND t.status = 'pago'
-      AND (t.gateway IS DISTINCT FROM 'stripe' OR (t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()))
-      AND EXTRACT(YEAR  FROM CASE WHEN t.disponivel_em IS NOT NULL THEN t.disponivel_em AT TIME ZONE 'America/Sao_Paulo' ELSE t.created_at AT TIME ZONE 'America/Sao_Paulo' END) = $2
-      AND EXTRACT(MONTH FROM CASE WHEN t.disponivel_em IS NOT NULL THEN t.disponivel_em AT TIME ZONE 'America/Sao_Paulo' ELSE t.created_at AT TIME ZONE 'America/Sao_Paulo' END) = $3
+    WHERE ${baseWhere}
   `, [agenciaId, ano, mes]);
 
   const porModeloQ = await db.query(`
@@ -559,11 +565,7 @@ async function calcularFechamentoAgencia(agenciaId, ano, mes) {
       COALESCE(SUM(CASE WHEN t.tipo = 'assinatura' THEN t.valor_modelo ELSE 0 END), 0) AS total_assinaturas,
       COALESCE(SUM(t.valor_modelo), 0) AS total_geral
     FROM vw_transacoes_agencia t
-    WHERE t.agencia_id = $1
-      AND t.status = 'pago'
-      AND (t.gateway IS DISTINCT FROM 'stripe' OR (t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()))
-      AND EXTRACT(YEAR  FROM CASE WHEN t.disponivel_em IS NOT NULL THEN t.disponivel_em AT TIME ZONE 'America/Sao_Paulo' ELSE t.created_at AT TIME ZONE 'America/Sao_Paulo' END) = $2
-      AND EXTRACT(MONTH FROM CASE WHEN t.disponivel_em IS NOT NULL THEN t.disponivel_em AT TIME ZONE 'America/Sao_Paulo' ELSE t.created_at AT TIME ZONE 'America/Sao_Paulo' END) = $3
+    WHERE ${baseWhere}
     GROUP BY t.modelo_id
   `, [agenciaId, ano, mes]);
 
