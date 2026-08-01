@@ -139,13 +139,12 @@ router.get("/overview", authAgencia, async (req, res) => {
           AND agencia_id = $1
       `, [agenciaId]),
 
-      // FATURAMENTO DIA (via view) — só conta cartão já liberado (PIX é sempre liberado);
-      // o valor entra no dia/mês em que foi liberado, não no dia da venda.
+      // FATURAMENTO DIA (via view) — só conta Stripe já liberado; mês/dia sempre por created_at
       db.query(`
         SELECT COALESCE(SUM(agency_fee), 0) AS total
         FROM vw_transacoes_agencia
         WHERE agencia_id = $1
-          AND (CASE WHEN disponivel_em IS NOT NULL THEN DATE(disponivel_em AT TIME ZONE 'America/Sao_Paulo') ELSE DATE(created_at AT TIME ZONE 'America/Sao_Paulo') END) = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
+          AND DATE(created_at AT TIME ZONE 'America/Sao_Paulo') = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
           AND status = 'pago'
           AND (gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW()))
       `, [agenciaId]),
@@ -155,7 +154,7 @@ router.get("/overview", authAgencia, async (req, res) => {
         SELECT COALESCE(SUM(agency_fee), 0) AS total
         FROM vw_transacoes_agencia
         WHERE agencia_id = $1
-          AND DATE_TRUNC('month', CASE WHEN disponivel_em IS NOT NULL THEN disponivel_em AT TIME ZONE 'America/Sao_Paulo' ELSE created_at AT TIME ZONE 'America/Sao_Paulo' END) = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
+          AND DATE_TRUNC('month', created_at AT TIME ZONE 'America/Sao_Paulo') = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
           AND status = 'pago'
           AND (gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW()))
       `, [agenciaId]),
@@ -177,7 +176,7 @@ router.get("/overview", authAgencia, async (req, res) => {
             AND status = 'pago'
             AND (gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW()))
         ) t
-          ON DATE_TRUNC('month', CASE WHEN t.disponivel_em IS NOT NULL THEN t.disponivel_em AT TIME ZONE 'America/Sao_Paulo' ELSE t.created_at AT TIME ZONE 'America/Sao_Paulo' END) = meses.mes
+          ON DATE_TRUNC('month', t.created_at AT TIME ZONE 'America/Sao_Paulo') = meses.mes
         GROUP BY meses.mes
         ORDER BY meses.mes ASC
       `, [agenciaId]),
@@ -229,7 +228,7 @@ router.get("/overview", authAgencia, async (req, res) => {
         FROM vw_transacoes_agencia t
         JOIN modelos m ON m.id = t.modelo_id
         WHERE t.agencia_id = $1
-          AND DATE_TRUNC('month', CASE WHEN t.disponivel_em IS NOT NULL THEN t.disponivel_em AT TIME ZONE 'America/Sao_Paulo' ELSE t.created_at AT TIME ZONE 'America/Sao_Paulo' END) = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
+          AND DATE_TRUNC('month', t.created_at AT TIME ZONE 'America/Sao_Paulo') = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
           AND t.status = 'pago'
           AND (t.gateway IS DISTINCT FROM 'stripe' OR (t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()))
         GROUP BY t.modelo_id, m.nome_exibicao, m.nome

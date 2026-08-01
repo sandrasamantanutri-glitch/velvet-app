@@ -641,7 +641,7 @@ async function recalcularFechamentoAgency() {
     await postJSON(`/agency/dashboard/fechamentos-agency/${f.id}/recalcular`, {});
     toast('Fechamento recalculado!', 'success');
     await abrirDetalheFechamentoAgency(f.id);
-    carregarFechamentosAgency();
+    pageLoaders.fechamento();
   } catch (err) {
     toast('Erro ao recalcular: ' + err.message, 'error');
   } finally {
