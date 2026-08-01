@@ -49,6 +49,10 @@
       <svg viewBox="0 0 24 24"><path d="M7.5 21H2V9h5.5v12zm7.25-18h-5.5v18h5.5V3zM22 11h-5.5v10H22V11z"/></svg>
       <span>Ranking</span>
     </a>
+    <a class="nav-item" data-page="transacoes">
+      <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm7 13H5v-.23c0-.62.28-1.2.76-1.58C7.47 15.82 9.64 15 12 15s4.53.82 6.24 2.19c.48.38.76.97.76 1.58V19z"/></svg>
+      <span>Transações</span>
+    </a>
     <a class="nav-item" data-page="pagamentos-agencia">
       <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg>
       <span>Pagamentos</span>
@@ -142,6 +146,41 @@
         <thead><tr><th>#</th><th>Modelo</th><th>Ganhos Modelo</th><th>Ganhos Agência</th><th>Pendente Stripe</th><th>Assinantes</th></tr></thead>
         <tbody></tbody>
       </table>
+    </div>
+  </section>
+
+  <!-- TRANSAÇÕES -->
+  <section class="page" id="page-transacoes">
+    <div class="page-actions" style="gap:8px;flex-wrap:wrap;">
+      <select id="transacoesMes" class="input-select"></select>
+      <select id="transacoesModelo" class="input-select">
+        <option value="">Todas as modelos</option>
+      </select>
+      <button class="btn btn-primary" onclick="carregarTransacoes()">Filtrar</button>
+    </div>
+
+    <div class="kpi-row" style="margin-bottom:16px;">
+      <div class="kpi-card blue"><span>Total Modelo</span><strong id="tx-modelo">--</strong></div>
+      <div class="kpi-card green"><span>Total Agência</span><strong id="tx-agencia">--</strong></div>
+      <div class="kpi-card red"><span>Chargebacks</span><strong id="tx-cb">--</strong></div>
+      <div class="kpi-card orange"><span>Pendente Modelo</span><strong id="tx-pend-modelo">--</strong></div>
+      <div class="kpi-card purple"><span>Pendente Agência</span><strong id="tx-pend-agencia">--</strong></div>
+    </div>
+
+    <div class="card" style="overflow-x:auto;">
+      <table class="table" id="tableTransacoes">
+        <thead>
+          <tr>
+            <th>Dia da Compra</th>
+            <th>Ganhos Modelo</th>
+            <th>Ganhos Agência</th>
+            <th>Pendente Modelo</th>
+            <th>Pendente Agência</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <div id="transacoesPagination" style="display:flex;gap:8px;justify-content:center;padding:12px 0;"></div>
     </div>
   </section>
 

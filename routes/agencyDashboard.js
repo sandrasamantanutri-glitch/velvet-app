@@ -2182,6 +2182,109 @@ router.get("/chat-form/:modelo_id", async (req, res) => {
   }
 });
 
+// ========== TRANSAÇÕES ==========
+router.get("/transacoes", authAgencia, async (req, res) => {
+  try {
+    const agenciaId = req.agencia.id;
+    const { mes, modelo_id } = req.query;
+    const page  = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = 20;
+    const offset = (page - 1) * limit;
+
+    const DISP = "(t.gateway IS DISTINCT FROM 'stripe' OR (t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()))";
+
+    const where = ["m.agencia_id = $1", "t.status IN ('pago','chargeback')"];
+    const params = [agenciaId];
+    let idx = 2;
+    let m = null;
+
+    if (modelo_id && Number(modelo_id) > 0) {
+      where.push(`t.modelo_id = $${idx}`);
+      params.push(Number(modelo_id));
+      idx++;
+    }
+
+    if (mes && /^\d{4}-\d{2}$/.test(mes)) {
+      const [ano, mesNum] = mes.split('-').map(Number);
+      m = { ano, mes: mesNum };
+      where.push(`EXTRACT(YEAR  FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $${idx}`);
+      where.push(`EXTRACT(MONTH FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $${idx + 1}`);
+      params.push(ano, mesNum);
+      idx += 2;
+    }
+
+    const whereStr = where.join(' AND ');
+
+    const [totaisQ, cbQ, countQ, rowsQ] = await Promise.all([
+
+      db.query(`
+        SELECT
+          COALESCE(SUM(CASE WHEN t.status='pago' AND ${DISP}     THEN t.valor_modelo ELSE 0 END), 0) AS modelo,
+          COALESCE(SUM(CASE WHEN t.status='pago' AND ${DISP}     THEN t.agency_fee   ELSE 0 END), 0) AS agencia,
+          COALESCE(SUM(CASE WHEN t.status='pago' AND NOT ${DISP} THEN t.valor_modelo ELSE 0 END), 0) AS pendente_modelo,
+          COALESCE(SUM(CASE WHEN t.status='pago' AND NOT ${DISP} THEN t.agency_fee   ELSE 0 END), 0) AS pendente_agencia
+        FROM transacoes_agency t
+        JOIN modelos m ON m.id = t.modelo_id
+        WHERE ${whereStr}
+      `, params),
+
+      db.query(`
+        SELECT COALESCE(SUM(c.valor), 0) AS chargebacks
+        FROM chargebacks c
+        JOIN modelos m ON m.id = c.modelo_id
+        WHERE m.agencia_id = $1
+          ${modelo_id && Number(modelo_id) > 0 ? `AND c.modelo_id = $2` : ''}
+          ${m ? `AND EXTRACT(YEAR  FROM c.criado_em AT TIME ZONE 'America/Sao_Paulo') = $${modelo_id && Number(modelo_id) > 0 ? 3 : 2}
+                 AND EXTRACT(MONTH FROM c.criado_em AT TIME ZONE 'America/Sao_Paulo') = $${modelo_id && Number(modelo_id) > 0 ? 4 : 3}` : ''}
+      `, [
+        agenciaId,
+        ...(modelo_id && Number(modelo_id) > 0 ? [Number(modelo_id)] : []),
+        ...(m ? [m.ano, m.mes] : [])
+      ]),
+
+      db.query(`
+        SELECT COUNT(DISTINCT DATE(t.created_at AT TIME ZONE 'America/Sao_Paulo')) AS count
+        FROM transacoes_agency t
+        JOIN modelos m ON m.id = t.modelo_id
+        WHERE ${whereStr}
+      `, params),
+
+      db.query(`
+        SELECT
+          DATE(t.created_at AT TIME ZONE 'America/Sao_Paulo') AS dia,
+          COALESCE(SUM(CASE WHEN t.status='pago' AND ${DISP}     THEN t.valor_modelo ELSE 0 END), 0) AS ganhos_modelo,
+          COALESCE(SUM(CASE WHEN t.status='pago' AND ${DISP}     THEN t.agency_fee   ELSE 0 END), 0) AS ganhos_agencia,
+          COALESCE(SUM(CASE WHEN t.status='pago' AND NOT ${DISP} THEN t.valor_modelo ELSE 0 END), 0) AS pendente_modelo,
+          COALESCE(SUM(CASE WHEN t.status='pago' AND NOT ${DISP} THEN t.agency_fee   ELSE 0 END), 0) AS pendente_agencia
+        FROM transacoes_agency t
+        JOIN modelos m ON m.id = t.modelo_id
+        WHERE ${whereStr}
+        GROUP BY DATE(t.created_at AT TIME ZONE 'America/Sao_Paulo')
+        ORDER BY dia DESC
+        LIMIT $${idx} OFFSET $${idx + 1}
+      `, [...params, limit, offset])
+
+    ]);
+
+    const t0 = totaisQ.rows[0];
+    res.json({
+      totais: {
+        modelo:           Number(t0.modelo),
+        agencia:          Number(t0.agencia),
+        chargebacks:      Number(cbQ.rows[0].chargebacks || 0),
+        pendente_modelo:  Number(t0.pendente_modelo),
+        pendente_agencia: Number(t0.pendente_agencia),
+      },
+      rows: rowsQ.rows,
+      totalPages: Math.ceil(Number(countQ.rows[0].count || 0) / limit),
+      page,
+    });
+  } catch (err) {
+    console.error("Erro transacoes agencia:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
 module.exports = router;
 module.exports.gerarFechamentoAgencia = gerarFechamentoAgencia;
 module.exports.gerarFechamentosTodasAgencias = gerarFechamentosTodasAgencias;

@@ -1149,6 +1149,81 @@ async function popularSelectModeloSeVazio(selectId) {
   return Number(select.value) || null;
 }
 
+// ========== TRANSAÇÕES ==========
+
+let _txPage = 1;
+let _txTotalPages = 1;
+
+pageLoaders.transacoes = async function () {
+  populateMonthSelect($('transacoesMes'));
+  // Popula modelos mantendo a opção "Todas as modelos"
+  const selMod = $('transacoesModelo');
+  if (selMod.options.length <= 1) {
+    try {
+      const modelos = await fetchJSON('/agency/dashboard/modelos-lista');
+      selMod.innerHTML = `<option value="">Todas as modelos</option>` +
+        modelos.map(m => `<option value="${m.id}">${escapeHtml(m.nome)}</option>`).join('');
+    } catch (_) {}
+  }
+  await carregarTransacoes();
+  $('transacoesMes').onchange = () => { _txPage = 1; carregarTransacoes(); };
+  $('transacoesModelo').onchange = () => { _txPage = 1; carregarTransacoes(); };
+};
+
+async function carregarTransacoes() {
+  const mes      = $('transacoesMes')?.value || '';
+  const modeloId = $('transacoesModelo')?.value || '';
+  const params   = new URLSearchParams({ page: _txPage });
+  if (mes)      params.set('mes', mes);
+  if (modeloId) params.set('modelo_id', modeloId);
+
+  const money = v => 'R$ ' + Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  try {
+    const data = await fetchJSON(`/agency/dashboard/transacoes?${params}`);
+    const t = data.totais || {};
+
+    $('tx-modelo').textContent       = money(t.modelo);
+    $('tx-agencia').textContent      = money(t.agencia);
+    $('tx-cb').textContent           = money(t.chargebacks);
+    $('tx-pend-modelo').textContent  = money(t.pendente_modelo);
+    $('tx-pend-agencia').textContent = money(t.pendente_agencia);
+
+    const tbody = $('tableTransacoes').querySelector('tbody');
+    tbody.innerHTML = (data.rows || []).map(r => {
+      const pendMod  = Number(r.pendente_modelo  || 0);
+      const pendAgen = Number(r.pendente_agencia || 0);
+      const fmtPend  = v => v > 0
+        ? `<span style="color:#f59e0b">⏳ ${money(v)}</span>`
+        : `<span style="opacity:0.35">—</span>`;
+      return `<tr>
+        <td>${r.dia || ''}</td>
+        <td>${money(r.ganhos_modelo)}</td>
+        <td>${money(r.ganhos_agencia)}</td>
+        <td>${fmtPend(pendMod)}</td>
+        <td>${fmtPend(pendAgen)}</td>
+      </tr>`;
+    }).join('') || `<tr><td colspan="5" style="text-align:center;opacity:0.5">Sem transações</td></tr>`;
+
+    _txTotalPages = data.totalPages || 1;
+    renderTxPagination();
+
+  } catch (err) {
+    console.error('Erro transacoes:', err);
+  }
+}
+
+function renderTxPagination() {
+  const el = $('transacoesPagination');
+  if (!el) return;
+  if (_txTotalPages <= 1) { el.innerHTML = ''; return; }
+  let html = '';
+  for (let p = 1; p <= _txTotalPages; p++) {
+    html += `<button class="btn ${p === _txPage ? 'btn-primary' : 'btn-ghost'}" style="min-width:36px" onclick="_txPage=${p};carregarTransacoes()">${p}</button>`;
+  }
+  el.innerHTML = html;
+}
+
 // ---------- OFERTAS ----------
 
 pageLoaders.ofertas = async function () {
