@@ -624,12 +624,10 @@ router.get("/fechamentos-agency", authAgencia, async (req, res) => {
       ),
       db.query(
         `SELECT
-           COALESCE(SUM(agency_fee), 0) AS faturamento_agencia,
-           COALESCE(SUM(valor_modelo), 0) AS faturamento_modelo
-         FROM vw_transacoes_agencia
-         WHERE agencia_id = $1
-           AND status = 'pago'
-           AND (gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW()))`,
+           COALESCE(SUM(total_agencia), 0) AS faturamento_agencia,
+           COALESCE(SUM(total_modelo), 0) AS faturamento_modelo
+         FROM fechamento_mensal_agency
+         WHERE agencia_id = $1`,
         [agenciaId]
       )
     ]);
@@ -1298,12 +1296,12 @@ router.get("/ranking", authAgencia, async (req, res) => {
       }
       params.push(Number(match[1]), Number(match[2]));
       whereMes = `
-        EXTRACT(YEAR  FROM CASE WHEN t.disponivel_em IS NOT NULL THEN t.disponivel_em AT TIME ZONE 'America/Sao_Paulo' ELSE t.created_at AT TIME ZONE 'America/Sao_Paulo' END) = $2
-        AND EXTRACT(MONTH FROM CASE WHEN t.disponivel_em IS NOT NULL THEN t.disponivel_em AT TIME ZONE 'America/Sao_Paulo' ELSE t.created_at AT TIME ZONE 'America/Sao_Paulo' END) = $3
+        EXTRACT(YEAR  FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $2
+        AND EXTRACT(MONTH FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $3
       `;
     } else {
       whereMes = `
-        DATE_TRUNC('month', CASE WHEN t.disponivel_em IS NOT NULL THEN t.disponivel_em AT TIME ZONE 'America/Sao_Paulo' ELSE t.created_at AT TIME ZONE 'America/Sao_Paulo' END) = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
+        DATE_TRUNC('month', t.created_at AT TIME ZONE 'America/Sao_Paulo') = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
       `;
     }
 
