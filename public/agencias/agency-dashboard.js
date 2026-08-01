@@ -1189,6 +1189,7 @@ async function carregarTransacoes() {
     $('tx-pend-modelo').textContent  = money(t.pendente_modelo);
     $('tx-pend-agencia').textContent = money(t.pendente_agencia);
 
+    const fmtDia = d => { const s = String(d||'').substring(0,10); const [y,mo,dd]=s.split('-'); return dd&&mo&&y?`${dd}/${mo}/${y}`:''; };
     const tbody = $('tableTransacoes').querySelector('tbody');
     tbody.innerHTML = (data.rows || []).map(r => {
       const pendMod  = Number(r.pendente_modelo  || 0);
@@ -1197,7 +1198,7 @@ async function carregarTransacoes() {
         ? `<span style="color:#f59e0b">⏳ ${money(v)}</span>`
         : `<span style="opacity:0.35">—</span>`;
       return `<tr>
-        <td>${r.dia || ''}</td>
+        <td>${fmtDia(r.dia)}</td>
         <td>${money(r.ganhos_modelo)}</td>
         <td>${money(r.ganhos_agencia)}</td>
         <td>${fmtPend(pendMod)}</td>

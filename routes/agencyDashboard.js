@@ -218,17 +218,11 @@ router.get("/overview", authAgencia, async (req, res) => {
           t.modelo_id,
           COALESCE(m.nome_exibicao, m.nome) AS nome,
           ROUND(COALESCE(SUM(t.valor_modelo) FILTER (WHERE t.gateway IS DISTINCT FROM 'stripe' OR (t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW())), 0)::numeric, 2) AS ganhos,
-          ROUND(COALESCE(SUM(t.valor_modelo) FILTER (WHERE t.gateway = 'stripe' AND (t.disponivel_em IS NULL OR t.disponivel_em > NOW())), 0)::numeric, 2) AS ganhos_pendente,
-          ROUND(COALESCE(SUM(t.agency_fee) FILTER (WHERE t.gateway IS DISTINCT FROM 'stripe' OR (t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW())), 0)::numeric, 2) AS ganhos_agencia,
-          ROUND(COALESCE(SUM(t.agency_fee) FILTER (WHERE t.gateway = 'stripe' AND (t.disponivel_em IS NULL OR t.disponivel_em > NOW())), 0)::numeric, 2) AS ganhos_agencia_pendente,
+          ROUND(COALESCE(SUM(t.agency_fee)   FILTER (WHERE t.gateway IS DISTINCT FROM 'stripe' OR (t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW())), 0)::numeric, 2) AS ganhos_agencia,
           MAX(t.created_at) AS atualizado_em,
-          (
-            SELECT COUNT(*)
-            FROM vw_vips_agencia v
-            WHERE v.modelo_id = t.modelo_id
-              AND v.ativo = true
-              AND v.agencia_id = $1
-          ) AS assinantes
+          (SELECT COUNT(*) FROM vw_vips_agencia v WHERE v.modelo_id = t.modelo_id AND v.ativo = true AND v.agencia_id = $1) AS assinantes,
+          (SELECT COALESCE(SUM(p.valor_modelo),0) FROM vw_transacoes_agencia p WHERE p.modelo_id = t.modelo_id AND p.agencia_id = $1 AND p.status = 'pago' AND p.gateway = 'stripe' AND (p.disponivel_em IS NULL OR p.disponivel_em > NOW())) AS ganhos_pendente,
+          (SELECT COALESCE(SUM(p.agency_fee),0)   FROM vw_transacoes_agencia p WHERE p.modelo_id = t.modelo_id AND p.agencia_id = $1 AND p.status = 'pago' AND p.gateway = 'stripe' AND (p.disponivel_em IS NULL OR p.disponivel_em > NOW())) AS ganhos_agencia_pendente
         FROM vw_transacoes_agencia t
         JOIN modelos m ON m.id = t.modelo_id
         WHERE t.agencia_id = $1
