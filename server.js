@@ -2892,15 +2892,18 @@ if (valorEsperado > 0 && Math.abs(Number(valorPago) - Number(valorEsperado)) > 0
 
       const primeiraAssinatura = vipExistente.rowCount === 0;
 
-      // valor_base_brl é sempre o preço original em BRL, independente da moeda cobrada
+      // valor_assinatura = preço BASE da assinatura (sem taxa gateway)
+      // valor_base_brl  = total cobrado em BRL (base * 1.15) — não usar como base de split
       let valorBase = Number(
-        metadata.valor_base_brl ??
         metadata.valor_assinatura ??
         metadata.valor_base ??
-        pagamento.valor_brl ??
-        pagamento.valor ??
         0
       );
+      if (!valorBase || !Number.isFinite(valorBase)) {
+        // fallback: extrai base do total dividindo pela margem da gateway
+        const total = Number(metadata.valor_base_brl ?? pagamento.valor_brl ?? pagamento.valor ?? 0);
+        valorBase = Number((total / 1.15).toFixed(2));
+      }
 
       if (!Number.isFinite(valorBase) || valorBase <= 0) {
         console.log("🚨 valorBase inválido:", valorBase);
