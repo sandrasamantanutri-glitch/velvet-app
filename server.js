@@ -147,7 +147,8 @@ app.use(helmet({
         "https://*.r2.dev",
         "https://cdn.jsdelivr.net",
         "https://app.zapsign.com.br",
-        "https://api.frankfurter.app"
+        "https://api.frankfurter.app",
+         "https://formspree.io"
       ],
       frameSrc: [
         "'self'",
