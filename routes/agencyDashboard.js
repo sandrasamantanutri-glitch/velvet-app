@@ -468,22 +468,28 @@ router.put("/agency/percentuais", authAgencia, async (req, res) => {
     const ag = Number(percentual_agencia);
     const mod = Number(percentual_modelo);
 
-    // plataforma fixa (20%)
-    const pPlat = 0.2;
+    // busca o percentual da plataforma definido para esta agência
+    const { rows: agRows } = await db.query(
+      `SELECT COALESCE(percentual_plataforma, 0.30) AS percentual_plataforma FROM agencias WHERE id = $1`,
+      [agenciaId]
+    );
+    const pPlat = Number(agRows[0]?.percentual_plataforma || 0.30);
+    const pPlatPct = +(pPlat * 100).toFixed(2);
+    const maxDisponivel = +(100 - pPlatPct).toFixed(2);
 
     // validação básica
-    if (isNaN(ag) || ag < 0 || ag > 80) {
-      return res.status(400).json({ erro: "Percentual da agência inválido (0–80%)" });
+    if (isNaN(ag) || ag < 0 || ag > maxDisponivel) {
+      return res.status(400).json({ erro: `Percentual da agência inválido (0–${maxDisponivel}%)` });
     }
 
-    if (isNaN(mod) || mod < 0 || mod > 80) {
-      return res.status(400).json({ erro: "Percentual do modelo inválido (0–80%)" });
+    if (isNaN(mod) || mod < 0 || mod > maxDisponivel) {
+      return res.status(400).json({ erro: `Percentual do modelo inválido (0–${maxDisponivel}%)` });
     }
 
-    // validação em % (mais intuitivo)
-    if (ag + mod > 80) {
+    // validação em %
+    if (+(ag + mod).toFixed(2) > maxDisponivel) {
       return res.status(400).json({
-        erro: `A soma não pode ultrapassar 100%. Velvet: 20% + Agência: ${ag}% + Modelo: ${mod}% = ${20 + ag + mod}%`
+        erro: `A soma não pode ultrapassar 100%. Velvet: ${pPlatPct}% + Agência: ${ag}% + Modelo: ${mod}% = ${+(pPlatPct + ag + mod).toFixed(2)}%`
       });
     }
 

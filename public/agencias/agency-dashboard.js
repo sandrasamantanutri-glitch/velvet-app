@@ -478,10 +478,12 @@ pageLoaders.agency = async function () {
     ` : emptyRow(5);
 
     if (agencia) {
+      const inpVelvet = $('inputPercentualVelvet');
       const inpAg = $('inputPercentualAgencia');
       const inpMod = $('inputPercentualModelo');
-if (inpAg) inpAg.value = (agencia.percentual_agencia * 100).toFixed(2);
-if (inpMod) inpMod.value = (agencia.percentual_modelo * 100).toFixed(2);
+      if (inpVelvet) inpVelvet.value = (agencia.percentual_plataforma * 100).toFixed(2);
+      if (inpAg) inpAg.value = (agencia.percentual_agencia * 100).toFixed(2);
+      if (inpMod) inpMod.value = (agencia.percentual_modelo * 100).toFixed(2);
       atualizarSoma();
     }
   } catch (err) {
@@ -490,19 +492,20 @@ if (inpMod) inpMod.value = (agencia.percentual_modelo * 100).toFixed(2);
 };
 
 function atualizarSoma() {
-  const ag  = Number($('inputPercentualAgencia')?.value || 0);
-  const mod = Number($('inputPercentualModelo')?.value || 0);
+  const ag     = Number($('inputPercentualAgencia')?.value || 0);
+  const mod    = Number($('inputPercentualModelo')?.value || 0);
+  const velvet = Number($('inputPercentualVelvet')?.value || 0);
 
-  const velvet = 20;
+  const maxDisponivel = 100 - velvet;
   const total = velvet + ag + mod;
 
   const info = $('percentualSomaInfo');
   if (!info) return;
 
-  if (ag + mod > 80) {
+  if (ag + mod > maxDisponivel) {
     info.style.color = 'var(--red)';
     info.textContent = `❌ Excede limite: ${total.toFixed(2)}% (máx: 100%)`;
-  } else if (ag + mod === 80) {
+  } else if (ag + mod === maxDisponivel) {
     info.style.color = 'var(--green)';
     info.textContent = `✔ Perfeito: ${total.toFixed(2)}%`;
   } else {
@@ -514,10 +517,9 @@ function atualizarSoma() {
 async function salvarPercentuais(e) {
   e.preventDefault();
 
-  const ag  = Number($('inputPercentualAgencia').value);
-  const mod = Number($('inputPercentualModelo').value);
-
-  const velvet = 20;
+  const ag     = Number($('inputPercentualAgencia').value);
+  const mod    = Number($('inputPercentualModelo').value);
+  const velvet = Number($('inputPercentualVelvet')?.value || 0);
 
   if (ag + mod > (100 - velvet)) {
     toast(

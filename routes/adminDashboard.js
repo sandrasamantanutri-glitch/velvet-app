@@ -3373,8 +3373,17 @@ router.get("/transacoes-agency", async (req, res) => {
 
     const countParams = [...params];
 
-    // DISPONIVEL: Stripe só conta quando liberado; outros gateways sempre disponíveis
-    const DISPONIVEL = "(t.gateway IS DISTINCT FROM 'stripe' OR (t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()))";
+    // DISPONIVEL: Stripe só conta quando liberado; outros gateways sempre disponíveis.
+    // Quando há filtro de mês, Stripe só é "disponível" se liberado DENTRO ou ANTES do mês filtrado
+    // (evita dupla contagem: transações liberadas em mês posterior aparecem como pendente aqui
+    // e como "liberações Stripe" no mês em que foram liberadas).
+    const DISPONIVEL = m
+      ? `(t.gateway IS DISTINCT FROM 'stripe' OR (
+           t.disponivel_em IS NOT NULL
+           AND (t.disponivel_em AT TIME ZONE 'America/Sao_Paulo')
+               < (MAKE_DATE(${m.ano}, ${m.mes}, 1) + INTERVAL '1 month')
+         ))`
+      : "(t.gateway IS DISTINCT FROM 'stripe' OR (t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()))";
 
     // Totais financeiros (por created_at do período, separando disponível de pendente)
     const totaisQ = await db.query(`

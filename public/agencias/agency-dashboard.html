@@ -226,15 +226,15 @@
     <div class="card" style="margin-top:20px">
       <h3>Distribuição de Percentuais</h3>
       <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">
-        O percentual da Velvet é fixo em <strong>20%</strong> e não pode ser alterado.
-        A soma de Agência + Modelo não pode ultrapassar 80%.
+        O percentual da Velvet é definido pela plataforma e não pode ser alterado aqui.
+        Distribua o restante entre Agência e Modelo como preferir.
       </p>
      <form id="formPercentuais" onsubmit="salvarPercentuais(event)" style="display:grid;gap:14px;max-width:400px;">
 
-  <!-- Velvet fixo -->
+  <!-- Velvet (somente leitura, valor vem do banco) -->
   <label style="font-size:13px;font-weight:500;color:var(--text-muted);">
-    Velvet (fixo)
-    <input type="number" value="20" disabled
+    % Velvet (somente leitura)
+    <input type="number" id="inputPercentualVelvet" disabled
       style="background:var(--bg);margin-top:4px;padding:9px 12px;border:1px solid var(--border);border-radius:8px;width:100%;font-size:13px;">
   </label>
 
@@ -245,7 +245,6 @@
       id="inputPercentualAgencia"
       name="percentual_agencia"
       min="0"
-      max="80"
       step="0.01"
       required
       oninput="atualizarSoma()"
@@ -259,7 +258,6 @@
       id="inputPercentualModelo"
       name="percentual_modelo"
       min="0"
-      max="80"
       step="0.01"
       required
       oninput="atualizarSoma()"
