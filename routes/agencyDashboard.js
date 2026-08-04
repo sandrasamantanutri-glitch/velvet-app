@@ -2191,34 +2191,76 @@ router.get("/transacoes", authAgencia, async (req, res) => {
     const limit = 20;
     const offset = (page - 1) * limit;
 
-    const where = ["m.agencia_id = $1", "t.status IN ('pago','chargeback')"];
-    const params = [agenciaId];
-    let idx = 2;
+    // Lógica híbrida:
+    // - Tabela: created_at (compra visível no mês em que ocorreu)
+    // - Totais: Stripe conta no mês do disponivel_em; não-Stripe no created_at
+    // - Pendente na linha: Stripe com disponivel_em em mês futuro ao filtrado
     let m = null;
+    const hasModelo = modelo_id && Number(modelo_id) > 0;
 
-    if (modelo_id && Number(modelo_id) > 0) {
-      where.push(`t.modelo_id = $${idx}`);
-      params.push(Number(modelo_id));
-      idx++;
-    }
+    // Parâmetros base: agencia + modelo opcional
+    const baseParams = [agenciaId];
+    if (hasModelo) baseParams.push(Number(modelo_id));
+    const baseModeloFilter = hasModelo ? ` AND t.modelo_id = $2` : '';
+
+    // WHERE para linhas da tabela (por created_at)
+    let whereRows = `m.agencia_id = $1${baseModeloFilter} AND t.status IN ('pago','chargeback')`;
+    const rowsParams = [...baseParams];
+
+    // WHERE para totais (ganhos por disponivel_em Stripe + pendentes por created_at)
+    let whereTotais = `m.agencia_id = $1${baseModeloFilter} AND t.status IN ('pago','chargeback')`;
+    const paramsTotais = [...baseParams];
 
     if (mes && /^\d{4}-\d{2}$/.test(mes)) {
       const [ano, mesNum] = mes.split('-').map(Number);
       m = { ano, mes: mesNum };
-      // Todas as transações filtradas pela data de compra (created_at).
-      where.push(`EXTRACT(YEAR  FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $${idx}
-               AND EXTRACT(MONTH FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $${idx + 1}`);
-      params.push(ano, mesNum);
-      idx += 2;
+
+      whereRows += ` AND EXTRACT(YEAR  FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $${rowsParams.length + 1}
+                     AND EXTRACT(MONTH FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $${rowsParams.length + 2}`;
+      rowsParams.push(ano, mesNum);
+
+      const futMes = ano * 12 + mesNum;
+      whereTotais += ` AND (
+        (t.gateway IS DISTINCT FROM 'stripe'
+         AND EXTRACT(YEAR  FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $${paramsTotais.length + 1}
+         AND EXTRACT(MONTH FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $${paramsTotais.length + 2})
+        OR
+        (t.gateway = 'stripe' AND t.disponivel_em IS NOT NULL
+         AND EXTRACT(YEAR  FROM t.disponivel_em AT TIME ZONE 'America/Sao_Paulo') = $${paramsTotais.length + 1}
+         AND EXTRACT(MONTH FROM t.disponivel_em AT TIME ZONE 'America/Sao_Paulo') = $${paramsTotais.length + 2}
+         AND t.disponivel_em <= NOW())
+        OR
+        (t.gateway = 'stripe'
+         AND EXTRACT(YEAR  FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $${paramsTotais.length + 1}
+         AND EXTRACT(MONTH FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $${paramsTotais.length + 2}
+         AND (t.disponivel_em IS NULL
+              OR (EXTRACT(YEAR  FROM t.disponivel_em AT TIME ZONE 'America/Sao_Paulo') * 12 +
+                  EXTRACT(MONTH FROM t.disponivel_em AT TIME ZONE 'America/Sao_Paulo')) > $${paramsTotais.length + 3}))
+      )`;
+      paramsTotais.push(ano, mesNum, futMes);
     }
 
-    // Stripe é ganho quando disponivel_em já passou; senão pendente.
-    const DISP = "(t.gateway IS DISTINCT FROM 'stripe' OR (t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()))";
+    // DISPONIVEL para totais: Stripe = liberado neste mês; não-Stripe = sempre
+    const DISP = m
+      ? `(t.gateway IS DISTINCT FROM 'stripe' OR (
+           t.gateway = 'stripe' AND t.disponivel_em IS NOT NULL
+           AND EXTRACT(YEAR  FROM t.disponivel_em AT TIME ZONE 'America/Sao_Paulo') = ${m.ano}
+           AND EXTRACT(MONTH FROM t.disponivel_em AT TIME ZONE 'America/Sao_Paulo') = ${m.mes}
+           AND t.disponivel_em <= NOW()
+         ))`
+      : "(t.gateway IS DISTINCT FROM 'stripe' OR (t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()))";
 
-    // Agrupamento e exibição sempre pelo dia da compra.
-    const DIA = `DATE(t.created_at AT TIME ZONE 'America/Sao_Paulo')`;
+    // PEND_ROW: Stripe com disponivel_em em mês futuro ao filtrado (ou sem data)
+    const PEND_ROW = m
+      ? `(t.gateway = 'stripe' AND (
+           t.disponivel_em IS NULL
+           OR (EXTRACT(YEAR  FROM t.disponivel_em AT TIME ZONE 'America/Sao_Paulo') * 12 +
+               EXTRACT(MONTH FROM t.disponivel_em AT TIME ZONE 'America/Sao_Paulo')) > ${m.ano * 12 + m.mes}
+         ))`
+      : "(t.gateway = 'stripe' AND (t.disponivel_em IS NULL OR t.disponivel_em > NOW()))";
 
-    const whereStr = where.join(' AND ');
+    const limitIdx  = rowsParams.length + 1;
+    const offsetIdx = rowsParams.length + 2;
 
     const [totaisQ, cbQ, countQ, rowsQ] = await Promise.all([
 
@@ -2230,44 +2272,44 @@ router.get("/transacoes", authAgencia, async (req, res) => {
           COALESCE(SUM(CASE WHEN t.status='pago' AND NOT ${DISP} THEN t.agency_fee   ELSE 0 END), 0) AS pendente_agencia
         FROM transacoes_agency t
         JOIN modelos m ON m.id = t.modelo_id
-        WHERE ${whereStr}
-      `, params),
+        WHERE ${whereTotais}
+      `, paramsTotais),
 
       db.query(`
         SELECT COALESCE(SUM(c.valor), 0) AS chargebacks
         FROM chargebacks c
         JOIN modelos m ON m.id = c.modelo_id
         WHERE m.agencia_id = $1
-          ${modelo_id && Number(modelo_id) > 0 ? `AND c.modelo_id = $2` : ''}
-          ${m ? `AND EXTRACT(YEAR  FROM c.criado_em AT TIME ZONE 'America/Sao_Paulo') = $${modelo_id && Number(modelo_id) > 0 ? 3 : 2}
-                 AND EXTRACT(MONTH FROM c.criado_em AT TIME ZONE 'America/Sao_Paulo') = $${modelo_id && Number(modelo_id) > 0 ? 4 : 3}` : ''}
+          ${hasModelo ? `AND c.modelo_id = $2` : ''}
+          ${m ? `AND EXTRACT(YEAR  FROM c.criado_em AT TIME ZONE 'America/Sao_Paulo') = $${hasModelo ? 3 : 2}
+                 AND EXTRACT(MONTH FROM c.criado_em AT TIME ZONE 'America/Sao_Paulo') = $${hasModelo ? 4 : 3}` : ''}
       `, [
         agenciaId,
-        ...(modelo_id && Number(modelo_id) > 0 ? [Number(modelo_id)] : []),
+        ...(hasModelo ? [Number(modelo_id)] : []),
         ...(m ? [m.ano, m.mes] : [])
       ]),
 
       db.query(`
-        SELECT COUNT(DISTINCT (${DIA})) AS count
+        SELECT COUNT(DISTINCT DATE(t.created_at AT TIME ZONE 'America/Sao_Paulo')) AS count
         FROM transacoes_agency t
         JOIN modelos m ON m.id = t.modelo_id
-        WHERE ${whereStr}
-      `, params),
+        WHERE ${whereRows}
+      `, rowsParams),
 
       db.query(`
         SELECT
-          (${DIA}) AS dia,
+          DATE(t.created_at AT TIME ZONE 'America/Sao_Paulo') AS dia,
           COALESCE(SUM(CASE WHEN t.status='pago' AND ${DISP}     THEN t.valor_modelo ELSE 0 END), 0) AS ganhos_modelo,
           COALESCE(SUM(CASE WHEN t.status='pago' AND ${DISP}     THEN t.agency_fee   ELSE 0 END), 0) AS ganhos_agencia,
-          COALESCE(SUM(CASE WHEN t.status='pago' AND NOT ${DISP} THEN t.valor_modelo ELSE 0 END), 0) AS pendente_modelo,
-          COALESCE(SUM(CASE WHEN t.status='pago' AND NOT ${DISP} THEN t.agency_fee   ELSE 0 END), 0) AS pendente_agencia
+          COALESCE(SUM(CASE WHEN t.status='pago' AND ${PEND_ROW} THEN t.valor_modelo ELSE 0 END), 0) AS pendente_modelo,
+          COALESCE(SUM(CASE WHEN t.status='pago' AND ${PEND_ROW} THEN t.agency_fee   ELSE 0 END), 0) AS pendente_agencia
         FROM transacoes_agency t
         JOIN modelos m ON m.id = t.modelo_id
-        WHERE ${whereStr}
-        GROUP BY (${DIA})
+        WHERE ${whereRows}
+        GROUP BY DATE(t.created_at AT TIME ZONE 'America/Sao_Paulo')
         ORDER BY dia DESC
-        LIMIT $${idx} OFFSET $${idx + 1}
-      `, [...params, limit, offset])
+        LIMIT $${limitIdx} OFFSET $${offsetIdx}
+      `, [...rowsParams, limit, offset])
 
     ]);
 
