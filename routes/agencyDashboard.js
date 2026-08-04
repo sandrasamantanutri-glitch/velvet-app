@@ -1324,7 +1324,6 @@ router.get("/ranking", authAgencia, async (req, res) => {
       WHERE t.modelo_id IS NOT NULL
         AND m.agencia_id = $1
         AND t.status = 'pago'
-        AND (t.gateway IS DISTINCT FROM 'stripe' OR (t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()))
         AND ${whereMes}
       GROUP BY t.modelo_id, m.nome
       ORDER BY ganhos_total DESC, atualizado_em DESC
@@ -2191,8 +2190,7 @@ router.get("/transacoes", authAgencia, async (req, res) => {
     const limit = 20;
     const offset = (page - 1) * limit;
 
-    // Tabela de linhas: sempre por created_at (dia de compra real)
-    // Totais financeiros: COALESCE(disponivel_em, created_at) — Stripe conta no mês da liberação
+    // Filtro único por created_at — igual ao relatorio.html e ao top 5.
     let m = null;
     const hasModelo = modelo_id && Number(modelo_id) > 0;
 
@@ -2200,28 +2198,21 @@ router.get("/transacoes", authAgencia, async (req, res) => {
     const baseParams = [agenciaId];
     if (hasModelo) { baseFilter.push(`t.modelo_id = $2`); baseParams.push(Number(modelo_id)); }
 
-    // WHERE para linhas e contagem: sempre por created_at
-    const rowsFilter = [...baseFilter];
+    const filterArr  = [...baseFilter];
     const rowsParams = [...baseParams];
-    // WHERE para totais: COALESCE(disponivel_em, created_at) para Stripe ir pro mês correto
-    const totaisFilter = [...baseFilter];
-    const totaisParams = [...baseParams];
 
     if (mes && /^\d{4}-\d{2}$/.test(mes)) {
       const [ano, mesNum] = mes.split('-').map(Number);
       m = { ano, mes: mesNum };
-      const ri = rowsParams.length + 1;
-      rowsFilter.push(`EXTRACT(YEAR  FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $${ri}
-                   AND EXTRACT(MONTH FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $${ri + 1}`);
+      const pi = rowsParams.length + 1;
+      filterArr.push(`EXTRACT(YEAR  FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $${pi}
+                  AND EXTRACT(MONTH FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $${pi + 1}`);
       rowsParams.push(ano, mesNum);
-      const ti = totaisParams.length + 1;
-      totaisFilter.push(`EXTRACT(YEAR  FROM COALESCE(t.disponivel_em, t.created_at AT TIME ZONE 'America/Sao_Paulo')) = $${ti}
-                     AND EXTRACT(MONTH FROM COALESCE(t.disponivel_em, t.created_at AT TIME ZONE 'America/Sao_Paulo')) = $${ti + 1}`);
-      totaisParams.push(ano, mesNum);
     }
 
-    const whereRows   = rowsFilter.join(' AND ');
-    const whereTotais = totaisFilter.join(' AND ');
+    const whereRows    = filterArr.join(' AND ');
+    const whereTotais  = whereRows;
+    const totaisParams = rowsParams;
 
     // Liberado = não-Stripe OU Stripe com disponivel_em já passado
     const DISP = "(t.gateway IS DISTINCT FROM 'stripe' OR (t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()))";

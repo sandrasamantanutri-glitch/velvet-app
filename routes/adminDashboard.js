@@ -3080,13 +3080,12 @@ router.get("/ranking", authAdmin, async (req, res) => {
       }
       params.push(Number(match[1]), Number(match[2]));
       whereMes = `
-        EXTRACT(YEAR  FROM CASE WHEN t.disponivel_em IS NOT NULL THEN t.disponivel_em AT TIME ZONE 'America/Sao_Paulo' ELSE t.created_at AT TIME ZONE 'America/Sao_Paulo' END) = $1
-        AND EXTRACT(MONTH FROM CASE WHEN t.disponivel_em IS NOT NULL THEN t.disponivel_em AT TIME ZONE 'America/Sao_Paulo' ELSE t.created_at AT TIME ZONE 'America/Sao_Paulo' END) = $2
+        EXTRACT(YEAR  FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $1
+        AND EXTRACT(MONTH FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $2
       `;
     } else {
       whereMes = `
-        EXTRACT(YEAR  FROM CASE WHEN t.disponivel_em IS NOT NULL THEN t.disponivel_em AT TIME ZONE 'America/Sao_Paulo' ELSE t.created_at AT TIME ZONE 'America/Sao_Paulo' END) = EXTRACT(YEAR  FROM NOW() AT TIME ZONE 'America/Sao_Paulo')
-        AND EXTRACT(MONTH FROM CASE WHEN t.disponivel_em IS NOT NULL THEN t.disponivel_em AT TIME ZONE 'America/Sao_Paulo' ELSE t.created_at AT TIME ZONE 'America/Sao_Paulo' END) = EXTRACT(MONTH FROM NOW() AT TIME ZONE 'America/Sao_Paulo')
+        DATE_TRUNC('month', t.created_at AT TIME ZONE 'America/Sao_Paulo') = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
       `;
     }
 
@@ -3100,7 +3099,6 @@ router.get("/ranking", authAdmin, async (req, res) => {
       LEFT JOIN modelos m ON m.id = t.modelo_id
       WHERE t.modelo_id IS NOT NULL
         AND t.status = 'pago'
-        AND (t.gateway IS DISTINCT FROM 'stripe' OR (t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()))
         AND ${whereMes}
       GROUP BY t.modelo_id, m.nome
       ORDER BY ganhos_total DESC, atualizado_em DESC
@@ -3352,31 +3350,22 @@ router.get("/transacoes-agency", async (req, res) => {
     const modelo_id = req.query.modelo_id;
     const m = parseMes(req.query.mes);
 
-    // Tabela de linhas: sempre por created_at (dia de compra real)
-    // Totais financeiros: COALESCE(disponivel_em, created_at) — Stripe conta no mês da liberação
-    const baseWhere = "m.verificada = true AND m.ativo = true";
-    const baseParams = [];
-    if (modelo_id) baseParams.push(modelo_id);
-    const modeloClause = modelo_id ? ` AND t.modelo_id = $1` : "";
-
-    // WHERE linhas/contagem: created_at
-    let whereRows = baseWhere + modeloClause;
-    const rowsParams = [...baseParams];
-    // WHERE totais: COALESCE(disponivel_em, created_at)
-    let whereTotais = baseWhere + modeloClause;
-    const paramsTotais = [...baseParams];
-
+    // Filtro único por created_at — igual ao relatorio.html e ao top 5 do admin.
+    // Liberações cross-month (julho→agosto) ficam no painel informativo apenas.
+    let where = "m.verificada = true AND m.ativo = true";
+    const params = [];
+    let pIdx = 1;
+    if (modelo_id) { where += ` AND t.modelo_id = $${pIdx}`; params.push(modelo_id); pIdx++; }
     if (m) {
-      const ri = rowsParams.length + 1;
-      whereRows += ` AND EXTRACT(YEAR  FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $${ri}
-                     AND EXTRACT(MONTH FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $${ri + 1}`;
-      rowsParams.push(m.ano, m.mes);
-
-      const ti = paramsTotais.length + 1;
-      whereTotais += ` AND EXTRACT(YEAR  FROM COALESCE(t.disponivel_em, t.created_at AT TIME ZONE 'America/Sao_Paulo')) = $${ti}
-                       AND EXTRACT(MONTH FROM COALESCE(t.disponivel_em, t.created_at AT TIME ZONE 'America/Sao_Paulo')) = $${ti + 1}`;
-      paramsTotais.push(m.ano, m.mes);
+      where += ` AND EXTRACT(YEAR  FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $${pIdx}
+                 AND EXTRACT(MONTH FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $${pIdx + 1}`;
+      params.push(m.ano, m.mes);
     }
+
+    const whereRows = where;
+    const rowsParams = params;
+    const whereTotais = where;
+    const paramsTotais = params;
 
     // Liberado = não-Stripe OU Stripe com disponivel_em já passado
     const DISPONIVEL = "(t.gateway IS DISTINCT FROM 'stripe' OR (t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()))";
@@ -3384,7 +3373,7 @@ router.get("/transacoes-agency", async (req, res) => {
     // Dia de compra: sempre created_at
     const DIA = `DATE(t.created_at AT TIME ZONE 'America/Sao_Paulo')`;
 
-    // Totais financeiros (usa COALESCE WHERE para incluir liberações cross-month)
+    // Totais financeiros
     const totaisQ = await db.query(`
       SELECT
         COALESCE(SUM(CASE WHEN t.status='pago' AND ${DISPONIVEL}     THEN t.valor_bruto  ELSE 0 END), 0) AS bruto,
