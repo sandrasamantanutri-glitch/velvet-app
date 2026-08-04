@@ -293,14 +293,12 @@ pageLoaders.overview = async function () {
     const fatdPend = Number(data.faturamento_dia_pendente ?? 0);
     $('kpi-fatd').textContent = money(Number(data.faturamento_dia ?? 0) + fatdPend);
     const elFatdP = $('kpi-fatd-pendente');
-    if (fatdPend > 0) { elFatdP.textContent = `+ ${money(fatdPend)} pendente`; elFatdP.style.display = 'block'; }
-    else { elFatdP.style.display = 'none'; }
+    if (elFatdP) elFatdP.style.display = 'none';
 
     const fatmPend = Number(data.faturamento_mes_pendente ?? 0);
     $('kpi-fatm').textContent = money(Number(data.faturamento_mes ?? 0) + fatmPend);
     const elFatmP = $('kpi-fatm-pendente');
-    if (fatmPend > 0) { elFatmP.textContent = `+ ${money(fatmPend)} pendente`; elFatmP.style.display = 'block'; }
-    else { elFatmP.style.display = 'none'; }
+    if (elFatmP) elFatmP.style.display = 'none';
 
     // Chart faturamento últimos 12 meses
     if (chartFat) {

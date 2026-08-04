@@ -1,26 +1,17 @@
 <!-- AGE GATE +18 -->
 <div id="ageModal" class="modal hidden">
   <div class="modal-overlay" onclick="confirmAge(false)"></div>
-  <div class="modal-box" id="ageModalBox"></div>
+  <div class="modal-box" id="ageModalBox">
+    <h2 data-i18n="index.ageGateTitle">A Velvet é uma plataforma social destinada para usuários maiores de idade.</h2>
+    <p data-i18n="index.ageGateText" style="margin-top:10px;">
+      Ao continuar, você declara que possui 18 anos ou mais e concorda com os Termos e Políticas da Velvet disponíveis para consulta em nossa pagina inicial.
+    </p>
+    <div style="display:flex; gap:12px; margin-top:20px;">
+      <button class="btn btn-primary" onclick="confirmAge(true)" data-i18n="index.ageGateConfirm">Continuar</button>
+      <button class="btn btn-secondary" onclick="confirmAge(false)" data-i18n="index.ageGateDeny">Sair</button>
+    </div>
+  </div>
 </div>
-
-<script>
-  (function () {
-    const box = document.getElementById("ageModalBox");
-    if (box) {
-      box.innerHTML = `
-        <h2 data-i18n="index.ageGateTitle">A Velvet é uma plataforma social destinada para usuários maiores de idade.</h2>
-        <p data-i18n="index.ageGateText" style="margin-top:10px;">
-          Ao continuar, você declara que possui 18 anos ou mais e concorda com os Termos e Políticas da Velvet disponíveis para consulta em nossa pagina inicial.
-        </p>
-        <div style="display:flex; gap:12px; margin-top:20px;">
-          <button class="btn btn-primary" onclick="confirmAge(true)" data-i18n="index.ageGateConfirm">Continuar</button>
-          <button class="btn btn-secondary" onclick="confirmAge(false)" data-i18n="index.ageGateDeny">Sair</button>
-        </div>`;
-      if (typeof applyTranslations === "function") applyTranslations();
-    }
-  })();
-</script>
 
 <!-- LOGIN / REGISTER MODAL -->
 <div id="loginModal" class="modal hidden">
