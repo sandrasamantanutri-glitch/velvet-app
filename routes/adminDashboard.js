@@ -3352,8 +3352,8 @@ router.get("/transacoes-agency", async (req, res) => {
     const modelo_id = req.query.modelo_id;
     const m = parseMes(req.query.mes);
 
-    // WHERE base para listagem — filtra por created_at (data da compra)
-    // Pending Stripe aparecem no mês/dia em que o cliente comprou
+    // Todas as transações são filtradas pela data de compra (created_at).
+    // O status ganho/pendente reflete a situação atual: disponivel_em <= NOW().
     let where = "m.verificada = true AND m.ativo = true";
     const params = [];
     let paramIdx = 1;
@@ -3373,19 +3373,13 @@ router.get("/transacoes-agency", async (req, res) => {
 
     const countParams = [...params];
 
-    // DISPONIVEL: Stripe só conta quando liberado; outros gateways sempre disponíveis.
-    // Quando há filtro de mês, Stripe só é "disponível" se liberado DENTRO ou ANTES do mês filtrado
-    // (evita dupla contagem: transações liberadas em mês posterior aparecem como pendente aqui
-    // e como "liberações Stripe" no mês em que foram liberadas).
-    const DISPONIVEL = m
-      ? `(t.gateway IS DISTINCT FROM 'stripe' OR (
-           t.disponivel_em IS NOT NULL
-           AND (t.disponivel_em AT TIME ZONE 'America/Sao_Paulo')
-               < (MAKE_DATE(${m.ano}, ${m.mes}, 1) + INTERVAL '1 month')
-         ))`
-      : "(t.gateway IS DISTINCT FROM 'stripe' OR (t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()))";
+    // Stripe é ganho quando já liberado (disponivel_em passou); senão pendente.
+    const DISPONIVEL = "(t.gateway IS DISTINCT FROM 'stripe' OR (t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()))";
 
-    // Totais financeiros (por created_at do período, separando disponível de pendente)
+    // Agrupamento e exibição sempre pelo dia da compra.
+    const DIA = `DATE(t.created_at AT TIME ZONE 'America/Sao_Paulo')`;
+
+    // Totais financeiros
     const totaisQ = await db.query(`
       SELECT
         COALESCE(SUM(CASE WHEN t.status='pago' AND ${DISPONIVEL} THEN t.valor_bruto  ELSE 0 END), 0) AS bruto,
@@ -3416,21 +3410,20 @@ router.get("/transacoes-agency", async (req, res) => {
       cbParams
     );
 
-    // Contagem de dias distintos (por created_at)
+    // Contagem de dias distintos (por DIA de exibição)
     const countDiasQ = await db.query(`
-      SELECT COUNT(DISTINCT DATE(t.created_at AT TIME ZONE 'America/Sao_Paulo')) AS count
+      SELECT COUNT(DISTINCT (${DIA})) AS count
       FROM transacoes_agency t
       INNER JOIN modelos m ON m.id = t.modelo_id
       WHERE ${where} AND t.status IN ('pago','chargeback')
     `, countParams);
     const totalDias = Number(countDiasQ.rows[0]?.count || 0);
 
-    // Listagem agrupada por dia de compra (created_at)
-    // ganhos_* = já liberado; ganhos_pendente = ainda represado pelo Stripe
+    // Listagem agrupada por DIA de exibição
     const rowsParams = [...params, limit, offset];
     const { rows } = await db.query(`
       SELECT
-        DATE(t.created_at AT TIME ZONE 'America/Sao_Paulo') AS dia,
+        (${DIA}) AS dia,
         COALESCE(SUM(CASE WHEN t.status='pago' AND ${DISPONIVEL} THEN t.valor_bruto  ELSE 0 END), 0) AS ganhos_dia,
         COALESCE(SUM(CASE WHEN t.status='pago' AND ${DISPONIVEL} THEN t.valor_modelo ELSE 0 END), 0) AS ganhos_modelo,
         COALESCE(SUM(CASE WHEN t.status='pago' AND ${DISPONIVEL} THEN t.velvet_fee   ELSE 0 END), 0) AS ganhos_velvet,
@@ -3441,18 +3434,18 @@ router.get("/transacoes-agency", async (req, res) => {
       FROM transacoes_agency t
       INNER JOIN modelos m ON m.id = t.modelo_id
       WHERE ${where} AND t.status IN ('pago','chargeback')
-      GROUP BY DATE(t.created_at AT TIME ZONE 'America/Sao_Paulo')
+      GROUP BY (${DIA})
       ORDER BY dia DESC
       LIMIT $${paramIdx} OFFSET $${paramIdx + 1}
     `, rowsParams);
 
-    // Liberações Stripe do período: transações compradas em OUTRO mês mas liberadas neste
-    // (disponivel_em cai no mês filtrado mas created_at é de mês diferente)
+    // Liberações Stripe: informativo — mostra de onde veio o dinheiro liberado neste mês
+    // (compras de meses anteriores com disponivel_em neste mês).
+    // NÃO são somadas aos totais — já estão incluídas no WHERE acima.
     let liberacoes = [];
     if (m) {
       const libParams = [];
       let libIdx = 1;
-      // Usa fuso SP para disponivel_em, garantindo consistência com financeiro da modelo
       let libWhere = `t.gateway = 'stripe'
         AND t.status = 'pago'
         AND t.disponivel_em IS NOT NULL
@@ -3489,27 +3482,16 @@ router.get("/transacoes-agency", async (req, res) => {
       liberacoes = libQ.rows;
     }
 
-    // Soma liberações Stripe no totais do período:
-    // são valores já disponíveis de meses anteriores que entram no saldo do mês filtrado
-    const libSum = liberacoes.reduce((acc, r) => {
-      acc.bruto   += Number(r.valor_bruto  || 0);
-      acc.modelo  += Number(r.valor_modelo || 0);
-      acc.velvet  += Number(r.velvet_fee   || 0);
-      acc.agency  += Number(r.agency_fee   || 0);
-      acc.gateway += Number(r.taxa_gateway || 0);
-      return acc;
-    }, { bruto: 0, modelo: 0, velvet: 0, agency: 0, gateway: 0 });
-
     const t0 = totaisQ.rows[0];
     const totais = {
-      bruto:          Number(t0.bruto)          + libSum.bruto,
-      modelo:         Number(t0.modelo)         + libSum.modelo,
-      velvet:         Number(t0.velvet)         + libSum.velvet,
-      agency:         Number(t0.agency)         + libSum.agency,
-      gateway:        Number(t0.gateway)        + libSum.gateway,
-      bruto_pendente: Number(t0.bruto_pendente),
-      modelo_pendente:Number(t0.modelo_pendente),
-      chargebacks:    Number(cbTotaisQ.rows[0].chargebacks || 0),
+      bruto:           Number(t0.bruto),
+      modelo:          Number(t0.modelo),
+      velvet:          Number(t0.velvet),
+      agency:          Number(t0.agency),
+      gateway:         Number(t0.gateway),
+      bruto_pendente:  Number(t0.bruto_pendente),
+      modelo_pendente: Number(t0.modelo_pendente),
+      chargebacks:     Number(cbTotaisQ.rows[0].chargebacks || 0),
     };
 
     res.json({

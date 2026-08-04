@@ -2205,21 +2205,18 @@ router.get("/transacoes", authAgencia, async (req, res) => {
     if (mes && /^\d{4}-\d{2}$/.test(mes)) {
       const [ano, mesNum] = mes.split('-').map(Number);
       m = { ano, mes: mesNum };
-      where.push(`EXTRACT(YEAR  FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $${idx}`);
-      where.push(`EXTRACT(MONTH FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $${idx + 1}`);
+      // Todas as transações filtradas pela data de compra (created_at).
+      where.push(`EXTRACT(YEAR  FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $${idx}
+               AND EXTRACT(MONTH FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $${idx + 1}`);
       params.push(ano, mesNum);
       idx += 2;
     }
 
-    // Quando há filtro de mês, Stripe só é "disponível" se liberado dentro ou antes do mês filtrado.
-    // Evita dupla contagem: transações liberadas em mês posterior aparecem como pendente aqui.
-    const DISP = m
-      ? `(t.gateway IS DISTINCT FROM 'stripe' OR (
-           t.disponivel_em IS NOT NULL
-           AND (t.disponivel_em AT TIME ZONE 'America/Sao_Paulo')
-               < (MAKE_DATE(${m.ano}, ${m.mes}, 1) + INTERVAL '1 month')
-         ))`
-      : "(t.gateway IS DISTINCT FROM 'stripe' OR (t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()))";
+    // Stripe é ganho quando disponivel_em já passou; senão pendente.
+    const DISP = "(t.gateway IS DISTINCT FROM 'stripe' OR (t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()))";
+
+    // Agrupamento e exibição sempre pelo dia da compra.
+    const DIA = `DATE(t.created_at AT TIME ZONE 'America/Sao_Paulo')`;
 
     const whereStr = where.join(' AND ');
 
@@ -2251,7 +2248,7 @@ router.get("/transacoes", authAgencia, async (req, res) => {
       ]),
 
       db.query(`
-        SELECT COUNT(DISTINCT DATE(t.created_at AT TIME ZONE 'America/Sao_Paulo')) AS count
+        SELECT COUNT(DISTINCT (${DIA})) AS count
         FROM transacoes_agency t
         JOIN modelos m ON m.id = t.modelo_id
         WHERE ${whereStr}
@@ -2259,7 +2256,7 @@ router.get("/transacoes", authAgencia, async (req, res) => {
 
       db.query(`
         SELECT
-          DATE(t.created_at AT TIME ZONE 'America/Sao_Paulo') AS dia,
+          (${DIA}) AS dia,
           COALESCE(SUM(CASE WHEN t.status='pago' AND ${DISP}     THEN t.valor_modelo ELSE 0 END), 0) AS ganhos_modelo,
           COALESCE(SUM(CASE WHEN t.status='pago' AND ${DISP}     THEN t.agency_fee   ELSE 0 END), 0) AS ganhos_agencia,
           COALESCE(SUM(CASE WHEN t.status='pago' AND NOT ${DISP} THEN t.valor_modelo ELSE 0 END), 0) AS pendente_modelo,
@@ -2267,7 +2264,7 @@ router.get("/transacoes", authAgencia, async (req, res) => {
         FROM transacoes_agency t
         JOIN modelos m ON m.id = t.modelo_id
         WHERE ${whereStr}
-        GROUP BY DATE(t.created_at AT TIME ZONE 'America/Sao_Paulo')
+        GROUP BY (${DIA})
         ORDER BY dia DESC
         LIMIT $${idx} OFFSET $${idx + 1}
       `, [...params, limit, offset])
