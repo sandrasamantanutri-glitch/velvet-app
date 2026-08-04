@@ -2191,8 +2191,6 @@ router.get("/transacoes", authAgencia, async (req, res) => {
     const limit = 20;
     const offset = (page - 1) * limit;
 
-    const DISP = "(t.gateway IS DISTINCT FROM 'stripe' OR (t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()))";
-
     const where = ["m.agencia_id = $1", "t.status IN ('pago','chargeback')"];
     const params = [agenciaId];
     let idx = 2;
@@ -2212,6 +2210,16 @@ router.get("/transacoes", authAgencia, async (req, res) => {
       params.push(ano, mesNum);
       idx += 2;
     }
+
+    // Quando há filtro de mês, Stripe só é "disponível" se liberado dentro ou antes do mês filtrado.
+    // Evita dupla contagem: transações liberadas em mês posterior aparecem como pendente aqui.
+    const DISP = m
+      ? `(t.gateway IS DISTINCT FROM 'stripe' OR (
+           t.disponivel_em IS NOT NULL
+           AND (t.disponivel_em AT TIME ZONE 'America/Sao_Paulo')
+               < (MAKE_DATE(${m.ano}, ${m.mes}, 1) + INTERVAL '1 month')
+         ))`
+      : "(t.gateway IS DISTINCT FROM 'stripe' OR (t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()))";
 
     const whereStr = where.join(' AND ');
 
