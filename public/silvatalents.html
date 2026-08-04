@@ -719,6 +719,10 @@
       background: var(--purple-bg);
     }
     .radio-card:hover { border-color: var(--purple-lt); color: var(--purple); }
+    .field-error-msg { color:#DC2626; font-size:.78rem; font-weight:600; margin-top:6px; display:flex; align-items:center; gap:4px; }
+    .field-input.field-invalid { border-color:#FECACA !important; background:#FEF2F2; }
+    .radio-group-invalid .radio-card { border-color:#FECACA; color:#DC2626; }
+    .termos-invalid { color:#DC2626 !important; }
     @media (max-width: 560px) {
       .form-grid-2 { grid-template-columns: 1fr !important; }
     }
@@ -1122,7 +1126,7 @@
         <p class="s-p" style="margin:0 auto; text-align:center;">Nossa equipe retorna em até 24h pelo WhatsApp ou e-mail informado.</p>
       </div>
 
-      <form id="form-candidatura" onsubmit="handleSubmit(event)" style="display:flex;flex-direction:column;gap:20px;">
+      <form id="form-candidatura" onsubmit="handleSubmit(event)" novalidate style="display:flex;flex-direction:column;gap:20px;">
         <input type="hidden" name="_subject" value="Contato Silva Talents" />
 
         <!-- erro -->
@@ -1135,7 +1139,7 @@
           <label class="field-label">Motivo do contato</label>
           <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;">
             <label class="radio-card">
-              <input type="radio" name="motivo" value="Candidatura" required onchange="toggleCandidatura(this)" />
+              <input type="radio" name="motivo" value="Candidatura" onchange="toggleCandidatura(this)" />
               <span>Candidatura</span>
             </label>
             <label class="radio-card">
@@ -1254,9 +1258,114 @@
       : 'Escreva aqui sua mensagem ou dúvida...';
   }
 
+  function addFieldError(anchor, msg) {
+    const p = document.createElement('p');
+    p.className = 'field-error-msg';
+    p.setAttribute('role', 'alert');
+    p.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12" y2="16"/></svg> ' + msg;
+    anchor.insertAdjacentElement('afterend', p);
+    return p;
+  }
+
+  function clearAllErrors(form) {
+    form.querySelectorAll('.field-invalid').forEach(el => el.classList.remove('field-invalid'));
+    form.querySelectorAll('.radio-group-invalid').forEach(el => el.classList.remove('radio-group-invalid'));
+    form.querySelectorAll('.termos-invalid').forEach(el => el.classList.remove('termos-invalid'));
+    form.querySelectorAll('.field-error-msg').forEach(el => el.remove());
+  }
+
+  function validateForm(form) {
+    clearAllErrors(form);
+    let first = null;
+
+    // motivo (radio escondido — validação manual)
+    if (!form.querySelector('input[name="motivo"]:checked')) {
+      const wrap = form.querySelector('input[name="motivo"]').closest('.field-wrap');
+      const group = wrap.querySelector('[style*="flex"]');
+      group.classList.add('radio-group-invalid');
+      addFieldError(group, 'Selecione o motivo do contato.');
+      first = first || wrap;
+    }
+
+    // nome
+    const nome = form.querySelector('#f-nome');
+    if (!nome.value.trim()) {
+      nome.classList.add('field-invalid');
+      addFieldError(nome, 'Informe seu nome.');
+      first = first || nome;
+    }
+
+    // idade
+    const idade = form.querySelector('#f-idade');
+    const idadeVal = Number(idade.value);
+    if (!idade.value || idadeVal < 18 || idadeVal > 60) {
+      idade.classList.add('field-invalid');
+      addFieldError(idade, !idade.value ? 'Informe sua idade.' : 'Idade deve ser entre 18 e 60 anos.');
+      first = first || idade;
+    }
+
+    // whatsapp
+    const whats = form.querySelector('#f-whats');
+    if (!whats.value.trim()) {
+      whats.classList.add('field-invalid');
+      addFieldError(whats, 'Informe seu WhatsApp.');
+      first = first || whats;
+    }
+
+    // email
+    const email = form.querySelector('#f-email');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) {
+      email.classList.add('field-invalid');
+      addFieldError(email, !email.value.trim() ? 'Informe seu e-mail.' : 'E-mail inválido.');
+      first = first || email;
+    }
+
+    // termos
+    const termos = form.querySelector('#f-termos');
+    if (!termos.checked) {
+      const lbl = termos.closest('label');
+      lbl.classList.add('termos-invalid');
+      addFieldError(lbl, 'Você precisa concordar para continuar.');
+      first = first || lbl;
+    }
+
+    if (first) {
+      first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return false;
+    }
+    return true;
+  }
+
+  // limpa erro do campo assim que o usuário começa a corrigir
+  document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('form-candidatura');
+    form.addEventListener('input', e => {
+      const el = e.target;
+      el.classList.remove('field-invalid');
+      const next = el.parentElement.querySelector('.field-error-msg') || el.nextElementSibling;
+      if (next && next.classList.contains('field-error-msg')) next.remove();
+    });
+    form.addEventListener('change', e => {
+      const el = e.target;
+      if (el.name === 'motivo') {
+        form.querySelectorAll('.radio-group-invalid').forEach(g => g.classList.remove('radio-group-invalid'));
+        form.querySelectorAll('.field-error-msg').forEach(p => {
+          if (p.textContent.includes('motivo')) p.remove();
+        });
+      }
+      if (el.id === 'f-termos') {
+        el.closest('label').classList.remove('termos-invalid');
+        const err = el.closest('label').nextElementSibling;
+        if (err && err.classList.contains('field-error-msg')) err.remove();
+      }
+    });
+  });
+
   async function handleSubmit(e) {
     e.preventDefault();
     const form    = document.getElementById('form-candidatura');
+    if (!validateForm(form)) return;
+
     const btn     = form.querySelector('button[type="submit"]');
     const success = document.getElementById('form-success');
     const error   = document.getElementById('form-error');
