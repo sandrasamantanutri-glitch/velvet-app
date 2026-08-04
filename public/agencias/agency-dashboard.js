@@ -290,14 +290,14 @@ pageLoaders.overview = async function () {
 
     $('kpi-modelos').textContent = Number(data.total_modelos ?? 0);
     $('kpi-vips').textContent = Number(data.vips_ativos ?? 0);
-    $('kpi-fatd').textContent = money(Number(data.faturamento_dia ?? 0));
     const fatdPend = Number(data.faturamento_dia_pendente ?? 0);
+    $('kpi-fatd').textContent = money(Number(data.faturamento_dia ?? 0) + fatdPend);
     const elFatdP = $('kpi-fatd-pendente');
     if (fatdPend > 0) { elFatdP.textContent = `+ ${money(fatdPend)} pendente`; elFatdP.style.display = 'block'; }
     else { elFatdP.style.display = 'none'; }
 
-    $('kpi-fatm').textContent = money(Number(data.faturamento_mes ?? 0));
     const fatmPend = Number(data.faturamento_mes_pendente ?? 0);
+    $('kpi-fatm').textContent = money(Number(data.faturamento_mes ?? 0) + fatmPend);
     const elFatmP = $('kpi-fatm-pendente');
     if (fatmPend > 0) { elFatmP.textContent = `+ ${money(fatmPend)} pendente`; elFatmP.style.display = 'block'; }
     else { elFatmP.style.display = 'none'; }
@@ -359,18 +359,20 @@ pageLoaders.overview = async function () {
       }
     });
 
-    // Top 5 modelos do mês
+    // Top 5 modelos do mês — ganhos incluem pendente Stripe no total
     const tbody = $('tableTopModelos').querySelector('tbody');
     tbody.innerHTML = (data.top_modelos || []).map((m, i) => {
-      const pend = Number(m.ganhos_agencia_pendente || 0);
-      const pendCell = pend > 0
-        ? `<span style="color:#f59e0b;font-size:0.85em">⏳ ${money(pend)}</span>`
+      const totalModelo  = Number(m.ganhos || 0) + Number(m.ganhos_pendente || 0);
+      const totalAgencia = Number(m.ganhos_agencia || 0) + Number(m.ganhos_agencia_pendente || 0);
+      const pendAgencia  = Number(m.ganhos_agencia_pendente || 0);
+      const pendCell = pendAgencia > 0
+        ? `<span style="color:#f59e0b;font-size:0.85em">⏳ ${money(pendAgencia)}</span>`
         : `<span style="opacity:0.35">—</span>`;
       return `<tr>
         <td>${i + 1}</td>
         <td>${m.nome || 'Modelo #' + m.modelo_id}</td>
-        <td>${money(Number(m.ganhos || 0))}</td>
-        <td>${money(Number(m.ganhos_agencia || 0))}</td>
+        <td>${money(totalModelo)}</td>
+        <td>${money(totalAgencia)}</td>
         <td>${pendCell}</td>
         <td>${Number(m.assinantes || 0)}</td>
       </tr>`;

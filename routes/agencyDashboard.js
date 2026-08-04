@@ -2191,39 +2191,46 @@ router.get("/transacoes", authAgencia, async (req, res) => {
     const limit = 20;
     const offset = (page - 1) * limit;
 
-    // Mesma lógica do relatorio.html da modelo (servercontent.js):
-    // - Filtro de mês por COALESCE(disponivel_em, created_at)
-    // - DISPONIVEL: disponivel_em <= NOW() → liberado; senão pendente
-    // - Agrupamento diário por COALESCE(disponivel_em, created_at)
+    // Tabela de linhas: sempre por created_at (dia de compra real)
+    // Totais financeiros: COALESCE(disponivel_em, created_at) — Stripe conta no mês da liberação
     let m = null;
     const hasModelo = modelo_id && Number(modelo_id) > 0;
 
-    const where = ["m.agencia_id = $1", "t.status IN ('pago','chargeback')"];
-    const params = [agenciaId];
-    let idx = 2;
+    const baseFilter = ["m.agencia_id = $1", "t.status IN ('pago','chargeback')"];
+    const baseParams = [agenciaId];
+    if (hasModelo) { baseFilter.push(`t.modelo_id = $2`); baseParams.push(Number(modelo_id)); }
 
-    if (hasModelo) {
-      where.push(`t.modelo_id = $${idx}`);
-      params.push(Number(modelo_id));
-      idx++;
-    }
+    // WHERE para linhas e contagem: sempre por created_at
+    const rowsFilter = [...baseFilter];
+    const rowsParams = [...baseParams];
+    // WHERE para totais: COALESCE(disponivel_em, created_at) para Stripe ir pro mês correto
+    const totaisFilter = [...baseFilter];
+    const totaisParams = [...baseParams];
 
     if (mes && /^\d{4}-\d{2}$/.test(mes)) {
       const [ano, mesNum] = mes.split('-').map(Number);
       m = { ano, mes: mesNum };
-      where.push(`EXTRACT(YEAR  FROM COALESCE(t.disponivel_em, t.created_at AT TIME ZONE 'America/Sao_Paulo')) = $${idx}
-               AND EXTRACT(MONTH FROM COALESCE(t.disponivel_em, t.created_at AT TIME ZONE 'America/Sao_Paulo')) = $${idx + 1}`);
-      params.push(ano, mesNum);
-      idx += 2;
+      const ri = rowsParams.length + 1;
+      rowsFilter.push(`EXTRACT(YEAR  FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $${ri}
+                   AND EXTRACT(MONTH FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $${ri + 1}`);
+      rowsParams.push(ano, mesNum);
+      const ti = totaisParams.length + 1;
+      totaisFilter.push(`EXTRACT(YEAR  FROM COALESCE(t.disponivel_em, t.created_at AT TIME ZONE 'America/Sao_Paulo')) = $${ti}
+                     AND EXTRACT(MONTH FROM COALESCE(t.disponivel_em, t.created_at AT TIME ZONE 'America/Sao_Paulo')) = $${ti + 1}`);
+      totaisParams.push(ano, mesNum);
     }
 
-    const whereStr = where.join(' AND ');
+    const whereRows   = rowsFilter.join(' AND ');
+    const whereTotais = totaisFilter.join(' AND ');
 
     // Liberado = não-Stripe OU Stripe com disponivel_em já passado
     const DISP = "(t.gateway IS DISTINCT FROM 'stripe' OR (t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()))";
 
-    // Dia de agrupamento e exibição: disponivel_em para Stripe, created_at para demais
-    const DIA = `DATE(COALESCE(t.disponivel_em, t.created_at AT TIME ZONE 'America/Sao_Paulo'))`;
+    // Dia de compra (sempre created_at)
+    const DIA = `DATE(t.created_at AT TIME ZONE 'America/Sao_Paulo')`;
+
+    const limitIdx  = rowsParams.length + 1;
+    const offsetIdx = rowsParams.length + 2;
 
     const [totaisQ, cbQ, countQ, rowsQ] = await Promise.all([
 
@@ -2235,8 +2242,8 @@ router.get("/transacoes", authAgencia, async (req, res) => {
           COALESCE(SUM(CASE WHEN t.status='pago' AND NOT ${DISP} THEN t.agency_fee   ELSE 0 END), 0) AS pendente_agencia
         FROM transacoes_agency t
         JOIN modelos m ON m.id = t.modelo_id
-        WHERE ${whereStr}
-      `, params),
+        WHERE ${whereTotais}
+      `, totaisParams),
 
       db.query(`
         SELECT COALESCE(SUM(c.valor), 0) AS chargebacks
@@ -2256,8 +2263,8 @@ router.get("/transacoes", authAgencia, async (req, res) => {
         SELECT COUNT(DISTINCT (${DIA})) AS count
         FROM transacoes_agency t
         JOIN modelos m ON m.id = t.modelo_id
-        WHERE ${whereStr}
-      `, params),
+        WHERE ${whereRows}
+      `, rowsParams),
 
       db.query(`
         SELECT
@@ -2268,11 +2275,11 @@ router.get("/transacoes", authAgencia, async (req, res) => {
           COALESCE(SUM(CASE WHEN t.status='pago' AND NOT ${DISP} THEN t.agency_fee   ELSE 0 END), 0) AS pendente_agencia
         FROM transacoes_agency t
         JOIN modelos m ON m.id = t.modelo_id
-        WHERE ${whereStr}
+        WHERE ${whereRows}
         GROUP BY (${DIA})
         ORDER BY dia DESC
-        LIMIT $${idx} OFFSET $${idx + 1}
-      `, [...params, limit, offset])
+        LIMIT $${limitIdx} OFFSET $${offsetIdx}
+      `, [...rowsParams, limit, offset])
 
     ]);
 
