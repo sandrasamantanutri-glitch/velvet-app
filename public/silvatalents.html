@@ -723,6 +723,117 @@
       .form-grid-2 { grid-template-columns: 1fr !important; }
     }
 
+    /* ── RESPONSIVE ─────────────────────────────── */
+
+    /* fix stat-cell padding que estava 100px horizontal */
+    .stat-cell { padding: 36px 32px; }
+
+    /* ── tablet largo (≤1024px) ── */
+    @media (max-width: 1024px) {
+      .wrap { padding: 0 20px; }
+      .split { gap: 48px; }
+      .hero-grid { gap: 32px; }
+    }
+
+    /* ── tablet (≤820px) — já definido split, reforça resto ── */
+    @media (max-width: 820px) {
+      .section { padding: 72px 0; }
+      .s-head { margin-bottom: 40px; }
+      .stats-row { grid-template-columns: 1fr 1fr; }
+      .cta-btns { flex-direction: column; align-items: center; }
+      .cta-btns .btn { width: 100%; max-width: 360px; justify-content: center; }
+      .footer-inner { flex-direction: column; align-items: center; text-align: center; gap: 20px; padding: 28px 0; }
+      .footer-nav { justify-content: center; }
+      .proof-logos { gap: 16px; }
+    }
+
+    /* ── mobile grande (≤640px) ── */
+    @media (max-width: 640px) {
+      .section { padding: 56px 0; }
+      .nav-inner { height: 68px; }
+      .logo-icon img { width: 68px; height: 68px; }
+
+      /* hero */
+      .hero { padding: 48px 0 0; }
+      .hero-h1 { font-size: 2rem; }
+      .hero-p { font-size: .95rem; margin-bottom: 28px; }
+      .hero-badge { font-size: .7rem; margin-bottom: 18px; }
+      .hero-ctas { flex-direction: column; }
+      .hero-ctas .btn { width: 100%; justify-content: center; }
+      .hero-right { max-width: 100%; padding-bottom: 0; }
+
+      /* proof */
+      .proof { margin-top: 40px; }
+      .proof-logos { gap: 10px; }
+      .proof-pill { padding: 8px 14px; font-size: .75rem; }
+
+      /* stats */
+      .stats-row { grid-template-columns: 1fr 1fr; }
+      .stat-cell { padding: 24px 18px; }
+      .stat-num { font-size: 2rem; }
+
+      /* steps */
+      .step-card { padding: 28px 22px; }
+
+      /* split */
+      .split { gap: 32px; }
+      .split-visual { aspect-ratio: 16/9; }
+
+      /* section headers */
+      .s-h2 { font-size: 1.7rem; }
+      .s-p { font-size: .93rem; }
+
+      /* CTA section */
+      .cta-section { padding: 72px 0; }
+      .cta-h2 { font-size: 2rem; }
+      .cta-contacts { flex-direction: column; align-items: center; gap: 14px; }
+
+      /* form */
+      .form-grid-2 { grid-template-columns: 1fr !important; }
+      .btn-xl { padding: 16px 28px; font-size: .92rem; }
+
+      /* radio pills wrapping */
+      .radio-card { font-size: .8rem; padding: 10px 14px; }
+    }
+
+    /* ── mobile pequeno (≤480px) ── */
+    @media (max-width: 480px) {
+      .wrap { padding: 0 16px; }
+      .section { padding: 48px 0; }
+
+      /* nav */
+      .nav-inner { height: 60px; }
+      .logo-icon img { width: 56px; height: 56px; }
+      .btn-purple { padding: 10px 18px; font-size: .82rem; }
+
+      /* hero */
+      .hero { padding: 36px 0 0; }
+      .hero-h1 { font-size: 1.75rem; letter-spacing: -.015em; }
+      .hero-badge { font-size: .68rem; padding: 6px 12px; }
+
+      /* stats */
+      .stats-row { grid-template-columns: 1fr; }
+      .stat-cell { padding: 20px 16px; border-bottom: 1px solid var(--border); }
+
+      /* steps */
+      .steps { gap: 12px; }
+      .step-card { padding: 24px 18px; }
+      .step-num, .step-h { font-size: 1rem; }
+
+      /* CTA */
+      .cta-h2 { font-size: 1.8rem; }
+      .cta-section { padding: 56px 0; }
+
+      /* form */
+      .field-input { padding: 12px 14px; font-size: .87rem; }
+      .btn-xl { width: 100%; justify-content: center; }
+
+      /* footer */
+      .footer-copy { font-size: .72rem; }
+      .footer-nav { gap: 16px; }
+      .footer-nav a { font-size: .72rem; }
+    }
+
     /* ── FOCUS ───────────────────────────────────── */
     :focus-visible { outline: 2px solid var(--purple); outline-offset: 3px; border-radius: 4px; }
   </style>
@@ -778,10 +889,11 @@
       <!-- right: image + cards -->
       <div class="hero-right">
         <div class="hero-img-wrap">
+          <img src="img1.png" alt="Silva Talents — criadora de conteúdo">
           <div class="img-ph-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           </div>
-          <p class="img-ph-text"> <img src="/img1.png">/p>
+          <p class="img-ph-text">Sua foto aqui</p>
           <p class="img-ph-sub">Criadora, equipe ou backstage</p>
         </div>
 
