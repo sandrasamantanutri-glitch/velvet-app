@@ -5807,6 +5807,24 @@ router.get("/ocorrencias", authAdmin, async (req, res) => {
       params
     );
 
+    // Busca histórico de rascunhos para cada ocorrência retornada
+    if (rows.length) {
+      const ids = rows.map(r => r.id);
+      const { rows: rascunhos } = await db.query(
+        `SELECT id, ocorrencia_id, resposta, resposta_admin, status_salvo, anexo_filename, criado_em
+           FROM logs_ocorrencias_rascunhos
+          WHERE ocorrencia_id = ANY($1)
+          ORDER BY criado_em ASC`,
+        [ids]
+      );
+      const byId = {};
+      for (const r of rascunhos) {
+        if (!byId[r.ocorrencia_id]) byId[r.ocorrencia_id] = [];
+        byId[r.ocorrencia_id].push(r);
+      }
+      for (const row of rows) row.rascunhos = byId[row.id] || [];
+    }
+
     res.json({ total, page: pageNum, per_page: perPage, rows });
   } catch (err) {
     console.error("Erro GET /admin/dashboard/ocorrencias:", err);
@@ -5851,6 +5869,23 @@ router.patch("/ocorrencias/:id", authAdmin, async (req, res) => {
       params
     );
     if (!rows.length) return res.status(404).json({ erro: "Ocorrência não encontrada" });
+
+    // Registra rascunho no histórico sempre que houver texto de resposta
+    if (resposta !== undefined) {
+      await db.query(
+        `INSERT INTO logs_ocorrencias_rascunhos
+           (ocorrencia_id, resposta, resposta_admin, status_salvo, anexo_base64, anexo_filename)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [
+          id,
+          resposta || null,
+          adminEmail,
+          status || 'pendente',
+          anexo_resposta_base64 || null,
+          anexo_resposta_filename || null,
+        ]
+      );
+    }
 
     res.json(rows[0]);
   } catch (err) {

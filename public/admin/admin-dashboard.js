@@ -1368,9 +1368,16 @@ const termosCompletos = `
       </div>
       ${oc.modelo_nome ? `<div style="font-size:13px;color:#5e5873;">Influencer: <strong>${oc.modelo_nome}</strong></div>` : ''}
       ${oc.descricao   ? `<div style="font-size:13px;color:#5e5873;margin-top:4px;">${oc.descricao}</div>` : ''}
-      ${oc.resposta    ? `<div style="margin-top:8px;padding:8px 12px;background:#f3eff5;border-left:3px solid #6f3cff;border-radius:0 6px 6px 0;font-size:13px;">
-        <strong style="color:#6f3cff;">Resposta (${fmtDateTime(oc.resposta_at)}):</strong><br>${oc.resposta}
-      </div>` : ''}
+      ${(oc.rascunhos && oc.rascunhos.length) ? oc.rascunhos.map(r => `
+        <div style="margin-top:6px;padding:8px 12px;background:#f3eff5;border-left:3px solid #6f3cff;border-radius:0 6px 6px 0;font-size:13px;">
+          <strong style="color:#6f3cff;">Resposta (${fmtDateTime(r.criado_em)}) — ${r.resposta_admin || ''}${r.status_salvo === 'pendente' ? ' <span style="font-size:11px;background:#e8f0ff;color:#2c5fe6;padding:1px 6px;border-radius:10px;font-weight:600;">rascunho</span>' : ' <span style="font-size:11px;background:#e6f9ee;color:#1a7a40;padding:1px 6px;border-radius:10px;font-weight:600;">enviado</span>'}:</strong><br>${r.resposta || ''}
+          ${r.anexo_filename ? `<br><span style="font-size:12px;">📎 ${r.anexo_filename}</span>` : ''}
+        </div>
+      `).join('') : (oc.resposta ? `
+        <div style="margin-top:8px;padding:8px 12px;background:#f3eff5;border-left:3px solid #6f3cff;border-radius:0 6px 6px 0;font-size:13px;">
+          <strong style="color:#6f3cff;">Resposta (${fmtDateTime(oc.resposta_at)}):</strong><br>${oc.resposta}
+        </div>
+      ` : '')}
     </div>
   `).join('') || '<p>Nenhuma ocorrência de suporte registrada.</p>';
 
@@ -1550,12 +1557,17 @@ async function carregarOcorrenciasAdmin(page = 1) {
           ${oc.nome_completo ? `<div style="font-size:13px;color:#5e5873;margin-bottom:4px;">Cliente: ${oc.nome_completo}</div>` : ''}
           ${oc.descricao ? `<div style="font-size:13px;color:#1e1b2e;margin-bottom:8px;">${oc.descricao}</div>` : ''}
           ${oc.anexo_filename ? `<div style="font-size:12px;color:#9b87b8;margin-bottom:6px;">📎 Anexo cliente: ${oc.anexo_filename}</div>` : ''}
-          ${oc.resposta ? `
+          ${(oc.rascunhos && oc.rascunhos.length) ? oc.rascunhos.map(r => `
+            <div style="padding:8px 12px;background:#f3eff5;border-left:3px solid #6f3cff;border-radius:0 6px 6px 0;font-size:13px;margin-bottom:6px;">
+              <strong style="color:#6f3cff;">Resposta (${fmtDateTime(r.criado_em)}) — ${r.resposta_admin || ''}${r.status_salvo === 'pendente' ? ' <span style="font-size:11px;background:#e8f0ff;color:#2c5fe6;padding:1px 6px;border-radius:10px;font-weight:600;">rascunho</span>' : ' <span style="font-size:11px;background:#e6f9ee;color:#1a7a40;padding:1px 6px;border-radius:10px;font-weight:600;">enviado</span>'}:</strong><br>${r.resposta || ''}
+              ${r.anexo_filename ? `<br><span style="font-size:12px;">📎 ${r.anexo_filename}</span>` : ''}
+            </div>
+          `).join('') : (oc.resposta ? `
             <div style="padding:8px 12px;background:#f3eff5;border-left:3px solid #6f3cff;border-radius:0 6px 6px 0;font-size:13px;margin-bottom:8px;">
               <strong style="color:#6f3cff;">Resposta (${fmtDateTime(oc.resposta_at)}) — ${oc.resposta_admin || ''}:</strong><br>${oc.resposta}
               ${oc.anexo_resposta_filename ? `<br><span style="font-size:12px;">📎 ${oc.anexo_resposta_filename}</span>` : ''}
             </div>
-          ` : ''}
+          ` : '')}
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
             ${oc.status !== 'pendente' ? `<button class="btn btn-sm" onclick="atualizarOcorrencia(${oc.id},'pendente')">Marcar Em Análise</button>` : ''}
             ${oc.status !== 'fechada'  ? `<button class="btn btn-sm btn-primary" onclick="abrirRespostaOcorrencia(${oc.id})">Responder / Fechar</button>` : ''}

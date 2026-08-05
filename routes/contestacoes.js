@@ -317,6 +317,25 @@ router.get('/:identificador', async (req, res) => {
       if (ipPagto) cliente.ultimo_ip = ipPagto;
     }
 
+    // Anexa histórico de rascunhos a cada ocorrência
+    const ocorrencias = ocorrenciasRes.rows;
+    if (ocorrencias.length) {
+      const ids = ocorrencias.map(o => o.id);
+      const { rows: rascunhos } = await db.query(
+        `SELECT id, ocorrencia_id, resposta, resposta_admin, status_salvo, anexo_filename, criado_em
+           FROM logs_ocorrencias_rascunhos
+          WHERE ocorrencia_id = ANY($1)
+          ORDER BY criado_em ASC`,
+        [ids]
+      );
+      const byId = {};
+      for (const r of rascunhos) {
+        if (!byId[r.ocorrencia_id]) byId[r.ocorrencia_id] = [];
+        byId[r.ocorrencia_id].push(r);
+      }
+      for (const oc of ocorrencias) oc.rascunhos = byId[oc.id] || [];
+    }
+
     res.json({
       cliente,
       aceite_termos: aceiteTermosRes.rows,
@@ -329,7 +348,7 @@ router.get('/:identificador', async (req, res) => {
       suporte: suporteRes.rows,
       risco: riscoRes.rows,
       autoexclusao: autoexclusaoRes.rows,
-      ocorrencias: ocorrenciasRes.rows,
+      ocorrencias,
       bloqueado_cadastro: bloqueadoCadastroRes.rows,
       historico_seguranca: historicoSegurancaRes.rows
     });
