@@ -3476,43 +3476,17 @@ router.get("/transacoes-agency-cartao", async (req, res) => {
       pIdx += 2;
     }
 
-    // Totais do período
-    const totaisQ = await db.query(`
-      SELECT
-        COALESCE(SUM(CASE WHEN t.status = 'pago' THEN t.valor_bruto  ELSE 0 END), 0) AS bruto,
-        COALESCE(SUM(CASE WHEN t.status = 'pago' THEN t.valor_modelo ELSE 0 END), 0) AS modelo,
-        COALESCE(SUM(CASE WHEN t.status = 'pago' AND t.disponivel_em IS NOT NULL AND t.disponivel_em > NOW()  THEN t.valor_bruto  ELSE 0 END), 0) AS pendente_bruto,
-        COALESCE(SUM(CASE WHEN t.status = 'pago' AND t.disponivel_em IS NOT NULL AND t.disponivel_em > NOW()  THEN t.valor_modelo ELSE 0 END), 0) AS pendente_modelo,
-        COALESCE(SUM(CASE WHEN t.status = 'pago' AND t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW() THEN t.valor_bruto  ELSE 0 END), 0) AS liberado_bruto,
-        COALESCE(SUM(CASE WHEN t.status = 'pago' AND t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW() THEN t.valor_modelo ELSE 0 END), 0) AS liberado_modelo,
-        COALESCE(SUM(CASE WHEN t.status = 'chargeback' THEN t.valor_bruto ELSE 0 END), 0) AS chargebacks
-      FROM transacoes_agency t
-      INNER JOIN modelos m ON m.id = t.modelo_id
-      WHERE ${where}
-    `, params);
-
-    // Contagem de dias distintos
-    const countQ = await db.query(`
-      SELECT COUNT(*) AS count FROM (
-        SELECT DISTINCT ${DIA}
-        FROM transacoes_agency t
-        INNER JOIN modelos m ON m.id = t.modelo_id
-        WHERE ${where}
-      ) sub
-    `, params);
-    const totalLinhas = Number(countQ.rows[0]?.count || 0);
-
-    const paramIdx = params.length + 1;
-
-    // Linhas agrupadas por dia_compra
-    const { rows } = await db.query(`
+    // Todas as linhas do período (sem LIMIT) — base para totais e paginação
+    const allRowsQ = await db.query(`
       SELECT
         TO_CHAR(${DIA}, 'YYYY-MM-DD') AS dia_compra,
         COALESCE(SUM(CASE WHEN t.status = 'pago'       THEN t.valor_bruto  ELSE 0 END), 0) AS total_bruto,
         COALESCE(SUM(CASE WHEN t.status = 'pago'       THEN t.valor_modelo ELSE 0 END), 0) AS total_modelo,
         COALESCE(SUM(CASE WHEN t.status = 'chargeback' THEN t.valor_bruto  ELSE 0 END), 0) AS chargeback_bruto,
-        COALESCE(SUM(CASE WHEN t.status = 'pago' AND t.disponivel_em IS NOT NULL AND t.disponivel_em > NOW()  THEN t.valor_bruto  ELSE 0 END), 0) AS pendente_bruto,
-        COALESCE(SUM(CASE WHEN t.status = 'pago' AND t.disponivel_em IS NOT NULL AND t.disponivel_em > NOW()  THEN t.valor_modelo ELSE 0 END), 0) AS pendente_modelo,
+        COALESCE(SUM(CASE WHEN t.status = 'pago' AND t.disponivel_em IS NOT NULL AND t.disponivel_em >  NOW() THEN t.valor_bruto  ELSE 0 END), 0) AS pendente_bruto,
+        COALESCE(SUM(CASE WHEN t.status = 'pago' AND t.disponivel_em IS NOT NULL AND t.disponivel_em >  NOW() THEN t.valor_modelo ELSE 0 END), 0) AS pendente_modelo,
+        COALESCE(SUM(CASE WHEN t.status = 'pago' AND t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW() THEN t.valor_bruto  ELSE 0 END), 0) AS liberado_bruto,
+        COALESCE(SUM(CASE WHEN t.status = 'pago' AND t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW() THEN t.valor_modelo ELSE 0 END), 0) AS liberado_modelo,
         TO_CHAR(MIN(CASE WHEN t.status = 'pago' AND t.disponivel_em IS NOT NULL AND t.disponivel_em > NOW()
           THEN DATE(t.disponivel_em AT TIME ZONE 'UTC') END), 'YYYY-MM-DD') AS proxima_liberacao
       FROM transacoes_agency t
@@ -3520,8 +3494,13 @@ router.get("/transacoes-agency-cartao", async (req, res) => {
       WHERE ${where}
       GROUP BY 1
       ORDER BY 1 DESC
-      LIMIT $${paramIdx} OFFSET $${paramIdx + 1}
-    `, [...params, limit, offset]);
+    `, params);
+
+    const allRows = allRowsQ.rows;
+    const totalLinhas = allRows.length;
+
+    // Paginação em JS sobre as linhas já retornadas
+    const rows = allRows.slice(offset, offset + limit);
 
     // Liberações por (dia_compra, dia_lib) — só status=pago já liberadas
     const libRows = await db.query(`
@@ -3547,20 +3526,23 @@ router.get("/transacoes-agency-cartao", async (req, res) => {
       row.liberacoes = libMap[row.dia_compra] || [];
     }
 
-    const t0 = totaisQ.rows[0];
+    // Totais = soma de TODAS as linhas do período (sem LIMIT)
+    const totais = { bruto: 0, modelo: 0, pendente_bruto: 0, pendente_modelo: 0, liberado_bruto: 0, liberado_modelo: 0, chargebacks: 0 };
+    for (const r of allRows) {
+      totais.bruto           += Number(r.total_bruto);
+      totais.modelo          += Number(r.total_modelo);
+      totais.pendente_bruto  += Number(r.pendente_bruto);
+      totais.pendente_modelo += Number(r.pendente_modelo);
+      totais.liberado_bruto  += Number(r.liberado_bruto);
+      totais.liberado_modelo += Number(r.liberado_modelo);
+      totais.chargebacks     += Number(r.chargeback_bruto);
+    }
+
     res.json({
       rows,
       totalPages: Math.ceil(totalLinhas / limit),
       page,
-      totais: {
-        bruto:           Number(t0.bruto),
-        modelo:          Number(t0.modelo),
-        pendente_bruto:  Number(t0.pendente_bruto),
-        pendente_modelo: Number(t0.pendente_modelo),
-        liberado_bruto:  Number(t0.liberado_bruto),
-        liberado_modelo: Number(t0.liberado_modelo),
-        chargebacks:     Number(t0.chargebacks),
-      }
+      totais,
     });
   } catch (err) {
     console.error("Erro transações cartão:", err);
