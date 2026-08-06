@@ -3807,43 +3807,34 @@ async function carregarTransacoes(page) {
     $('kpi-bruto-pendente').textContent = money(data.totais?.bruto_pendente);
     if ($('kpi-modelo-pendente')) $('kpi-modelo-pendente').textContent = money(data.totais?.modelo_pendente);
 
-    // Helper: converte "YYYY-MM-DD" para "DD/MM/YYYY" sem risco de fuso
-    function isoToBR(s) {
+    // Helper: "YYYY-MM-DD" → "DD/MM"
+    function isoToDDMM(s) {
       if (!s) return '—';
       const p = String(s).split('T')[0].split('-');
-      return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : s;
+      return p.length === 3 ? `${p[2]}/${p[1]}` : s;
     }
 
-    // Tabela principal — agrupada por (data efetiva, data de compra)
-    // Stripe liberado: data efetiva = disponivel_em (UTC), data compra = created_at (SP)
-    // Stripe pendente: data efetiva = created_at (SP), data compra = created_at (SP)
-    // PIX: data efetiva = created_at (SP), data compra = created_at (SP)
+    // Tabela principal — agrupada por dia efetivo
+    // datas_compra: array de datas ISO de compra que diferem do dia efetivo (Stripe liberado de mês anterior)
     const tbody = $('tableTransacoes').querySelector('tbody');
     tbody.innerHTML = (data.rows || []).map(r => {
-      const temPendente   = Number(r.ganhos_pendente) > 0;
-      const isCrossMonth  = r.dia !== r.dia_compra;   // Stripe de mês anterior liberado agora
-      const isSameDay     = r.dia === r.dia_compra;
+      const temPendente  = Number(r.ganhos_pendente) > 0;
+      const datasCompra  = Array.isArray(r.datas_compra) && r.datas_compra.length > 0
+        ? r.datas_compra.filter(Boolean).sort().map(isoToDDMM).join(', ')
+        : null;
+      const isCrossMonth = !!datasCompra;
 
       let rowStyle = '';
-      if (isCrossMonth)      rowStyle = 'background:linear-gradient(90deg,#f0fdf4 70%,#dcfce7 100%);';
-      else if (temPendente)  rowStyle = 'background:linear-gradient(90deg,#fff 70%,#fffbeb 100%);';
+      if (isCrossMonth)     rowStyle = 'background:linear-gradient(90deg,#f0fdf4 70%,#dcfce7 100%);';
+      else if (temPendente) rowStyle = 'background:linear-gradient(90deg,#fff 70%,#fffbeb 100%);';
 
-      let diaCompraCell;
-      if (isCrossMonth) {
-        // Stripe de mês anterior: mostra data de compra com destaque
-        diaCompraCell = `<span style="color:#166534;font-size:12px;font-weight:600;">compra ${isoToBR(r.dia_compra)}</span>`;
-      } else if (temPendente) {
-        // Stripe pendente: mostra data esperada de liberação
-        const libDate = r.data_liberacao ? isoToBR(r.data_liberacao) : '?';
-        diaCompraCell = `<span class="badge badge-warning" style="font-size:11px;">libera ${libDate}</span>`;
-      } else {
-        // PIX ou mesmo mês: mesma data, sem repetir
-        diaCompraCell = '<span style="color:#aaa;font-size:12px;">—</span>';
-      }
+      const diaCompraCell = datasCompra
+        ? `<span style="color:#166534;font-size:12px;font-weight:600;">${datasCompra}</span>`
+        : '<span style="color:#aaa;font-size:12px;">—</span>';
 
       return `
         <tr style="${rowStyle}">
-          <td style="${isCrossMonth ? 'font-weight:700;color:#166534;' : ''}">${isoToBR(r.dia)}</td>
+          <td style="${isCrossMonth ? 'font-weight:700;color:#166534;' : ''}">${isoToDDMM(r.dia)}</td>
           <td>${diaCompraCell}</td>
           <td>${modeloNome}</td>
           <td>${money(r.ganhos_dia)}</td>

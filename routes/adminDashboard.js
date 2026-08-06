@@ -3416,11 +3416,11 @@ router.get("/transacoes-agency", async (req, res) => {
       cbParams
     );
 
-    // Contagem de linhas distintas (dia efetivo + dia compra)
+    // Contagem de linhas distintas por dia efetivo
     const countQ = await db.query(`
       SELECT COUNT(*) AS count
       FROM (
-        SELECT DISTINCT ${DIA} AS dia, ${DIA_COMPRA} AS dia_compra
+        SELECT DISTINCT DATE(${EFFECTIVE_EXPR}) AS dia
         FROM transacoes_agency t
         INNER JOIN modelos m ON m.id = t.modelo_id
         WHERE ${where} AND t.status IN ('pago','chargeback')
@@ -3431,9 +3431,10 @@ router.get("/transacoes-agency", async (req, res) => {
     const paramIdx = params.length + 1;
     const { rows } = await db.query(`
       SELECT
-        TO_CHAR(${DIA},       'YYYY-MM-DD') AS dia,
-        TO_CHAR(${DIA_COMPRA},'YYYY-MM-DD') AS dia_compra,
-        TO_CHAR(MIN(DATE(t.disponivel_em AT TIME ZONE 'UTC')), 'YYYY-MM-DD') AS data_liberacao,
+        TO_CHAR(DATE(${EFFECTIVE_EXPR}), 'YYYY-MM-DD') AS dia,
+        ARRAY_AGG(DISTINCT TO_CHAR(DATE(t.created_at AT TIME ZONE 'America/Sao_Paulo'), 'YYYY-MM-DD'))
+          FILTER (WHERE DATE(t.created_at AT TIME ZONE 'America/Sao_Paulo') != DATE(${EFFECTIVE_EXPR}))
+          AS datas_compra,
         COALESCE(SUM(CASE WHEN t.status='pago' AND ${DISPONIVEL}     THEN t.valor_bruto  ELSE 0 END), 0) AS ganhos_dia,
         COALESCE(SUM(CASE WHEN t.status='pago' AND ${DISPONIVEL}     THEN t.valor_modelo ELSE 0 END), 0) AS ganhos_modelo,
         COALESCE(SUM(CASE WHEN t.status='pago' AND ${DISPONIVEL}     THEN t.velvet_fee   ELSE 0 END), 0) AS ganhos_velvet,
@@ -3444,8 +3445,8 @@ router.get("/transacoes-agency", async (req, res) => {
       FROM transacoes_agency t
       INNER JOIN modelos m ON m.id = t.modelo_id
       WHERE ${where} AND t.status IN ('pago','chargeback')
-      GROUP BY dia, dia_compra
-      ORDER BY dia DESC, dia_compra DESC
+      GROUP BY dia
+      ORDER BY dia DESC
       LIMIT $${paramIdx} OFFSET $${paramIdx + 1}
     `, [...params, limit, offset]);
 
