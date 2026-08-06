@@ -3919,9 +3919,24 @@ async function carregarTransacoesCartao(page) {
       } catch (rowErr) { console.error('[cartao] erro na linha ' + i, rowErr, rows[i]); }
     }
 
-    console.log('[cartao frontend] html length:', html.length);
+    // Rodapé com soma das colunas visíveis
+    var sumBruto = 0, sumModelo = 0, sumCb = 0, sumPend = 0;
+    for (var j = 0; j < rows.length; j++) {
+      sumBruto  += Number(rows[j].total_bruto);
+      sumModelo += Number(rows[j].total_modelo);
+      sumCb     += Number(rows[j].chargeback_bruto);
+      sumPend   += Number(rows[j].pendente_bruto);
+    }
+    html += '<tr style="font-weight:700;border-top:2px solid #6c3cf0;background:#f8f5ff">' +
+      '<td colspan="2" style="text-align:right;color:#6c3cf0">Total página</td>' +
+      '<td>' + money(sumBruto)  + '</td>' +
+      '<td>' + money(sumModelo) + '</td>' +
+      '<td>' + (sumCb  > 0 ? money(sumCb)  : '—') + '</td>' +
+      '<td>' + (sumPend > 0 ? money(sumPend) : '—') + '</td>' +
+      '<td></td>' +
+      '</tr>';
+
     var tbody = $('tableTransacoesCartao') && $('tableTransacoesCartao').querySelector('tbody');
-    console.log('[cartao frontend] tbody:', tbody);
     if (tbody) tbody.innerHTML = html || emptyRow(7);
 
     buildPagination('paginationCartao', page, data.totalPages || 1, 'carregarTransacoesCartao');
