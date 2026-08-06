@@ -3807,14 +3807,44 @@ async function carregarTransacoes(page) {
     $('kpi-bruto-pendente').textContent = money(data.totais?.bruto_pendente);
     if ($('kpi-modelo-pendente')) $('kpi-modelo-pendente').textContent = money(data.totais?.modelo_pendente);
 
-    // Tabela principal — agrupada por dia de compra (created_at)
+    // Helper: converte "YYYY-MM-DD" para "DD/MM/YYYY" sem risco de fuso
+    function isoToBR(s) {
+      if (!s) return '—';
+      const p = String(s).split('T')[0].split('-');
+      return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : s;
+    }
+
+    // Tabela principal — agrupada por (data efetiva, data de compra)
+    // Stripe liberado: data efetiva = disponivel_em (UTC), data compra = created_at (SP)
+    // Stripe pendente: data efetiva = created_at (SP), data compra = created_at (SP)
+    // PIX: data efetiva = created_at (SP), data compra = created_at (SP)
     const tbody = $('tableTransacoes').querySelector('tbody');
     tbody.innerHTML = (data.rows || []).map(r => {
-      const temPendente = Number(r.ganhos_pendente) > 0;
-      const rowStyle = temPendente ? 'background:linear-gradient(90deg,#fff 70%,#fffbeb 100%);' : '';
+      const temPendente   = Number(r.ganhos_pendente) > 0;
+      const isCrossMonth  = r.dia !== r.dia_compra;   // Stripe de mês anterior liberado agora
+      const isSameDay     = r.dia === r.dia_compra;
+
+      let rowStyle = '';
+      if (isCrossMonth)      rowStyle = 'background:linear-gradient(90deg,#f0fdf4 70%,#dcfce7 100%);';
+      else if (temPendente)  rowStyle = 'background:linear-gradient(90deg,#fff 70%,#fffbeb 100%);';
+
+      let diaCompraCell;
+      if (isCrossMonth) {
+        // Stripe de mês anterior: mostra data de compra com destaque
+        diaCompraCell = `<span style="color:#166534;font-size:12px;font-weight:600;">compra ${isoToBR(r.dia_compra)}</span>`;
+      } else if (temPendente) {
+        // Stripe pendente: mostra data esperada de liberação
+        const libDate = r.data_liberacao ? isoToBR(r.data_liberacao) : '?';
+        diaCompraCell = `<span class="badge badge-warning" style="font-size:11px;">libera ${libDate}</span>`;
+      } else {
+        // PIX ou mesmo mês: mesma data, sem repetir
+        diaCompraCell = '<span style="color:#aaa;font-size:12px;">—</span>';
+      }
+
       return `
         <tr style="${rowStyle}">
-          <td>${fmtDate(r.dia)}</td>
+          <td style="${isCrossMonth ? 'font-weight:700;color:#166534;' : ''}">${isoToBR(r.dia)}</td>
+          <td>${diaCompraCell}</td>
           <td>${modeloNome}</td>
           <td>${money(r.ganhos_dia)}</td>
           <td>${money(r.ganhos_modelo)}</td>
@@ -3824,54 +3854,11 @@ async function carregarTransacoes(page) {
           <td>${temPendente ? `<span class="badge badge-warning">${money(r.ganhos_pendente)}</span>` : '—'}</td>
           <td>${Number(r.modelo_pendente) > 0 ? `<span class="badge badge-warning">${money(r.modelo_pendente)}</span>` : '—'}</td>
         </tr>`;
-    }).join('') || emptyRow(9);
+    }).join('') || emptyRow(10);
 
-    // Seção Liberações Stripe: compras de outros meses liberadas neste período
+    // Painel de Liberações Stripe incorporado na tabela principal — ocultar
     const libPanel = $('liberacoesStripePanel');
-    if (libPanel) {
-      const libs = data.liberacoes || [];
-      if (libs.length && mes) {
-        const libLinhas = libs.map(l => `
-          <tr>
-            <td style="padding:7px 12px;font-weight:600;">${fmtDate(l.dia_liberacao)}</td>
-            <td style="padding:7px 12px;color:#6b7280;font-size:12px;">compra em ${fmtDate(l.dia_compra)}</td>
-            <td style="padding:7px 12px;">${money(l.valor_bruto)}</td>
-            <td style="padding:7px 12px;">${money(l.valor_modelo)}</td>
-            <td style="padding:7px 12px;">${money(l.velvet_fee)}</td>
-            <td style="padding:7px 12px;">${money(l.agency_fee)}</td>
-            <td style="padding:7px 12px;">${money(l.taxa_gateway)}</td>
-            <td style="padding:7px 12px;color:#888;font-size:12px;">${l.qtd} transação(ões)</td>
-          </tr>`).join('');
-
-        libPanel.style.display = 'block';
-        libPanel.innerHTML = `
-          <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:14px 16px;">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-              <span style="font-size:16px;">⚡</span>
-              <strong style="color:#166534;">Liberações Stripe neste período</strong>
-              <span style="color:#666;font-size:12px;">— compras de meses anteriores liberadas agora</span>
-            </div>
-            <table style="width:100%;border-collapse:collapse;font-size:13px;">
-              <thead>
-                <tr style="background:#dcfce7;color:#14532d;text-align:left;">
-                  <th style="padding:7px 12px;">Dia da Liberação</th>
-                  <th style="padding:7px 12px;">Origem</th>
-                  <th style="padding:7px 12px;">Bruto</th>
-                  <th style="padding:7px 12px;">Modelo</th>
-                  <th style="padding:7px 12px;">Velvet</th>
-                  <th style="padding:7px 12px;">Agência</th>
-                  <th style="padding:7px 12px;">Gateway</th>
-                  <th style="padding:7px 12px;">Qtd</th>
-                </tr>
-              </thead>
-              <tbody>${libLinhas}</tbody>
-            </table>
-          </div>`;
-      } else {
-        libPanel.style.display = 'none';
-        libPanel.innerHTML = '';
-      }
-    }
+    if (libPanel) { libPanel.style.display = 'none'; libPanel.innerHTML = ''; }
 
     buildPagination('paginationTransacoes', page, data.totalPages || 1, 'carregarTransacoes');
   } catch (err) { console.error('Erro transações:', err); }
