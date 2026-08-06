@@ -3456,7 +3456,7 @@ router.get("/transacoes-agency-cartao", async (req, res) => {
     const { limit, offset, page } = paginate(
       req.query,
       Number(req.query.page) || 1,
-      Number(req.query.limit) || 20
+      Number(req.query.limit) || 31
     );
 
     const modelo_id = req.query.modelo_id;
@@ -3491,10 +3491,10 @@ router.get("/transacoes-agency-cartao", async (req, res) => {
       WHERE ${where}
     `, params);
 
-    // Contagem de linhas distintas (dia_compra, tipo)
+    // Contagem de dias distintos
     const countQ = await db.query(`
       SELECT COUNT(*) AS count FROM (
-        SELECT DISTINCT ${DIA}, t.tipo
+        SELECT DISTINCT ${DIA}
         FROM transacoes_agency t
         INNER JOIN modelos m ON m.id = t.modelo_id
         WHERE ${where}
@@ -3504,11 +3504,10 @@ router.get("/transacoes-agency-cartao", async (req, res) => {
 
     const paramIdx = params.length + 1;
 
-    // Linhas agrupadas por (dia_compra, tipo)
+    // Linhas agrupadas por dia_compra
     const { rows } = await db.query(`
       SELECT
-        TO_CHAR(${DIA}, 'YYYY-MM-DD')  AS dia_compra,
-        t.tipo,
+        TO_CHAR(${DIA}, 'YYYY-MM-DD') AS dia_compra,
         COALESCE(SUM(CASE WHEN t.status = 'pago'       THEN t.valor_bruto  ELSE 0 END), 0) AS total_bruto,
         COALESCE(SUM(CASE WHEN t.status = 'pago'       THEN t.valor_modelo ELSE 0 END), 0) AS total_modelo,
         COALESCE(SUM(CASE WHEN t.status = 'chargeback' THEN t.valor_bruto  ELSE 0 END), 0) AS chargeback_bruto,
@@ -3519,37 +3518,33 @@ router.get("/transacoes-agency-cartao", async (req, res) => {
       FROM transacoes_agency t
       INNER JOIN modelos m ON m.id = t.modelo_id
       WHERE ${where}
-      GROUP BY 1, 2
-      ORDER BY 1 DESC, 2
+      GROUP BY 1
+      ORDER BY 1 DESC
       LIMIT $${paramIdx} OFFSET $${paramIdx + 1}
     `, [...params, limit, offset]);
 
-    console.log('[cartao] rows count:', rows.length, '| totalLinhas:', totalLinhas, '| params:', params);
-
-    // Liberações por (dia_compra, tipo, dia_lib) — só status=pago já liberadas
+    // Liberações por (dia_compra, dia_lib) — só status=pago já liberadas
     const libRows = await db.query(`
       SELECT
         TO_CHAR(DATE(t.created_at AT TIME ZONE 'America/Sao_Paulo'), 'YYYY-MM-DD') AS dia_compra,
-        t.tipo,
         TO_CHAR(DATE(t.disponivel_em AT TIME ZONE 'UTC'), 'YYYY-MM-DD')            AS dia_lib,
         COALESCE(SUM(t.valor_bruto),  0) AS lib_bruto,
         COALESCE(SUM(t.valor_modelo), 0) AS lib_modelo
       FROM transacoes_agency t
       INNER JOIN modelos m ON m.id = t.modelo_id
       WHERE ${where} AND t.status = 'pago' AND t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()
-      GROUP BY 1, 2, 3
-      ORDER BY 1 DESC, 2, 3
+      GROUP BY 1, 2
+      ORDER BY 1 DESC, 2
     `, params);
 
-    // libMap keyed por "dia_compra:tipo"
+    // libMap keyed por dia_compra
     const libMap = {};
     for (const r of libRows.rows) {
-      const key = `${r.dia_compra}:${r.tipo}`;
-      if (!libMap[key]) libMap[key] = [];
-      libMap[key].push({ data: r.dia_lib, bruto: Number(r.lib_bruto), modelo: Number(r.lib_modelo) });
+      if (!libMap[r.dia_compra]) libMap[r.dia_compra] = [];
+      libMap[r.dia_compra].push({ data: r.dia_lib, bruto: Number(r.lib_bruto), modelo: Number(r.lib_modelo) });
     }
     for (const row of rows) {
-      row.liberacoes = libMap[`${row.dia_compra}:${row.tipo}`] || [];
+      row.liberacoes = libMap[row.dia_compra] || [];
     }
 
     const t0 = totaisQ.rows[0];

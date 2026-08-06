@@ -3875,7 +3875,7 @@ async function carregarTransacoesCartao(page) {
       ? (modeloSelect.options[modeloSelect.selectedIndex]?.textContent || ('#' + modelo))
       : 'Acumulado (todas)';
     var mes = $('transacoesMes').value;
-    var qp = new URLSearchParams({ page: page, limit: 20 });
+    var qp = new URLSearchParams({ page: page, limit: 31 });
     if (modelo) qp.set('modelo_id', modelo);
     if (mes)    qp.set('mes', mes);
 
@@ -3910,7 +3910,6 @@ async function carregarTransacoesCartao(page) {
         html += '<tr' + rowBg + '>' +
           '<td>' + _isoToDDMM(r.dia_compra) + '</td>' +
           '<td>' + modeloNome + '</td>' +
-          '<td><span class="badge" style="background:#e0e7ff;color:#3730a3;font-size:11px">' + tipoLabel + '</span></td>' +
           '<td>' + money(r.total_bruto)  + '</td>' +
           '<td>' + money(r.total_modelo) + '</td>' +
           '<td>' + cbCell + '</td>' +
@@ -3923,7 +3922,7 @@ async function carregarTransacoesCartao(page) {
     console.log('[cartao frontend] html length:', html.length);
     var tbody = $('tableTransacoesCartao') && $('tableTransacoesCartao').querySelector('tbody');
     console.log('[cartao frontend] tbody:', tbody);
-    if (tbody) tbody.innerHTML = html || emptyRow(8);
+    if (tbody) tbody.innerHTML = html || emptyRow(7);
 
     buildPagination('paginationCartao', page, data.totalPages || 1, 'carregarTransacoesCartao');
   } catch (err) { console.error('Erro transações cartão:', err); }
