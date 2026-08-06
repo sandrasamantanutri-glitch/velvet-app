@@ -3483,6 +3483,7 @@ router.get("/transacoes-agency-cartao", async (req, res) => {
         COALESCE(SUM(CASE WHEN t.status = 'pago'       THEN t.valor_bruto  ELSE 0 END), 0) AS total_bruto,
         COALESCE(SUM(CASE WHEN t.status = 'pago'       THEN t.valor_modelo ELSE 0 END), 0) AS total_modelo,
         COALESCE(SUM(CASE WHEN t.status = 'chargeback' THEN t.valor_bruto  ELSE 0 END), 0) AS chargeback_bruto,
+        COALESCE(SUM(CASE WHEN t.status = 'chargeback' THEN t.valor_modelo ELSE 0 END), 0) AS chargeback_modelo,
         COALESCE(SUM(CASE WHEN t.status = 'pago' AND t.disponivel_em IS NOT NULL AND t.disponivel_em >  NOW() THEN t.valor_bruto  ELSE 0 END), 0) AS pendente_bruto,
         COALESCE(SUM(CASE WHEN t.status = 'pago' AND t.disponivel_em IS NOT NULL AND t.disponivel_em >  NOW() THEN t.valor_modelo ELSE 0 END), 0) AS pendente_modelo,
         COALESCE(SUM(CASE WHEN t.status = 'pago' AND t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW() THEN t.valor_bruto  ELSE 0 END), 0) AS liberado_bruto,

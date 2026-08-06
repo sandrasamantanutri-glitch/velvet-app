@@ -3907,7 +3907,7 @@ async function carregarTransacoesCartao(page) {
              '<br><small style="opacity:.7">' + money(r.pendente_modelo) + ' modelo</small>')
           : '—';
         var cbCell       = temCb
-          ? ('<span class="badge badge-danger">' + money(r.chargeback_bruto) + '</span>')
+          ? ('<span class="badge badge-danger">' + money(r.chargeback_modelo) + '</span>')
           : '—';
         html += '<tr' + rowBg + '>' +
           '<td>' + _isoToDDMM(r.dia_compra) + '</td>' +
