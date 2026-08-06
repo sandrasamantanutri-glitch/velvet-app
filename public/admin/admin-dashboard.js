@@ -3889,37 +3889,41 @@ async function carregarTransacoesCartao(page) {
     $('kpi-cartao-pendente-modelo').textContent = money(data.totais && data.totais.pendente_modelo);
     $('kpi-cartao-chargebacks').textContent     = money(data.totais && data.totais.chargebacks);
 
-    console.log('[cartao frontend] rows:', data.rows && data.rows.length);
+    console.log('[cartao frontend] rows:', data.rows && data.rows.length, '| row[0]:', data.rows && data.rows[0]);
 
     var rows = data.rows || [];
     var html = '';
     for (var i = 0; i < rows.length; i++) {
-      var r            = rows[i];
-      var temPendente  = Number(r.pendente_bruto) > 0;
-      var temCb        = Number(r.chargeback_bruto) > 0;
-      var rowBg        = temPendente ? ' style="background:linear-gradient(90deg,#fff 70%,#fffbeb 100%);"' : '';
-      var tipoLabel    = r.tipo === 'assinatura' ? 'Assinatura' : r.tipo === 'midia' ? 'Mídia' : (r.tipo || '—');
-      var pendCell     = temPendente
-        ? ('<span class="badge badge-warning">' + money(r.pendente_bruto) + '</span>' +
-           '<br><small style="opacity:.7">' + money(r.pendente_modelo) + ' modelo</small>')
-        : '—';
-      var cbCell       = temCb
-        ? ('<span class="badge badge-danger">' + money(r.chargeback_bruto) + '</span>')
-        : '—';
-      html += '<tr' + rowBg + '>' +
-        '<td>' + _isoToDDMM(r.dia_compra) + '</td>' +
-        '<td>' + modeloNome + '</td>' +
-        '<td><span class="badge" style="background:#e0e7ff;color:#3730a3;font-size:11px">' + tipoLabel + '</span></td>' +
-        '<td>' + money(r.total_bruto)  + '</td>' +
-        '<td>' + money(r.total_modelo) + '</td>' +
-        '<td>' + cbCell + '</td>' +
-        '<td>' + pendCell + '</td>' +
-        '<td style="white-space:nowrap">' + _renderLiberado(r) + '</td>' +
-        '</tr>';
+      try {
+        var r            = rows[i];
+        var temPendente  = Number(r.pendente_bruto) > 0;
+        var temCb        = Number(r.chargeback_bruto) > 0;
+        var rowBg        = temPendente ? ' style="background:linear-gradient(90deg,#fff 70%,#fffbeb 100%);"' : '';
+        var tipoLabel    = r.tipo === 'assinatura' ? 'Assinatura' : r.tipo === 'midia' ? 'Mídia' : (r.tipo || '—');
+        var pendCell     = temPendente
+          ? ('<span class="badge badge-warning">' + money(r.pendente_bruto) + '</span>' +
+             '<br><small style="opacity:.7">' + money(r.pendente_modelo) + ' modelo</small>')
+          : '—';
+        var cbCell       = temCb
+          ? ('<span class="badge badge-danger">' + money(r.chargeback_bruto) + '</span>')
+          : '—';
+        html += '<tr' + rowBg + '>' +
+          '<td>' + _isoToDDMM(r.dia_compra) + '</td>' +
+          '<td>' + modeloNome + '</td>' +
+          '<td><span class="badge" style="background:#e0e7ff;color:#3730a3;font-size:11px">' + tipoLabel + '</span></td>' +
+          '<td>' + money(r.total_bruto)  + '</td>' +
+          '<td>' + money(r.total_modelo) + '</td>' +
+          '<td>' + cbCell + '</td>' +
+          '<td>' + pendCell + '</td>' +
+          '<td style="white-space:nowrap">' + _renderLiberado(r) + '</td>' +
+          '</tr>';
+      } catch (rowErr) { console.error('[cartao] erro na linha ' + i, rowErr, rows[i]); }
     }
 
-    var tbody = $('tableCartao').querySelector('tbody');
-    tbody.innerHTML = html || emptyRow(8);
+    console.log('[cartao frontend] html length:', html.length);
+    var tbody = $('tableCartao') && $('tableCartao').querySelector('tbody');
+    console.log('[cartao frontend] tbody:', tbody);
+    if (tbody) tbody.innerHTML = html || emptyRow(8);
 
     buildPagination('paginationCartao', page, data.totalPages || 1, 'carregarTransacoesCartao');
   } catch (err) { console.error('Erro transações cartão:', err); }
@@ -5731,7 +5735,7 @@ function initNotificacoes() {
   });
 
   if (window.io) {
-    const socket = window.io({ auth: { token }, transports: ['websocket'] });
+    const socket = window.io({ transports: ['websocket'] });
     window.dashboardSocket = socket;
 
     socket.on('admin:notificacao', (notif) => {
