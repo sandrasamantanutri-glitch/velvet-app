@@ -3536,7 +3536,7 @@ router.get("/transacoes-agency-cartao", async (req, res) => {
       totais.pendente_modelo += Number(r.pendente_modelo);
       totais.liberado_bruto  += Number(r.liberado_bruto);
       totais.liberado_modelo += Number(r.liberado_modelo);
-      totais.chargebacks     += Number(r.chargeback_bruto);
+      totais.chargebacks     += Number(r.chargeback_modelo);
     }
 
     res.json({
