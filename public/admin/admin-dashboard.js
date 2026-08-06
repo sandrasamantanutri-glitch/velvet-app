@@ -3803,9 +3803,7 @@ async function carregarTransacoes(page) {
     $('kpi-velvet').textContent         = money(data.totais?.velvet);
     $('kpi-agency').textContent         = money(data.totais?.agency);
     $('kpi-gateway').textContent        = money(data.totais?.gateway);
-    $('kpi-chargebacks').textContent    = money(data.totais?.chargebacks);
-    $('kpi-bruto-pendente').textContent = money(data.totais?.bruto_pendente);
-    if ($('kpi-modelo-pendente')) $('kpi-modelo-pendente').textContent = money(data.totais?.modelo_pendente);
+    $('kpi-chargebacks').textContent = money(data.totais?.chargebacks);
 
     // Helper: "YYYY-MM-DD" → "DD/MM"
     function isoToDDMM(s) {
@@ -3814,40 +3812,21 @@ async function carregarTransacoes(page) {
       return p.length === 3 ? `${p[2]}/${p[1]}` : s;
     }
 
-    // Tabela principal — agrupada por dia efetivo
-    // datas_compra: array de datas ISO de compra que diferem do dia efetivo (Stripe liberado de mês anterior)
+    // Tabela — apenas PIX/não-Stripe pagos, agrupados por dia
     const tbody = $('tableTransacoes').querySelector('tbody');
-    tbody.innerHTML = (data.rows || []).map(r => {
-      const temPendente  = Number(r.ganhos_pendente) > 0;
-      const datasCompra  = Array.isArray(r.datas_compra) && r.datas_compra.length > 0
-        ? r.datas_compra.filter(Boolean).sort().map(isoToDDMM).join(', ')
-        : null;
-      const isCrossMonth = !!datasCompra;
+    tbody.innerHTML = (data.rows || []).map(r => `
+      <tr>
+        <td>${isoToDDMM(r.dia)}</td>
+        <td>${modeloNome}</td>
+        <td>${money(r.total_bruto)}</td>
+        <td>${money(r.total_modelo)}</td>
+        <td>${money(r.total_velvet)}</td>
+        <td>${money(r.total_agencia)}</td>
+        <td>${money(r.total_gateway)}</td>
+        <td>${r.total_chargebacks > 0 ? `<span class="badge badge-danger">${money(r.total_chargebacks)}</span>` : '—'}</td>
+      </tr>`
+    ).join('') || emptyRow(8);
 
-      let rowStyle = '';
-      if (isCrossMonth)     rowStyle = 'background:linear-gradient(90deg,#f0fdf4 70%,#dcfce7 100%);';
-      else if (temPendente) rowStyle = 'background:linear-gradient(90deg,#fff 70%,#fffbeb 100%);';
-
-      const diaCompraCell = datasCompra
-        ? `<span style="color:#166534;font-size:12px;font-weight:600;">${datasCompra}</span>`
-        : '<span style="color:#aaa;font-size:12px;">—</span>';
-
-      return `
-        <tr style="${rowStyle}">
-          <td style="${isCrossMonth ? 'font-weight:700;color:#166534;' : ''}">${isoToDDMM(r.dia)}</td>
-          <td>${diaCompraCell}</td>
-          <td>${modeloNome}</td>
-          <td>${money(r.ganhos_dia)}</td>
-          <td>${money(r.ganhos_modelo)}</td>
-          <td>${money(r.ganhos_velvet)}</td>
-          <td>${money(r.ganhos_agencia)}</td>
-          <td>${money(r.ganhos_gateway)}</td>
-          <td>${temPendente ? `<span class="badge badge-warning">${money(r.ganhos_pendente)}</span>` : '—'}</td>
-          <td>${Number(r.modelo_pendente) > 0 ? `<span class="badge badge-warning">${money(r.modelo_pendente)}</span>` : '—'}</td>
-        </tr>`;
-    }).join('') || emptyRow(10);
-
-    // Painel de Liberações Stripe incorporado na tabela principal — ocultar
     const libPanel = $('liberacoesStripePanel');
     if (libPanel) { libPanel.style.display = 'none'; libPanel.innerHTML = ''; }
 
