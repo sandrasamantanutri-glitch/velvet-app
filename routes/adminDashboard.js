@@ -3632,7 +3632,7 @@ router.get("/ganhos-conciliacao", async (req, res) => {
       prevAno = m.mes === 1 ? m.ano - 1 : m.ano;
     }
 
-    // 4a. Pendente Mês Anterior — compras do mês passado ainda não liberadas
+    // 4a. Previsto do Mês Anterior para este mês — compras do mês passado com disponivel_em neste mês (total original)
     let pendAntBruto = 0, pendAntModelo = 0;
     if (m) {
       const paPi = modP.length + 1;
@@ -3645,12 +3645,36 @@ router.get("/ganhos-conciliacao", async (req, res) => {
           AND t.gateway = 'stripe'
           AND t.status = 'pago'
           AND t.disponivel_em IS NOT NULL
-          AND t.disponivel_em > NOW()
-          AND EXTRACT(YEAR  FROM ${DIA_SP}) = $${paPi}
-          AND EXTRACT(MONTH FROM ${DIA_SP}) = $${paPi + 1}
-      `, [...modP, prevAno, prevMes]);
+          AND DATE(t.disponivel_em AT TIME ZONE 'UTC') >= $${paPi}::date
+          AND DATE(t.disponivel_em AT TIME ZONE 'UTC') <= $${paPi + 1}::date
+          AND EXTRACT(YEAR  FROM ${DIA_SP}) = $${paPi + 2}
+          AND EXTRACT(MONTH FROM ${DIA_SP}) = $${paPi + 3}
+      `, [...modP, firstDayStr, lastDayStr, prevAno, prevMes]);
       pendAntBruto  = Number(paR.rows[0].bruto);
       pendAntModelo = Number(paR.rows[0].modelo);
+    }
+
+    // 4d. Já liberado neste mês proveniente do mês anterior
+    let jaLibAntBruto = 0, jaLibAntModelo = 0;
+    if (m) {
+      const jaPi = modP.length + 1;
+      const jaR  = await db.query(`
+        SELECT
+          COALESCE(SUM(t.valor_bruto),  0) AS bruto,
+          COALESCE(SUM(t.valor_modelo), 0) AS modelo
+        FROM transacoes_agency t ${BASE_JOIN}
+        WHERE ${BASE_COND}${modF}
+          AND t.gateway = 'stripe'
+          AND t.status = 'pago'
+          AND t.disponivel_em IS NOT NULL
+          AND t.disponivel_em <= NOW()
+          AND DATE(t.disponivel_em AT TIME ZONE 'UTC') >= $${jaPi}::date
+          AND DATE(t.disponivel_em AT TIME ZONE 'UTC') <= $${jaPi + 1}::date
+          AND EXTRACT(YEAR  FROM ${DIA_SP}) = $${jaPi + 2}
+          AND EXTRACT(MONTH FROM ${DIA_SP}) = $${jaPi + 3}
+      `, [...modP, firstDayStr, lastDayStr, prevAno, prevMes]);
+      jaLibAntBruto  = Number(jaR.rows[0].bruto);
+      jaLibAntModelo = Number(jaR.rows[0].modelo);
     }
 
     // 4b. Pendente Mês Atual com previsão este mês — compras deste mês, libera ainda neste mês
@@ -3733,6 +3757,8 @@ router.get("/ganhos-conciliacao", async (req, res) => {
         chargebacks:        Number(stripeR.rows[0].chargebacks),
         pend_ant_bruto:     pendAntBruto,
         pend_ant_modelo:    pendAntModelo,
+        ja_lib_ant_bruto:   jaLibAntBruto,
+        ja_lib_ant_modelo:  jaLibAntModelo,
         pend_atual_bruto:   pendAtualBruto,
         pend_atual_modelo:  pendAtualModelo,
         liberar_bruto:      liberarBruto,

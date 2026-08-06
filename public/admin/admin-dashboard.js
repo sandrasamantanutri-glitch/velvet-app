@@ -3964,6 +3964,8 @@ async function carregarGanhos() {
     $('kg-stripe-cb').textContent         = money(s.chargebacks);
     $('kg-pend-ant-bruto').textContent    = money(s.pend_ant_bruto);
     $('kg-pend-ant-modelo').textContent   = money(s.pend_ant_modelo);
+    $('kg-ja-lib-ant-bruto').textContent  = money(s.ja_lib_ant_bruto);
+    $('kg-ja-lib-ant-modelo').textContent = money(s.ja_lib_ant_modelo);
     $('kg-pend-atual-bruto').textContent  = money(s.pend_atual_bruto);
     $('kg-pend-atual-modelo').textContent = money(s.pend_atual_modelo);
     $('kg-liberar-bruto').textContent     = money(s.liberar_bruto);
