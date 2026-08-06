@@ -3921,7 +3921,7 @@ async function carregarTransacoesCartao(page) {
     }
 
     console.log('[cartao frontend] html length:', html.length);
-    var tbody = $('tableCartao') && $('tableCartao').querySelector('tbody');
+    var tbody = $('tableTransacoesCartao') && $('tableTransacoesCartao').querySelector('tbody');
     console.log('[cartao frontend] tbody:', tbody);
     if (tbody) tbody.innerHTML = html || emptyRow(8);
 
