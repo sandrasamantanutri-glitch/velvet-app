@@ -3770,13 +3770,15 @@ let _tabTransacoes = 'pix';
 
 function switchTabTransacoes(tab) {
   _tabTransacoes = tab;
-  const isPix = tab === 'pix';
-  $('panelPix').style.display    = isPix ? '' : 'none';
-  $('panelCartao').style.display = isPix ? 'none' : '';
-  $('btnTabPix').className    = 'btn btn-sm' + (isPix  ? ' btn-primary' : '');
-  $('btnTabCartao').className = 'btn btn-sm' + (!isPix ? ' btn-primary' : '');
-  if (isPix) carregarTransacoes(1);
-  else       carregarTransacoesCartao(1);
+  $('panelPix').style.display    = tab === 'pix'    ? '' : 'none';
+  $('panelCartao').style.display = tab === 'cartao' ? '' : 'none';
+  $('panelGanhos').style.display = tab === 'ganhos' ? '' : 'none';
+  $('btnTabPix').className    = 'btn btn-sm' + (tab === 'pix'    ? ' btn-primary' : '');
+  $('btnTabCartao').className = 'btn btn-sm' + (tab === 'cartao' ? ' btn-primary' : '');
+  $('btnTabGanhos').className = 'btn btn-sm' + (tab === 'ganhos' ? ' btn-primary' : '');
+  if (tab === 'pix')    carregarTransacoes(1);
+  else if (tab === 'cartao') carregarTransacoesCartao(1);
+  else                  carregarGanhos();
 }
 
 pageLoaders.transacoes = async function () {
@@ -3941,6 +3943,32 @@ async function carregarTransacoesCartao(page) {
 
     buildPagination('paginationCartao', page, data.totalPages || 1, 'carregarTransacoesCartao');
   } catch (err) { console.error('Erro transações cartão:', err); }
+}
+
+async function carregarGanhos() {
+  try {
+    var modelo = $('transacoesModelo').value;
+    var mes    = $('transacoesMes').value;
+    var qp = new URLSearchParams();
+    if (modelo) qp.set('modelo_id', modelo);
+    if (mes)    qp.set('mes', mes);
+
+    var data = await fetchJSON('/admin/dashboard/ganhos-conciliacao?' + qp);
+
+    $('kg-pix-bruto').textContent  = money(data.pix && data.pix.bruto);
+    $('kg-pix-modelo').textContent = money(data.pix && data.pix.modelo);
+    $('kg-pix-cb').textContent     = money(data.pix && data.pix.chargebacks);
+
+    $('kg-stripe-bruto').textContent       = money(data.stripe && data.stripe.bruto);
+    $('kg-stripe-modelo').textContent      = money(data.stripe && data.stripe.modelo);
+    $('kg-stripe-pend-bruto').textContent  = money(data.stripe && data.stripe.pendente_bruto);
+    $('kg-stripe-pend-modelo').textContent = money(data.stripe && data.stripe.pendente_modelo);
+    $('kg-stripe-cb').textContent          = money(data.stripe && data.stripe.chargebacks);
+    $('kg-liberar-bruto').textContent      = money(data.stripe && data.stripe.liberar_bruto);
+    $('kg-liberar-modelo').textContent     = money(data.stripe && data.stripe.liberar_modelo);
+
+    $('kg-ganhos-liberados').textContent = money(data.ganhos_liberados_modelo);
+  } catch (err) { console.error('Erro ganhos conciliação:', err); }
 }
 
 // ========== AUDITORIA STRIPE ==========

@@ -845,8 +845,9 @@
 
     <!-- Abas -->
     <div style="display:flex;gap:8px;margin-bottom:16px;">
-      <button id="btnTabPix" class="btn btn-primary btn-sm" onclick="switchTabTransacoes('pix')">Pagamentos PIX</button>
-      <button id="btnTabCartao" class="btn btn-sm" onclick="switchTabTransacoes('cartao')">Pagamentos Cartão</button>
+      <button id="btnTabPix"    class="btn btn-primary btn-sm" onclick="switchTabTransacoes('pix')">Pagamentos PIX</button>
+      <button id="btnTabCartao" class="btn btn-sm"             onclick="switchTabTransacoes('cartao')">Pagamentos Cartão</button>
+      <button id="btnTabGanhos" class="btn btn-sm"             onclick="switchTabTransacoes('ganhos')">Ganhos</button>
     </div>
 
     <!-- Painel PIX -->
@@ -887,6 +888,41 @@
         </table>
         <div class="pagination" id="paginationCartao"></div>
       </div>
+    </div>
+
+    <!-- Painel Ganhos (conciliação) -->
+    <div id="panelGanhos" style="display:none">
+
+      <p style="color:#888;font-size:12px;margin:0 0 12px">Conciliação do mês selecionado. Ganhos liberados fecham no último dia do mês — liberações após essa data contam para o mês seguinte.</p>
+
+      <h4 style="color:#6c3cf0;font-size:12px;text-transform:uppercase;letter-spacing:.06em;margin:0 0 8px">PIX</h4>
+      <div class="kpi-row">
+        <div class="kpi-card purple"><span>Bruto PIX</span><strong id="kg-pix-bruto">--</strong></div>
+        <div class="kpi-card blue">  <span>Modelo PIX</span><strong id="kg-pix-modelo">--</strong></div>
+        <div class="kpi-card red">   <span>Chargebacks PIX</span><strong id="kg-pix-cb">--</strong></div>
+      </div>
+
+      <h4 style="color:#6c3cf0;font-size:12px;text-transform:uppercase;letter-spacing:.06em;margin:16px 0 8px">Cartão (Stripe)</h4>
+      <div class="kpi-row">
+        <div class="kpi-card purple"><span>Bruto Cartão</span><strong id="kg-stripe-bruto">--</strong></div>
+        <div class="kpi-card blue">  <span>Modelo Cartão</span><strong id="kg-stripe-modelo">--</strong></div>
+        <div class="kpi-card orange"><span>Pendente Bruto</span><strong id="kg-stripe-pend-bruto">--</strong></div>
+        <div class="kpi-card muted"> <span>Pendente Modelo</span><strong id="kg-stripe-pend-modelo">--</strong></div>
+        <div class="kpi-card red">   <span>Chargebacks Cartão</span><strong id="kg-stripe-cb">--</strong></div>
+      </div>
+      <div class="kpi-row" style="margin-top:8px">
+        <div class="kpi-card green"><span>A Liberar no Mês — Bruto</span><strong id="kg-liberar-bruto">--</strong></div>
+        <div class="kpi-card green"><span>A Liberar no Mês — Modelo</span><strong id="kg-liberar-modelo">--</strong></div>
+      </div>
+
+      <h4 style="color:#6c3cf0;font-size:12px;text-transform:uppercase;letter-spacing:.06em;margin:20px 0 8px">Total a Pagar (dia 01)</h4>
+      <div class="kpi-row">
+        <div class="kpi-card purple" style="flex:0 0 auto;min-width:260px">
+          <span>Ganhos Liberados — Modelos</span>
+          <strong id="kg-ganhos-liberados" style="font-size:1.6em">--</strong>
+        </div>
+      </div>
+
     </div>
   </section>
 

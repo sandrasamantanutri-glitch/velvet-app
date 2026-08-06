@@ -3550,6 +3550,128 @@ router.get("/transacoes-agency-cartao", async (req, res) => {
   }
 });
 
+// ========== 13b. GANHOS — CONCILIAÇÃO ==========
+
+router.get("/ganhos-conciliacao", async (req, res) => {
+  try {
+    const modelo_id = req.query.modelo_id || null;
+    const m         = parseMes(req.query.mes);
+
+    const DIA_SP    = `DATE(t.created_at AT TIME ZONE 'America/Sao_Paulo')`;
+    const BASE_JOIN = `INNER JOIN modelos mo ON mo.id = t.modelo_id`;
+    const BASE_COND = `mo.verificada = true AND mo.ativo = true`;
+
+    // Filtro de modelo (reutilizado em todas as queries)
+    const modP = [];
+    let modF   = '';
+    if (modelo_id) { modF = ' AND t.modelo_id = $1'; modP.push(modelo_id); }
+
+    // Filtro de mês (por data de compra)
+    const mesP = [...modP];
+    let mesF   = '';
+    let pi     = modP.length + 1;
+    if (m) {
+      mesF = ` AND EXTRACT(YEAR  FROM ${DIA_SP}) = $${pi}
+               AND EXTRACT(MONTH FROM ${DIA_SP}) = $${pi + 1}`;
+      mesP.push(m.ano, m.mes);
+    }
+
+    // Datas do mês selecionado
+    const firstDayStr = m ? `${m.ano}-${String(m.mes).padStart(2,'0')}-01` : null;
+    const lastDayStr  = m
+      ? `${m.ano}-${String(m.mes).padStart(2,'0')}-${new Date(m.ano, m.mes, 0).getDate()}`
+      : null;
+
+    // 1. PIX — ganhos do mês (bruto + modelo)
+    const pixR = await db.query(`
+      SELECT
+        COALESCE(SUM(t.valor_bruto),  0) AS bruto,
+        COALESCE(SUM(t.valor_modelo), 0) AS modelo
+      FROM transacoes_agency t ${BASE_JOIN}
+      WHERE ${BASE_COND}${modF}
+        AND t.gateway != 'stripe'
+        AND t.status = 'pago'
+        ${mesF}
+    `, mesP);
+
+    // 2. PIX — chargebacks do mês (tabela separada)
+    const cbP = [...modP];
+    let cbF   = '';
+    let ci    = modP.length + 1;
+    const cbCond = modelo_id ? `modelo_id = $1` : '1=1';
+    if (m) {
+      cbF = ` AND EXTRACT(YEAR  FROM criado_em AT TIME ZONE 'America/Sao_Paulo') = $${ci}
+              AND EXTRACT(MONTH FROM criado_em AT TIME ZONE 'America/Sao_Paulo') = $${ci + 1}`;
+      cbP.push(m.ano, m.mes);
+    }
+    const cbR = await db.query(
+      `SELECT COALESCE(SUM(valor), 0) AS total FROM chargebacks WHERE ${cbCond}${cbF}`,
+      cbP
+    );
+
+    // 3. Stripe — ganhos do mês (bruto, modelo, pendentes, chargebacks)
+    const stripeR = await db.query(`
+      SELECT
+        COALESCE(SUM(CASE WHEN t.status = 'pago' THEN t.valor_bruto ELSE 0 END), 0) AS bruto,
+        COALESCE(SUM(CASE WHEN t.status = 'pago' THEN t.valor_modelo ELSE 0 END), 0) AS modelo,
+        COALESCE(SUM(CASE WHEN t.status = 'pago' AND t.disponivel_em IS NOT NULL AND t.disponivel_em >  NOW() THEN t.valor_bruto  ELSE 0 END), 0) AS pendente_bruto,
+        COALESCE(SUM(CASE WHEN t.status = 'pago' AND t.disponivel_em IS NOT NULL AND t.disponivel_em >  NOW() THEN t.valor_modelo ELSE 0 END), 0) AS pendente_modelo,
+        COALESCE(SUM(CASE WHEN t.status = 'chargeback' THEN t.valor_bruto ELSE 0 END), 0) AS chargebacks
+      FROM transacoes_agency t ${BASE_JOIN}
+      WHERE ${BASE_COND}${modF}
+        AND t.gateway = 'stripe'
+        AND t.status IN ('pago','chargeback')
+        ${mesF}
+    `, mesP);
+
+    // 4. A liberar no mês: disponivel_em cai no mês selecionado (qualquer data de compra)
+    let liberarBruto = 0, liberarModelo = 0;
+    if (m) {
+      const libPi = modP.length + 1;
+      const libR  = await db.query(`
+        SELECT
+          COALESCE(SUM(t.valor_bruto),  0) AS bruto,
+          COALESCE(SUM(t.valor_modelo), 0) AS modelo
+        FROM transacoes_agency t ${BASE_JOIN}
+        WHERE ${BASE_COND}${modF}
+          AND t.gateway = 'stripe'
+          AND t.status = 'pago'
+          AND t.disponivel_em IS NOT NULL
+          AND DATE(t.disponivel_em AT TIME ZONE 'UTC') >= $${libPi}::date
+          AND DATE(t.disponivel_em AT TIME ZONE 'UTC') <= $${libPi + 1}::date
+      `, [...modP, firstDayStr, lastDayStr]);
+      liberarBruto  = Number(libR.rows[0].bruto);
+      liberarModelo = Number(libR.rows[0].modelo);
+    }
+
+    // 5. Ganhos liberados totais (modelo) = PIX modelo + Stripe liberado no mês
+    //    PIX é imediato; Stripe conta o que tem disponivel_em no mês selecionado
+    const ganhosLiberadosModelo = Number(pixR.rows[0].modelo) + liberarModelo;
+
+    res.json({
+      pix: {
+        bruto:       Number(pixR.rows[0].bruto),
+        modelo:      Number(pixR.rows[0].modelo),
+        chargebacks: Number(cbR.rows[0].total),
+      },
+      stripe: {
+        bruto:           Number(stripeR.rows[0].bruto),
+        modelo:          Number(stripeR.rows[0].modelo),
+        pendente_bruto:  Number(stripeR.rows[0].pendente_bruto),
+        pendente_modelo: Number(stripeR.rows[0].pendente_modelo),
+        chargebacks:     Number(stripeR.rows[0].chargebacks),
+        liberar_bruto:   liberarBruto,
+        liberar_modelo:  liberarModelo,
+      },
+      ganhos_liberados_modelo: ganhosLiberadosModelo,
+    });
+
+  } catch (err) {
+    console.error("Erro ganhos conciliação:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
 // ========== 14. PASSWORD RESETS ==========
 
 router.post("/password-reset", authAdmin, async (req, res) => {
