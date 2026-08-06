@@ -3859,7 +3859,7 @@ function _renderLiberado(row) {
   var libs  = row.liberacoes || [];
   var parts = libs.map(function(lib) {
     var dt  = _isoToDDMM(lib.data);
-    var txt = libs.length > 1 ? (dt + ' (' + money(lib.bruto) + ')') : dt;
+    var txt = libs.length > 1 ? (dt + ' (' + money(lib.modelo) + ')') : dt;
     return '<span class="badge badge-success" style="font-size:11px;margin:1px">' + txt + '</span>';
   });
   if (Number(row.pendente_bruto) > 0) {

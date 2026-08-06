@@ -3717,6 +3717,7 @@ router.get("/ganhos-conciliacao", async (req, res) => {
     }
 
     // 6. Ganhos liberados totais (modelo) = PIX modelo + Stripe JÁ liberado neste mês
+    //    Cresce conforme o Stripe vai liberando ao longo do mês
     const ganhosLiberadosModelo = Number(pixR.rows[0].modelo) + jaLiberadoModelo;
 
     res.json({
