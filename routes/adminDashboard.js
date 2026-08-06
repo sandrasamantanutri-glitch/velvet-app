@@ -3519,10 +3519,12 @@ router.get("/transacoes-agency-cartao", async (req, res) => {
       FROM transacoes_agency t
       INNER JOIN modelos m ON m.id = t.modelo_id
       WHERE ${where}
-      GROUP BY dia_compra, t.tipo
-      ORDER BY dia_compra DESC, t.tipo
+      GROUP BY 1, 2
+      ORDER BY 1 DESC, 2
       LIMIT $${paramIdx} OFFSET $${paramIdx + 1}
     `, [...params, limit, offset]);
+
+    console.log('[cartao] rows count:', rows.length, '| totalLinhas:', totalLinhas, '| params:', params);
 
     // Liberações por (dia_compra, tipo, dia_lib) — só status=pago já liberadas
     const libRows = await db.query(`
