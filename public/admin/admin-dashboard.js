@@ -3867,6 +3867,7 @@ async function carregarTransacoesCartao(page) {
     $('kpi-cartao-pendente').textContent         = money(data.totais?.pendente_bruto);
     $('kpi-cartao-liberado-modelo').textContent  = money(data.totais?.liberado_modelo);
     $('kpi-cartao-pendente-modelo').textContent  = money(data.totais?.pendente_modelo);
+    $('kpi-cartao-chargebacks').textContent      = money(data.totais?.chargebacks);
 
     function isoToDDMM(s) {
       if (!s) return '—';
@@ -3890,19 +3891,22 @@ async function carregarTransacoesCartao(page) {
 
     const tbody = $('tableCartao').querySelector('tbody');
     tbody.innerHTML = (data.rows || []).map(r => {
-      const temPendente = Number(r.pendente_bruto) > 0;
-      const rowStyle    = temPendente ? 'background:linear-gradient(90deg,#fff 70%,#fffbeb 100%);' : '';
+      const temPendente   = Number(r.pendente_bruto) > 0;
+      const temChargeback = Number(r.chargeback_bruto) > 0;
+      const rowStyle      = temPendente ? 'background:linear-gradient(90deg,#fff 70%,#fffbeb 100%);' : '';
+      const tipoLabel     = r.tipo === 'assinatura' ? 'Assinatura' : r.tipo === 'midia' ? 'Mídia' : (r.tipo || '—');
       return `
         <tr style="${rowStyle}">
           <td>${isoToDDMM(r.dia_compra)}</td>
           <td>${modeloNome}</td>
+          <td><span class="badge" style="background:#e0e7ff;color:#3730a3;font-size:11px">${tipoLabel}</span></td>
           <td>${money(r.total_bruto)}</td>
           <td>${money(r.total_modelo)}</td>
-          <td>${r.total_chargebacks > 0 ? `<span class="badge badge-danger">${money(r.total_chargebacks)}</span>` : '—'}</td>
+          <td>${temChargeback ? `<span class="badge badge-danger">${money(r.chargeback_bruto)}</span>` : '—'}</td>
           <td>${temPendente ? `<span class="badge badge-warning">${money(r.pendente_bruto)}<br><small style="opacity:.7">${money(r.pendente_modelo)} modelo</small></span>` : '—'}</td>
           <td style="white-space:nowrap">${renderLiberado(r)}</td>
         </tr>`;
-    }).join('') || emptyRow(7);
+    }).join('') || emptyRow(8);
 
     buildPagination('paginationCartao', page, data.totalPages || 1, 'carregarTransacoesCartao');
   } catch (err) { console.error('Erro transações cartão:', err); }

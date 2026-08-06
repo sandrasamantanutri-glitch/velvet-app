@@ -3449,7 +3449,7 @@ router.get("/transacoes-agency", async (req, res) => {
   }
 });
 
-// ========== 13b. TRANSAÇÕES CARTÃO (Stripe, agrupadas por dia de compra) ==========
+// ========== 13b. TRANSAÇÕES CARTÃO (Stripe, agrupadas por dia de compra + tipo) ==========
 
 router.get("/transacoes-agency-cartao", async (req, res) => {
   try {
@@ -3464,8 +3464,8 @@ router.get("/transacoes-agency-cartao", async (req, res) => {
 
     const DIA = `DATE(t.created_at AT TIME ZONE 'America/Sao_Paulo')`;
 
-    // Apenas Stripe pago — filtra por mês de compra
-    let where = "m.verificada = true AND m.ativo = true AND t.gateway = 'stripe' AND t.status = 'pago'";
+    // Stripe — inclui pago e chargeback, filtra por mês de compra
+    let where = "m.verificada = true AND m.ativo = true AND t.gateway = 'stripe' AND t.status IN ('pago','chargeback')";
     const params = [];
     let pIdx = 1;
     if (modelo_id) { where += ` AND t.modelo_id = $${pIdx}`; params.push(modelo_id); pIdx++; }
@@ -3479,88 +3479,75 @@ router.get("/transacoes-agency-cartao", async (req, res) => {
     // Totais do período
     const totaisQ = await db.query(`
       SELECT
-        COALESCE(SUM(t.valor_bruto),  0) AS bruto,
-        COALESCE(SUM(t.valor_modelo), 0) AS modelo,
-        COALESCE(SUM(CASE WHEN t.disponivel_em IS NOT NULL AND t.disponivel_em > NOW() THEN t.valor_bruto  ELSE 0 END), 0) AS pendente_bruto,
-        COALESCE(SUM(CASE WHEN t.disponivel_em IS NOT NULL AND t.disponivel_em > NOW() THEN t.valor_modelo ELSE 0 END), 0) AS pendente_modelo,
-        COALESCE(SUM(CASE WHEN t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW() THEN t.valor_bruto  ELSE 0 END), 0) AS liberado_bruto,
-        COALESCE(SUM(CASE WHEN t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW() THEN t.valor_modelo ELSE 0 END), 0) AS liberado_modelo
+        COALESCE(SUM(CASE WHEN t.status = 'pago' THEN t.valor_bruto  ELSE 0 END), 0) AS bruto,
+        COALESCE(SUM(CASE WHEN t.status = 'pago' THEN t.valor_modelo ELSE 0 END), 0) AS modelo,
+        COALESCE(SUM(CASE WHEN t.status = 'pago' AND t.disponivel_em IS NOT NULL AND t.disponivel_em > NOW()  THEN t.valor_bruto  ELSE 0 END), 0) AS pendente_bruto,
+        COALESCE(SUM(CASE WHEN t.status = 'pago' AND t.disponivel_em IS NOT NULL AND t.disponivel_em > NOW()  THEN t.valor_modelo ELSE 0 END), 0) AS pendente_modelo,
+        COALESCE(SUM(CASE WHEN t.status = 'pago' AND t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW() THEN t.valor_bruto  ELSE 0 END), 0) AS liberado_bruto,
+        COALESCE(SUM(CASE WHEN t.status = 'pago' AND t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW() THEN t.valor_modelo ELSE 0 END), 0) AS liberado_modelo,
+        COALESCE(SUM(CASE WHEN t.status = 'chargeback' THEN t.valor_bruto ELSE 0 END), 0) AS chargebacks
       FROM transacoes_agency t
       INNER JOIN modelos m ON m.id = t.modelo_id
       WHERE ${where}
     `, params);
 
-    // Chargebacks do período
-    const cbWhere = ['1=1'];
-    const cbParams = [];
-    let cbIdx = 1;
-    if (modelo_id) { cbWhere.push(`modelo_id = $${cbIdx}`); cbParams.push(modelo_id); cbIdx++; }
-    if (m) {
-      cbWhere.push(`EXTRACT(YEAR  FROM criado_em AT TIME ZONE 'America/Sao_Paulo') = $${cbIdx}`);
-      cbWhere.push(`EXTRACT(MONTH FROM criado_em AT TIME ZONE 'America/Sao_Paulo') = $${cbIdx + 1}`);
-      cbParams.push(m.ano, m.mes);
-      cbIdx += 2;
-    }
-    const cbPerDiaQ = await db.query(
-      `SELECT TO_CHAR(DATE(criado_em AT TIME ZONE 'America/Sao_Paulo'), 'YYYY-MM-DD') AS dia,
-              COALESCE(SUM(valor), 0) AS total
-       FROM chargebacks WHERE ${cbWhere.join(' AND ')} GROUP BY 1`,
-      cbParams
-    );
-    const cbMap = {};
-    for (const r of cbPerDiaQ.rows) cbMap[r.dia] = Number(r.total);
-
-    // Contagem de dias distintos de compra
+    // Contagem de linhas distintas (dia_compra, tipo)
     const countQ = await db.query(`
-      SELECT COUNT(DISTINCT ${DIA}) AS count
-      FROM transacoes_agency t
-      INNER JOIN modelos m ON m.id = t.modelo_id
-      WHERE ${where}
+      SELECT COUNT(*) AS count FROM (
+        SELECT DISTINCT ${DIA}, t.tipo
+        FROM transacoes_agency t
+        INNER JOIN modelos m ON m.id = t.modelo_id
+        WHERE ${where}
+      ) sub
     `, params);
     const totalLinhas = Number(countQ.rows[0]?.count || 0);
 
     const paramIdx = params.length + 1;
 
-    // Linhas agrupadas por dia de compra
+    // Linhas agrupadas por (dia_compra, tipo)
     const { rows } = await db.query(`
       SELECT
-        TO_CHAR(${DIA}, 'YYYY-MM-DD') AS dia_compra,
-        COALESCE(SUM(t.valor_bruto),  0) AS total_bruto,
-        COALESCE(SUM(t.valor_modelo), 0) AS total_modelo,
-        COALESCE(SUM(CASE WHEN t.disponivel_em IS NOT NULL AND t.disponivel_em > NOW()  THEN t.valor_bruto  ELSE 0 END), 0) AS pendente_bruto,
-        COALESCE(SUM(CASE WHEN t.disponivel_em IS NOT NULL AND t.disponivel_em > NOW()  THEN t.valor_modelo ELSE 0 END), 0) AS pendente_modelo,
-        TO_CHAR(MIN(CASE WHEN t.disponivel_em IS NOT NULL AND t.disponivel_em > NOW()
+        TO_CHAR(${DIA}, 'YYYY-MM-DD')  AS dia_compra,
+        t.tipo,
+        COALESCE(SUM(CASE WHEN t.status = 'pago'       THEN t.valor_bruto  ELSE 0 END), 0) AS total_bruto,
+        COALESCE(SUM(CASE WHEN t.status = 'pago'       THEN t.valor_modelo ELSE 0 END), 0) AS total_modelo,
+        COALESCE(SUM(CASE WHEN t.status = 'chargeback' THEN t.valor_bruto  ELSE 0 END), 0) AS chargeback_bruto,
+        COALESCE(SUM(CASE WHEN t.status = 'pago' AND t.disponivel_em IS NOT NULL AND t.disponivel_em > NOW()  THEN t.valor_bruto  ELSE 0 END), 0) AS pendente_bruto,
+        COALESCE(SUM(CASE WHEN t.status = 'pago' AND t.disponivel_em IS NOT NULL AND t.disponivel_em > NOW()  THEN t.valor_modelo ELSE 0 END), 0) AS pendente_modelo,
+        TO_CHAR(MIN(CASE WHEN t.status = 'pago' AND t.disponivel_em IS NOT NULL AND t.disponivel_em > NOW()
           THEN DATE(t.disponivel_em AT TIME ZONE 'UTC') END), 'YYYY-MM-DD') AS proxima_liberacao
       FROM transacoes_agency t
       INNER JOIN modelos m ON m.id = t.modelo_id
       WHERE ${where}
-      GROUP BY dia_compra
-      ORDER BY dia_compra DESC
+      GROUP BY dia_compra, t.tipo
+      ORDER BY dia_compra DESC, t.tipo
       LIMIT $${paramIdx} OFFSET $${paramIdx + 1}
     `, [...params, limit, offset]);
 
-    // Datas de liberação por dia de compra (só as já liberadas)
+    // Liberações por (dia_compra, tipo, dia_lib) — só status=pago já liberadas
     const libRows = await db.query(`
       SELECT
         TO_CHAR(DATE(t.created_at AT TIME ZONE 'America/Sao_Paulo'), 'YYYY-MM-DD') AS dia_compra,
-        TO_CHAR(DATE(t.disponivel_em AT TIME ZONE 'UTC'), 'YYYY-MM-DD') AS dia_lib,
+        t.tipo,
+        TO_CHAR(DATE(t.disponivel_em AT TIME ZONE 'UTC'), 'YYYY-MM-DD')            AS dia_lib,
         COALESCE(SUM(t.valor_bruto),  0) AS lib_bruto,
         COALESCE(SUM(t.valor_modelo), 0) AS lib_modelo
       FROM transacoes_agency t
       INNER JOIN modelos m ON m.id = t.modelo_id
-      WHERE ${where} AND t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()
-      GROUP BY 1, 2
-      ORDER BY 1 DESC, 2
+      WHERE ${where} AND t.status = 'pago' AND t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()
+      GROUP BY 1, 2, 3
+      ORDER BY 1 DESC, 2, 3
     `, params);
 
+    // libMap keyed por "dia_compra:tipo"
     const libMap = {};
     for (const r of libRows.rows) {
-      if (!libMap[r.dia_compra]) libMap[r.dia_compra] = [];
-      libMap[r.dia_compra].push({ data: r.dia_lib, bruto: Number(r.lib_bruto), modelo: Number(r.lib_modelo) });
+      const key = `${r.dia_compra}:${r.tipo}`;
+      if (!libMap[key]) libMap[key] = [];
+      libMap[key].push({ data: r.dia_lib, bruto: Number(r.lib_bruto), modelo: Number(r.lib_modelo) });
     }
     for (const row of rows) {
-      row.liberacoes = libMap[row.dia_compra] || [];
-      row.total_chargebacks = cbMap[row.dia_compra] || 0;
+      row.liberacoes = libMap[`${row.dia_compra}:${row.tipo}`] || [];
     }
 
     const t0 = totaisQ.rows[0];
@@ -3575,6 +3562,7 @@ router.get("/transacoes-agency-cartao", async (req, res) => {
         pendente_modelo: Number(t0.pendente_modelo),
         liberado_bruto:  Number(t0.liberado_bruto),
         liberado_modelo: Number(t0.liberado_modelo),
+        chargebacks:     Number(t0.chargebacks),
       }
     });
   } catch (err) {
