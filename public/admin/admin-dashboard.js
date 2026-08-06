@@ -3766,12 +3766,25 @@ function recarregarAbaFinanceiroAtual() {
 
 // ========== 12. TRANSAÇÕES (por modelo) ==========
 
+let _tabTransacoes = 'pix';
+
+function switchTabTransacoes(tab) {
+  _tabTransacoes = tab;
+  const isPix = tab === 'pix';
+  $('panelPix').style.display    = isPix ? '' : 'none';
+  $('panelCartao').style.display = isPix ? 'none' : '';
+  $('btnTabPix').className    = 'btn btn-sm' + (isPix  ? ' btn-primary' : '');
+  $('btnTabCartao').className = 'btn btn-sm' + (!isPix ? ' btn-primary' : '');
+  if (isPix) carregarTransacoes(1);
+  else       carregarTransacoesCartao(1);
+}
+
 pageLoaders.transacoes = async function () {
   populateMonthSelect($('transacoesMes'));
   await carregarModelosSelect('transacoesModelo');
-  carregarTransacoes(1);
-  $('transacoesModelo').onchange = () => carregarTransacoes(1);
-  $('transacoesMes').onchange = () => carregarTransacoes(1);
+  switchTabTransacoes('pix');
+  $('transacoesModelo').onchange = () => switchTabTransacoes(_tabTransacoes);
+  $('transacoesMes').onchange    = () => switchTabTransacoes(_tabTransacoes);
 };
 
 async function carregarModelosSelect(selectId) {
@@ -3832,6 +3845,67 @@ async function carregarTransacoes(page) {
 
     buildPagination('paginationTransacoes', page, data.totalPages || 1, 'carregarTransacoes');
   } catch (err) { console.error('Erro transações:', err); }
+}
+
+async function carregarTransacoesCartao(page) {
+  try {
+    const modeloSelect = $('transacoesModelo');
+    const modelo    = modeloSelect.value;
+    const modeloNome = modelo
+      ? (modeloSelect.options[modeloSelect.selectedIndex]?.textContent || ('#' + modelo))
+      : 'Acumulado (todas)';
+    const mes = $('transacoesMes').value;
+    const params = new URLSearchParams({ page, limit: 20 });
+    if (modelo) params.set('modelo_id', modelo);
+    if (mes)    params.set('mes', mes);
+
+    const data = await fetchJSON('/admin/dashboard/transacoes-agency-cartao?' + params);
+
+    $('kpi-cartao-bruto').textContent            = money(data.totais?.bruto);
+    $('kpi-cartao-modelo').textContent           = money(data.totais?.modelo);
+    $('kpi-cartao-liberado').textContent         = money(data.totais?.liberado_bruto);
+    $('kpi-cartao-pendente').textContent         = money(data.totais?.pendente_bruto);
+    $('kpi-cartao-liberado-modelo').textContent  = money(data.totais?.liberado_modelo);
+    $('kpi-cartao-pendente-modelo').textContent  = money(data.totais?.pendente_modelo);
+
+    function isoToDDMM(s) {
+      if (!s) return '—';
+      const p = String(s).split('T')[0].split('-');
+      return p.length === 3 ? `${p[2]}/${p[1]}` : s;
+    }
+
+    function renderLiberado(row) {
+      const libs = row.liberacoes || [];
+      const partes = libs.map(lib => {
+        const dt  = isoToDDMM(lib.data);
+        const txt = libs.length > 1 ? `${dt} (${money(lib.bruto)})` : dt;
+        return `<span class="badge badge-success" style="font-size:11px;margin:1px">${txt}</span>`;
+      });
+      if (Number(row.pendente_bruto) > 0) {
+        const dt = row.proxima_liberacao ? isoToDDMM(row.proxima_liberacao) : '?';
+        partes.push(`<span class="badge badge-warning" style="font-size:11px;margin:1px">libera ${dt}</span>`);
+      }
+      return partes.length ? partes.join(' ') : '—';
+    }
+
+    const tbody = $('tableCartao').querySelector('tbody');
+    tbody.innerHTML = (data.rows || []).map(r => {
+      const temPendente = Number(r.pendente_bruto) > 0;
+      const rowStyle    = temPendente ? 'background:linear-gradient(90deg,#fff 70%,#fffbeb 100%);' : '';
+      return `
+        <tr style="${rowStyle}">
+          <td>${isoToDDMM(r.dia_compra)}</td>
+          <td>${modeloNome}</td>
+          <td>${money(r.total_bruto)}</td>
+          <td>${money(r.total_modelo)}</td>
+          <td>${r.total_chargebacks > 0 ? `<span class="badge badge-danger">${money(r.total_chargebacks)}</span>` : '—'}</td>
+          <td>${temPendente ? `<span class="badge badge-warning">${money(r.pendente_bruto)}<br><small style="opacity:.7">${money(r.pendente_modelo)} modelo</small></span>` : '—'}</td>
+          <td style="white-space:nowrap">${renderLiberado(r)}</td>
+        </tr>`;
+    }).join('') || emptyRow(7);
+
+    buildPagination('paginationCartao', page, data.totalPages || 1, 'carregarTransacoesCartao');
+  } catch (err) { console.error('Erro transações cartão:', err); }
 }
 
 // ========== AUDITORIA STRIPE ==========
