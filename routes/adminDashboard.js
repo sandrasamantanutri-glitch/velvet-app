@@ -3617,7 +3617,7 @@ router.get("/ganhos-conciliacao", async (req, res) => {
         COALESCE(SUM(CASE WHEN t.status = 'pago' THEN t.valor_modelo ELSE 0 END), 0) AS modelo,
         COALESCE(SUM(CASE WHEN t.status = 'pago' AND t.disponivel_em IS NOT NULL AND t.disponivel_em >  NOW() THEN t.valor_bruto  ELSE 0 END), 0) AS pendente_bruto,
         COALESCE(SUM(CASE WHEN t.status = 'pago' AND t.disponivel_em IS NOT NULL AND t.disponivel_em >  NOW() THEN t.valor_modelo ELSE 0 END), 0) AS pendente_modelo,
-        COALESCE(SUM(CASE WHEN t.status = 'chargeback' THEN t.valor_bruto ELSE 0 END), 0) AS chargebacks
+        COALESCE(SUM(CASE WHEN t.status = 'chargeback' THEN t.valor_modelo ELSE 0 END), 0) AS chargebacks
       FROM transacoes_agency t ${BASE_JOIN}
       WHERE ${BASE_COND}${modF}
         AND t.gateway = 'stripe'

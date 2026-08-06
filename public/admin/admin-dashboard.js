@@ -3933,7 +3933,6 @@ async function carregarTransacoesCartao(page) {
       '<td colspan="2" style="text-align:right;color:#6c3cf0">Total página</td>' +
       '<td>' + money(sumBruto)  + '</td>' +
       '<td>' + money(sumModelo) + '</td>' +
-      '<td>' + (sumCb  > 0 ? money(sumCb)  : '—') + '</td>' +
       '<td>' + (sumPend > 0 ? money(sumPend) : '—') + '</td>' +
       '<td></td>' +
       '</tr>';
