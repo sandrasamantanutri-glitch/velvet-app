@@ -3959,13 +3959,16 @@ async function carregarGanhos() {
     $('kg-pix-modelo').textContent = money(data.pix && data.pix.modelo);
     $('kg-pix-cb').textContent     = money(data.pix && data.pix.chargebacks);
 
-    $('kg-stripe-bruto').textContent       = money(data.stripe && data.stripe.bruto);
-    $('kg-stripe-modelo').textContent      = money(data.stripe && data.stripe.modelo);
-    $('kg-stripe-pend-bruto').textContent  = money(data.stripe && data.stripe.pendente_bruto);
-    $('kg-stripe-pend-modelo').textContent = money(data.stripe && data.stripe.pendente_modelo);
-    $('kg-stripe-cb').textContent          = money(data.stripe && data.stripe.chargebacks);
-    $('kg-liberar-bruto').textContent      = money(data.stripe && data.stripe.liberar_bruto);
-    $('kg-liberar-modelo').textContent     = money(data.stripe && data.stripe.liberar_modelo);
+    var s = data.stripe || {};
+    $('kg-stripe-bruto').textContent      = money(s.bruto);
+    $('kg-stripe-modelo').textContent     = money(s.modelo);
+    $('kg-stripe-cb').textContent         = money(s.chargebacks);
+    $('kg-pend-ant-bruto').textContent    = money(s.pend_ant_bruto);
+    $('kg-pend-ant-modelo').textContent   = money(s.pend_ant_modelo);
+    $('kg-pend-atual-bruto').textContent  = money(s.pend_atual_bruto);
+    $('kg-pend-atual-modelo').textContent = money(s.pend_atual_modelo);
+    $('kg-liberar-bruto').textContent     = money(s.liberar_bruto);
+    $('kg-liberar-modelo').textContent    = money(s.liberar_modelo);
 
     $('kg-ganhos-liberados').textContent = money(data.ganhos_liberados_modelo);
   } catch (err) { console.error('Erro ganhos conciliação:', err); }

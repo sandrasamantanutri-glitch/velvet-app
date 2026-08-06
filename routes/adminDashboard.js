@@ -3624,11 +3624,18 @@ router.get("/ganhos-conciliacao", async (req, res) => {
         ${mesF}
     `, mesP);
 
-    // 4. A liberar no mês: disponivel_em cai no mês selecionado (qualquer data de compra)
-    let liberarBruto = 0, liberarModelo = 0;
+    // Mês anterior ao selecionado
+    let prevAno = null, prevMes = null;
     if (m) {
-      const libPi = modP.length + 1;
-      const libR  = await db.query(`
+      prevMes = m.mes === 1 ? 12 : m.mes - 1;
+      prevAno = m.mes === 1 ? m.ano - 1 : m.ano;
+    }
+
+    // 4a. Pendente Mês Anterior — compras do mês passado ainda não liberadas
+    let pendAntBruto = 0, pendAntModelo = 0;
+    if (m) {
+      const paPi = modP.length + 1;
+      const paR  = await db.query(`
         SELECT
           COALESCE(SUM(t.valor_bruto),  0) AS bruto,
           COALESCE(SUM(t.valor_modelo), 0) AS modelo
@@ -3637,16 +3644,80 @@ router.get("/ganhos-conciliacao", async (req, res) => {
           AND t.gateway = 'stripe'
           AND t.status = 'pago'
           AND t.disponivel_em IS NOT NULL
-          AND DATE(t.disponivel_em AT TIME ZONE 'UTC') >= $${libPi}::date
-          AND DATE(t.disponivel_em AT TIME ZONE 'UTC') <= $${libPi + 1}::date
-      `, [...modP, firstDayStr, lastDayStr]);
-      liberarBruto  = Number(libR.rows[0].bruto);
-      liberarModelo = Number(libR.rows[0].modelo);
+          AND t.disponivel_em > NOW()
+          AND EXTRACT(YEAR  FROM ${DIA_SP}) = $${paPi}
+          AND EXTRACT(MONTH FROM ${DIA_SP}) = $${paPi + 1}
+      `, [...modP, prevAno, prevMes]);
+      pendAntBruto  = Number(paR.rows[0].bruto);
+      pendAntModelo = Number(paR.rows[0].modelo);
     }
 
-    // 5. Ganhos liberados totais (modelo) = PIX modelo + Stripe liberado no mês
-    //    PIX é imediato; Stripe conta o que tem disponivel_em no mês selecionado
-    const ganhosLiberadosModelo = Number(pixR.rows[0].modelo) + liberarModelo;
+    // 4b. Pendente Mês Atual com previsão este mês — compras deste mês, libera ainda neste mês
+    let pendAtualBruto = 0, pendAtualModelo = 0;
+    if (m) {
+      const pbPi = modP.length + 1;
+      const pbR  = await db.query(`
+        SELECT
+          COALESCE(SUM(t.valor_bruto),  0) AS bruto,
+          COALESCE(SUM(t.valor_modelo), 0) AS modelo
+        FROM transacoes_agency t ${BASE_JOIN}
+        WHERE ${BASE_COND}${modF}
+          AND t.gateway = 'stripe'
+          AND t.status = 'pago'
+          AND t.disponivel_em IS NOT NULL
+          AND t.disponivel_em > NOW()
+          AND DATE(t.disponivel_em AT TIME ZONE 'UTC') <= $${pbPi}::date
+          AND EXTRACT(YEAR  FROM ${DIA_SP}) = $${pbPi + 1}
+          AND EXTRACT(MONTH FROM ${DIA_SP}) = $${pbPi + 2}
+      `, [...modP, lastDayStr, m.ano, m.mes]);
+      pendAtualBruto  = Number(pbR.rows[0].bruto);
+      pendAtualModelo = Number(pbR.rows[0].modelo);
+    }
+
+    // 4c. Valores a liberar no mês — qualquer compra, disponivel_em neste mês, ainda não liberado
+    let liberarBruto = 0, liberarModelo = 0;
+    if (m) {
+      const lcPi = modP.length + 1;
+      const lcR  = await db.query(`
+        SELECT
+          COALESCE(SUM(t.valor_bruto),  0) AS bruto,
+          COALESCE(SUM(t.valor_modelo), 0) AS modelo
+        FROM transacoes_agency t ${BASE_JOIN}
+        WHERE ${BASE_COND}${modF}
+          AND t.gateway = 'stripe'
+          AND t.status = 'pago'
+          AND t.disponivel_em IS NOT NULL
+          AND t.disponivel_em > NOW()
+          AND DATE(t.disponivel_em AT TIME ZONE 'UTC') >= $${lcPi}::date
+          AND DATE(t.disponivel_em AT TIME ZONE 'UTC') <= $${lcPi + 1}::date
+      `, [...modP, firstDayStr, lastDayStr]);
+      liberarBruto  = Number(lcR.rows[0].bruto);
+      liberarModelo = Number(lcR.rows[0].modelo);
+    }
+
+    // 5. Stripe já liberado neste mês — disponivel_em neste mês E já passou
+    let jaLiberadoBruto = 0, jaLiberadoModelo = 0;
+    if (m) {
+      const jlPi = modP.length + 1;
+      const jlR  = await db.query(`
+        SELECT
+          COALESCE(SUM(t.valor_bruto),  0) AS bruto,
+          COALESCE(SUM(t.valor_modelo), 0) AS modelo
+        FROM transacoes_agency t ${BASE_JOIN}
+        WHERE ${BASE_COND}${modF}
+          AND t.gateway = 'stripe'
+          AND t.status = 'pago'
+          AND t.disponivel_em IS NOT NULL
+          AND t.disponivel_em <= NOW()
+          AND DATE(t.disponivel_em AT TIME ZONE 'UTC') >= $${jlPi}::date
+          AND DATE(t.disponivel_em AT TIME ZONE 'UTC') <= $${jlPi + 1}::date
+      `, [...modP, firstDayStr, lastDayStr]);
+      jaLiberadoBruto  = Number(jlR.rows[0].bruto);
+      jaLiberadoModelo = Number(jlR.rows[0].modelo);
+    }
+
+    // 6. Ganhos liberados totais (modelo) = PIX modelo + Stripe JÁ liberado neste mês
+    const ganhosLiberadosModelo = Number(pixR.rows[0].modelo) + jaLiberadoModelo;
 
     res.json({
       pix: {
@@ -3655,13 +3726,17 @@ router.get("/ganhos-conciliacao", async (req, res) => {
         chargebacks: Number(cbR.rows[0].total),
       },
       stripe: {
-        bruto:           Number(stripeR.rows[0].bruto),
-        modelo:          Number(stripeR.rows[0].modelo),
-        pendente_bruto:  Number(stripeR.rows[0].pendente_bruto),
-        pendente_modelo: Number(stripeR.rows[0].pendente_modelo),
-        chargebacks:     Number(stripeR.rows[0].chargebacks),
-        liberar_bruto:   liberarBruto,
-        liberar_modelo:  liberarModelo,
+        bruto:              Number(stripeR.rows[0].bruto),
+        modelo:             Number(stripeR.rows[0].modelo),
+        chargebacks:        Number(stripeR.rows[0].chargebacks),
+        pend_ant_bruto:     pendAntBruto,
+        pend_ant_modelo:    pendAntModelo,
+        pend_atual_bruto:   pendAtualBruto,
+        pend_atual_modelo:  pendAtualModelo,
+        liberar_bruto:      liberarBruto,
+        liberar_modelo:     liberarModelo,
+        ja_liberado_bruto:  jaLiberadoBruto,
+        ja_liberado_modelo: jaLiberadoModelo,
       },
       ganhos_liberados_modelo: ganhosLiberadosModelo,
     });
