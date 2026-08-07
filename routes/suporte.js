@@ -401,16 +401,11 @@ router.patch("/admin/conversa/:id/fechar", auth, authAdmin, async (req, res) => 
   }
 });
 
-// ─── ADMIN: apaga conversas fechadas já lidas ────────────────────────────────
+// ─── ADMIN: apaga todas as conversas fechadas ───────────────────────────────
 router.delete("/admin/conversas/fechadas", auth, authAdmin, async (req, res) => {
   try {
     const { rowCount } = await db.query(`
-      DELETE FROM suporte_conversas
-      WHERE status = 'fechada'
-      AND id NOT IN (
-        SELECT DISTINCT conversa_id FROM suporte_mensagens
-        WHERE lida = false AND remetente = 'cliente'
-      )
+      DELETE FROM suporte_conversas WHERE status = 'fechada'
     `);
     res.json({ ok: true, removidas: rowCount });
   } catch (err) {

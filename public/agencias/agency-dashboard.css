@@ -268,7 +268,8 @@ body {
   font-family: inherit;
 }
 
-.admin-badge {
+.admin-badge,
+.agency-badge {
   background: var(--purple-soft);
   color: var(--purple);
   padding: 6px 14px;
@@ -1018,7 +1019,7 @@ canvas {
    RESPONSIVE
    ======================================== */
 
-/* --- Tablet (≤900px) --- */
+/* --- Tablet (≤ 900px) --- */
 
 @media (max-width: 900px) {
   .sidebar {
@@ -1032,31 +1033,37 @@ canvas {
   .main {
     margin-left: var(--sidebar-collapsed);
   }
+  .topbar {
+    padding: 0 20px;
+  }
+  .page {
+    padding: 20px;
+  }
   .grid-2 {
     grid-template-columns: 1fr;
   }
-  .global-search input {
-    width: 140px;
+  /* KPI 2×2 em tablet */
+  .kpi-row {
+    grid-template-columns: repeat(2, 1fr);
   }
   .modal { width: 90%; }
   .modal-lg { width: 90%; }
 }
 
-/* --- Mobile (≤640px) --- */
+/* --- Mobile (≤ 640px) --- */
 
 @media (max-width: 640px) {
-  /* Sidebar fica oculta e abre como overlay */
+  /* Sidebar oculta — abre como overlay ao clicar no hamburger */
   .sidebar {
     transform: translateX(-100%);
     width: var(--sidebar-w) !important;
+    transition: transform var(--transition);
   }
-
   .sidebar .logo-text,
   .sidebar .nav-item span,
   .sidebar .btn-logout span {
     display: unset;
   }
-
   .sidebar.mobile-open {
     transform: translateX(0);
   }
@@ -1066,134 +1073,138 @@ canvas {
     margin-left: 0 !important;
   }
 
-  /* Topbar mobile */
+  /* Topbar */
   .topbar {
     padding: 0 14px;
     gap: 8px;
   }
-
   .topbar h2 {
     font-size: 16px;
     flex: 1;
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-
   .topbar-menu-btn {
     display: flex;
   }
-
   .global-search {
     display: none;
   }
-
-  .admin-badge {
-    padding: 5px 10px;
+  .admin-badge,
+  .agency-badge {
+    padding: 4px 10px;
     font-size: 11px;
   }
 
   /* Página */
   .page {
-    padding: 16px 14px;
+    padding: 14px 12px;
   }
 
-  /* KPI cards: 2 colunas */
+  /* KPI 2×2 */
   .kpi-row {
     grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
+    gap: 10px;
+    margin-bottom: 16px;
   }
-
   .kpi-card {
-    padding: 14px;
+    padding: 14px 12px;
   }
-
+  .kpi-card span {
+    font-size: 11px;
+  }
   .kpi-card strong {
-    font-size: 20px;
+    font-size: 18px;
   }
 
-  /* Cards */
+  /* Cards — overflow:visible para permitir scroll horizontal das tabelas */
   .card {
-    padding: 16px;
+    padding: 14px 12px;
+    overflow: visible;
+    margin-bottom: 14px;
+  }
+  .card h3 {
+    font-size: 14px;
+    margin-bottom: 12px;
   }
 
-  /* Tabelas com scroll horizontal */
-  .card > .table,
-  .table-wrapper .table {
-    min-width: 480px;
-  }
-
-  /* Wraps tables automatically */
+  /* Tabelas: scroll horizontal dentro do card */
   .card > .table {
     display: block;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+    min-width: 480px;
+  }
+  .table-wrapper .table {
+    min-width: 480px;
+  }
+
+  /* Grid de 2 colunas para canvases */
+  .grid-2 {
+    grid-template-columns: 1fr;
+    gap: 14px;
   }
 
   /* Page actions empilhadas */
   .page-actions {
     flex-direction: column;
     align-items: stretch;
+    gap: 8px;
+    margin-bottom: 14px;
   }
-
   .page-actions .btn,
   .page-actions .input-select,
   .page-actions .input-search {
     width: 100%;
     justify-content: center;
+    box-sizing: border-box;
   }
-
   .input-search {
     min-width: unset;
     width: 100%;
   }
 
-  /* Tabs scroll */
+  /* Tabs */
   .tabs {
     padding: 3px;
+    flex-wrap: nowrap;
   }
-
   .tab {
-    padding: 7px 14px;
+    padding: 7px 12px;
     font-size: 12px;
   }
 
-  /* Modal */
-  .modal {
+  /* Formulário chat modal */
+  .modal-box-form-chat {
+    padding: 16px;
     width: 100% !important;
     max-width: 100%;
-    max-height: 95vh;
     top: auto;
     bottom: 0;
     left: 0;
     right: 0;
     transform: none;
     border-radius: 20px 20px 0 0;
-    padding: 16px;
+    max-height: 92vh;
   }
-
-  .modal-header,
-  .modal-body,
-  .modal-footer {
-    padding: 14px;
-  }
-
-  .modal-actions {
+  .form-chat-row {
     flex-direction: column;
+    gap: 2px;
+  }
+  .form-chat-label {
+    flex: unset;
+    font-weight: 600;
   }
 
-  .modal-actions .btn {
-    width: 100%;
-    justify-content: center;
+  /* Copy field — empilhado */
+  .copy-field {
+    flex-direction: column;
+    align-items: stretch;
   }
-
-  .modal-footer {
-    flex-direction: column-reverse;
-  }
-
-  .modal-footer .btn {
-    width: 100%;
-    justify-content: center;
+  .copy-field button {
+    text-align: center;
   }
 
   /* Grids de verificação */
@@ -1202,11 +1213,45 @@ canvas {
     grid-template-columns: 1fr;
   }
 
+  /* Modal — sheet bottom */
+  .modal {
+    width: 100% !important;
+    max-width: 100%;
+    max-height: 92vh;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    transform: none;
+    border-radius: 20px 20px 0 0;
+    padding: 16px;
+  }
+  .modal-header,
+  .modal-body,
+  .modal-footer {
+    padding: 12px;
+  }
+  .modal-actions {
+    flex-direction: column;
+  }
+  .modal-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+  .modal-footer {
+    flex-direction: column-reverse;
+    gap: 8px;
+  }
+  .modal-footer .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
   /* Toast */
   .toast {
-    left: 14px;
-    right: 14px;
-    bottom: 16px;
+    left: 12px;
+    right: 12px;
+    bottom: 14px;
     max-width: unset;
   }
 
@@ -1216,19 +1261,31 @@ canvas {
     height: 30px;
     font-size: 12px;
   }
+
+  /* Media grid: 2 colunas em mobile */
+  .grid-media {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* Ranking chart altura reduzida */
+  #chartRanking {
+    max-height: 220px !important;
+  }
 }
 
-/* --- Telas muito pequenas (≤380px) --- */
+/* --- Ecrãs muito pequenos (≤ 390px) --- */
 
-@media (max-width: 380px) {
+@media (max-width: 390px) {
   .kpi-row {
     grid-template-columns: 1fr;
   }
-
+  .kpi-card strong {
+    font-size: 20px;
+  }
   .topbar h2 {
     font-size: 14px;
   }
-
+  .agency-badge,
   .admin-badge {
     display: none;
   }
