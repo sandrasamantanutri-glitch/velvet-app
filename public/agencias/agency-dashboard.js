@@ -1197,19 +1197,27 @@ async function carregarTransacoes() {
 
     const fmtDia = d => { const s = String(d||'').substring(0,10); const [y,mo,dd]=s.split('-'); return dd&&mo&&y?`${dd}/${mo}/${y}`:''; };
 
-    function renderLiberado(row) {
+    function renderDesbloqueados(row) {
       const libs = row.liberacoes || [];
-      const parts = libs.map(lib => {
-        const dt  = fmtDia(lib.data);
-        const txt = libs.length > 1 ? `${dt} (${money(lib.modelo)})` : dt;
-        return `<span class="badge badge-success" style="font-size:11px;margin:1px 2px">${txt}</span>`;
-      });
+      if (!libs.length) return '<span style="opacity:0.35">—</span>';
+      return libs.map(lib => {
+        const dt       = fmtDia(lib.data);
+        const total    = Number(lib.modelo || 0) + Number(lib.agencia || 0);
+        const libMod   = Number(lib.modelo  || 0);
+        const libAgen  = Number(lib.agencia || 0);
+        return `<div style="margin-bottom:4px">
+          <span class="badge badge-success" style="font-size:11px">${dt}</span>
+          <span style="font-size:12px;margin-left:4px">${money(total)}</span>
+          <br><small style="opacity:.65;font-size:11px">${money(libMod)} modelo · ${money(libAgen)} ag.</small>
+        </div>`;
+      }).join('');
+    }
+
+    function renderPrevisao(row) {
       const pendMod = Number(row.pendente_modelo || 0);
-      if (pendMod > 0) {
-        const dt2 = row.proxima_liberacao ? fmtDia(row.proxima_liberacao) : '?';
-        parts.push(`<span class="badge badge-warning" style="font-size:11px;margin:1px 2px">libera ${dt2}</span>`);
-      }
-      return parts.length ? parts.join(' ') : '<span style="opacity:0.35">—</span>';
+      if (pendMod <= 0) return '<span style="opacity:0.35">—</span>';
+      const dt = row.proxima_liberacao ? fmtDia(row.proxima_liberacao) : '?';
+      return `<span class="badge badge-warning" style="font-size:11px">libera ${dt}</span>`;
     }
 
     function renderPendentes(row) {
@@ -1227,8 +1235,9 @@ async function carregarTransacoes() {
       <td>${money(r.ganhos_modelo)}</td>
       <td>${money(r.ganhos_agencia)}</td>
       <td>${renderPendentes(r)}</td>
-      <td>${renderLiberado(r)}</td>
-    </tr>`).join('') || `<tr><td colspan="5" style="text-align:center;opacity:0.5">Sem transações</td></tr>`;
+      <td>${renderDesbloqueados(r)}</td>
+      <td>${renderPrevisao(r)}</td>
+    </tr>`).join('') || `<tr><td colspan="6" style="text-align:center;opacity:0.5">Sem transações</td></tr>`;
 
     _txTotalPages = data.totalPages || 1;
     renderTxPagination();
