@@ -2261,19 +2261,15 @@ router.get("/transacoes", authAgencia, async (req, res) => {
       `, totaisParams),
 
       db.query(`
-        SELECT COUNT(*) AS count FROM (
-          SELECT DISTINCT (${DIA}) AS dia, t.modelo_id
-          FROM transacoes_agency t
-          JOIN modelos m ON m.id = t.modelo_id
-          WHERE ${whereRows}
-        ) sub
+        SELECT COUNT(DISTINCT (${DIA})) AS count
+        FROM transacoes_agency t
+        JOIN modelos m ON m.id = t.modelo_id
+        WHERE ${whereRows}
       `, rowsParams),
 
       db.query(`
         SELECT
           TO_CHAR((${DIA}), 'YYYY-MM-DD') AS dia,
-          t.modelo_id,
-          m.nome AS modelo_nome,
           COALESCE(SUM(CASE WHEN t.status='pago' AND ${DISP}     THEN t.valor_modelo ELSE 0 END), 0) AS ganhos_modelo,
           COALESCE(SUM(CASE WHEN t.status='pago' AND ${DISP}     THEN t.agency_fee   ELSE 0 END), 0) AS ganhos_agencia,
           COALESCE(SUM(CASE WHEN t.status='pago' AND NOT ${DISP} THEN t.valor_modelo ELSE 0 END), 0) AS pendente_modelo,
@@ -2283,15 +2279,14 @@ router.get("/transacoes", authAgencia, async (req, res) => {
         FROM transacoes_agency t
         JOIN modelos m ON m.id = t.modelo_id
         WHERE ${whereRows}
-        GROUP BY (${DIA}), t.modelo_id, m.nome
-        ORDER BY dia DESC, m.nome
+        GROUP BY (${DIA})
+        ORDER BY dia DESC
         LIMIT $${limitIdx} OFFSET $${offsetIdx}
       `, [...rowsParams, limit, offset]),
 
       db.query(`
         SELECT
           TO_CHAR(DATE(t.created_at AT TIME ZONE 'America/Sao_Paulo'), 'YYYY-MM-DD') AS dia,
-          t.modelo_id,
           TO_CHAR(DATE(t.disponivel_em AT TIME ZONE 'UTC'), 'YYYY-MM-DD') AS dia_lib,
           COALESCE(SUM(t.valor_modelo), 0) AS lib_modelo,
           COALESCE(SUM(t.agency_fee),   0) AS lib_agencia
@@ -2303,23 +2298,22 @@ router.get("/transacoes", authAgencia, async (req, res) => {
           AND t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()
           ${m ? `AND EXTRACT(YEAR  FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $${hasModelo ? 3 : 2}
                  AND EXTRACT(MONTH FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $${hasModelo ? 4 : 3}` : ''}
-        GROUP BY 1, 2, 3
-        ORDER BY 1 DESC, 2, 3
+        GROUP BY 1, 2
+        ORDER BY 1 DESC, 2
       `, [agenciaId, ...(hasModelo ? [Number(modelo_id)] : []), ...(m ? [m.ano, m.mes] : [])]),
 
       pendenteMesQ || Promise.resolve(null),
     ]);
 
-    // Monta libMap keyed por "dia|modelo_id"
+    // Monta libMap keyed por dia
     const libMap = {};
     for (const r of libRowsQ.rows) {
-      const key = `${r.dia}|${r.modelo_id}`;
-      if (!libMap[key]) libMap[key] = [];
-      libMap[key].push({ data: r.dia_lib, modelo: Number(r.lib_modelo), agencia: Number(r.lib_agencia) });
+      if (!libMap[r.dia]) libMap[r.dia] = [];
+      libMap[r.dia].push({ data: r.dia_lib, modelo: Number(r.lib_modelo), agencia: Number(r.lib_agencia) });
     }
     const rows = rowsQ.rows.map(r => ({
       ...r,
-      liberacoes: libMap[`${r.dia}|${r.modelo_id}`] || [],
+      liberacoes: libMap[r.dia] || [],
     }));
 
     const t0 = totaisQ.rows[0];

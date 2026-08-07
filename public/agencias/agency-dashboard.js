@@ -1158,10 +1158,6 @@ let _txTotalPages = 1;
 
 pageLoaders.transacoes = async function () {
   populateMonthSelect($('transacoesMes'));
-  // Adiciona opção "Acumulado (todas)" no topo
-  const selMes = $('transacoesMes');
-  selMes.insertAdjacentHTML('afterbegin', '<option value="">Acumulado (todas)</option>');
-  selMes.value = selMes.options[1]?.value || ''; // seleciona o mês atual por padrão
   // Popula modelos mantendo a opção "Todas as modelos"
   const selMod = $('transacoesModelo');
   if (selMod.options.length <= 1) {
@@ -1228,7 +1224,7 @@ async function carregarTransacoes() {
     const tbody = $('tableTransacoes').querySelector('tbody');
     tbody.innerHTML = (data.rows || []).map(r => `<tr>
       <td>${fmtDia(r.dia)}</td>
-      <td>${escapeHtml(r.modelo_nome || '')}</td>
+      <td>${money(r.ganhos_modelo)}</td>
       <td>${money(r.ganhos_agencia)}</td>
       <td>${renderPendentes(r)}</td>
       <td>${renderLiberado(r)}</td>
