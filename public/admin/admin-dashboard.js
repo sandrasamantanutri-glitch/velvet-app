@@ -4131,7 +4131,7 @@ async function carregarConciliacao() {
       fetchJSON(`/admin/dashboard/conciliacao-modelo/${modeloId}`),
       fetchJSON(`/admin/dashboard/conciliacao-justificativas/${modeloId}`)
     ]);
-    const divergencias = dados.filter(d => !d.ok);
+    const divergencias = dados.filter(d => !d.ok && d.mes.slice(0, 7) >= '2026-09');
 
     if (!divergencias.length) {
       panel.style.display = 'none';
