@@ -544,6 +544,16 @@ document.querySelector('.sidebar-overlay')?.addEventListener('click', () => {
   document.querySelector('.sidebar-overlay').classList.remove('active');
 });
 
+// Fecha sidebar ao clicar num item de menu no mobile
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('click', () => {
+    if (window.innerWidth <= 640) {
+      document.querySelector('.sidebar').classList.remove('mobile-open');
+      document.querySelector('.sidebar-overlay').classList.remove('active');
+    }
+  });
+});
+
 // Tab handling
 document.querySelectorAll('.tabs').forEach(tabGroup => {
   tabGroup.querySelectorAll('.tab').forEach(tab => {

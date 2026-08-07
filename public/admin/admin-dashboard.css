@@ -498,7 +498,17 @@ body {
   padding: 22px;
   box-shadow: var(--shadow);
   margin-bottom: 20px;
-  overflow: hidden;
+  overflow: visible;
+}
+
+/* Scroll container for every table — works regardless of nesting depth */
+.card .table,
+.card .email-table,
+.table-wrapper .table {
+  display: block;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
 }
 
 .card h3 {
@@ -1337,6 +1347,23 @@ canvas {
   }
   .modal { width: 90%; }
   .modal-lg { width: 90%; }
+
+  /* Scroll horizontal em tabelas no tablet */
+  .card {
+    overflow-x: auto;
+    overflow-y: visible;
+  }
+
+  /* KPI cards com min-width inline não quebram o layout */
+  .kpi-card {
+    min-width: 0 !important;
+  }
+
+  /* Page-actions empilhadas no tablet */
+  .page-actions {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
 }
 
 /* --- Mobile (≤640px) --- */
@@ -1412,19 +1439,12 @@ canvas {
   /* Cards */
   .card {
     padding: 16px;
-  }
-
-  /* Tabelas com scroll horizontal */
-  .card > .table,
-  .table-wrapper .table {
-    min-width: 480px;
-  }
-
-  /* Wraps tables automatically */
-  .card > .table {
-    display: block;
     overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
+    overflow-y: visible;
+  }
+
+  .kpi-card {
+    min-width: 0 !important;
   }
 
   /* Page actions empilhadas */
