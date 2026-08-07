@@ -139,29 +139,41 @@ router.get("/overview", authAgencia, async (req, res) => {
           AND agencia_id = $1
       `, [agenciaId]),
 
-      // FATURAMENTO DIA (via view) — liberado + pendente Stripe separados
+      // FATURAMENTO DIA — PIX comprados hoje + Stripe com disponivel_em hoje já liberado
       db.query(`
         SELECT
-          COALESCE(SUM(agency_fee) FILTER (WHERE gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW())), 0) AS total,
-          COALESCE(SUM(agency_fee) FILTER (WHERE gateway = 'stripe' AND (disponivel_em IS NULL OR disponivel_em > NOW())), 0) AS pendente
+          COALESCE(SUM(agency_fee) FILTER (WHERE
+            (gateway IS DISTINCT FROM 'stripe'
+              AND DATE(created_at AT TIME ZONE 'America/Sao_Paulo') = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo'))
+            OR
+            (gateway = 'stripe'
+              AND disponivel_em IS NOT NULL
+              AND disponivel_em <= NOW()
+              AND DATE(disponivel_em AT TIME ZONE 'America/Sao_Paulo') = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo'))
+          ), 0) AS total
         FROM vw_transacoes_agencia
         WHERE agencia_id = $1
-          AND DATE(created_at AT TIME ZONE 'America/Sao_Paulo') = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
           AND status = 'pago'
       `, [agenciaId]),
 
-      // FATURAMENTO MÊS (via view)
+      // FATURAMENTO MÊS — mesma lógica do card "Total Agência Liberado": PIX do mês + Stripe disponivel_em no mês já liberado (qualquer mês de compra)
       db.query(`
         SELECT
-          COALESCE(SUM(agency_fee) FILTER (WHERE gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW())), 0) AS total,
-          COALESCE(SUM(agency_fee) FILTER (WHERE gateway = 'stripe' AND (disponivel_em IS NULL OR disponivel_em > NOW())), 0) AS pendente
+          COALESCE(SUM(agency_fee) FILTER (WHERE
+            (gateway IS DISTINCT FROM 'stripe'
+              AND DATE_TRUNC('month', created_at AT TIME ZONE 'America/Sao_Paulo') = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo'))
+            OR
+            (gateway = 'stripe'
+              AND disponivel_em IS NOT NULL
+              AND disponivel_em <= NOW()
+              AND DATE_TRUNC('month', disponivel_em AT TIME ZONE 'America/Sao_Paulo') = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo'))
+          ), 0) AS total
         FROM vw_transacoes_agencia
         WHERE agencia_id = $1
-          AND DATE_TRUNC('month', created_at AT TIME ZONE 'America/Sao_Paulo') = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
           AND status = 'pago'
       `, [agenciaId]),
 
-      // FATURAMENTO 12 MESES (via view)
+      // FATURAMENTO 12 MESES — eixo de liberação: PIX por mês de compra, Stripe por mês do disponivel_em
       db.query(`
         SELECT
           TO_CHAR(meses.mes, 'YYYY-MM') AS mes,
@@ -172,13 +184,17 @@ router.get("/overview", authAgencia, async (req, res) => {
           INTERVAL '1 month'
         ) AS meses(mes)
         LEFT JOIN (
-          SELECT *
+          SELECT agency_fee,
+            DATE_TRUNC('month', created_at AT TIME ZONE 'America/Sao_Paulo') AS mes_ref
           FROM vw_transacoes_agencia
-          WHERE agencia_id = $1
-            AND status = 'pago'
-            AND (gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW()))
-        ) t
-          ON DATE_TRUNC('month', t.created_at AT TIME ZONE 'America/Sao_Paulo') = meses.mes
+          WHERE agencia_id = $1 AND status = 'pago' AND gateway IS DISTINCT FROM 'stripe'
+          UNION ALL
+          SELECT agency_fee,
+            DATE_TRUNC('month', disponivel_em AT TIME ZONE 'America/Sao_Paulo') AS mes_ref
+          FROM vw_transacoes_agencia
+          WHERE agencia_id = $1 AND status = 'pago' AND gateway = 'stripe'
+            AND disponivel_em IS NOT NULL AND disponivel_em <= NOW()
+        ) t ON t.mes_ref = meses.mes
         GROUP BY meses.mes
         ORDER BY meses.mes ASC
       `, [agenciaId]),
@@ -213,23 +229,29 @@ router.get("/overview", authAgencia, async (req, res) => {
         ORDER BY total DESC
       `, [agenciaId]),
 
+      // TOP 5 — mesma lógica de "Total Modelo Liberado": PIX do mês + Stripe disponivel_em no mês já liberado
       db.query(`
         SELECT
-          t.modelo_id,
+          u.modelo_id,
           COALESCE(m.nome_exibicao, m.nome) AS nome,
-          ROUND(COALESCE(SUM(t.valor_modelo) FILTER (WHERE t.gateway IS DISTINCT FROM 'stripe' OR (t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW())), 0)::numeric, 2) AS ganhos,
-          ROUND(COALESCE(SUM(t.agency_fee)   FILTER (WHERE t.gateway IS DISTINCT FROM 'stripe' OR (t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW())), 0)::numeric, 2) AS ganhos_agencia,
-          MAX(t.created_at) AS atualizado_em,
-          (SELECT COUNT(*) FROM vw_vips_agencia v WHERE v.modelo_id = t.modelo_id AND v.ativo = true AND v.agencia_id = $1) AS assinantes,
-          (SELECT COALESCE(SUM(p.valor_modelo),0) FROM vw_transacoes_agencia p WHERE p.modelo_id = t.modelo_id AND p.agencia_id = $1 AND p.status = 'pago' AND p.gateway = 'stripe' AND (p.disponivel_em IS NULL OR p.disponivel_em > NOW())) AS ganhos_pendente,
-          (SELECT COALESCE(SUM(p.agency_fee),0)   FROM vw_transacoes_agencia p WHERE p.modelo_id = t.modelo_id AND p.agencia_id = $1 AND p.status = 'pago' AND p.gateway = 'stripe' AND (p.disponivel_em IS NULL OR p.disponivel_em > NOW())) AS ganhos_agencia_pendente
-        FROM vw_transacoes_agencia t
-        JOIN modelos m ON m.id = t.modelo_id
-        WHERE t.agencia_id = $1
-          AND DATE_TRUNC('month', t.created_at AT TIME ZONE 'America/Sao_Paulo') = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
-          AND t.status = 'pago'
-        GROUP BY t.modelo_id, m.nome_exibicao, m.nome
-        ORDER BY ganhos DESC, atualizado_em DESC
+          ROUND(COALESCE(SUM(u.valor_modelo), 0)::numeric, 2) AS ganhos_modelo,
+          ROUND(COALESCE(SUM(u.agency_fee), 0)::numeric, 2) AS ganhos_agencia,
+          (SELECT COUNT(*) FROM vw_vips_agencia v WHERE v.modelo_id = u.modelo_id AND v.ativo = true AND v.agencia_id = $1) AS assinantes
+        FROM (
+          SELECT modelo_id, valor_modelo, agency_fee
+          FROM vw_transacoes_agencia
+          WHERE agencia_id = $1 AND status = 'pago' AND gateway IS DISTINCT FROM 'stripe'
+            AND DATE_TRUNC('month', created_at AT TIME ZONE 'America/Sao_Paulo') = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
+          UNION ALL
+          SELECT modelo_id, valor_modelo, agency_fee
+          FROM vw_transacoes_agencia
+          WHERE agencia_id = $1 AND status = 'pago' AND gateway = 'stripe'
+            AND disponivel_em IS NOT NULL AND disponivel_em <= NOW()
+            AND DATE_TRUNC('month', disponivel_em AT TIME ZONE 'America/Sao_Paulo') = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
+        ) u
+        JOIN modelos m ON m.id = u.modelo_id
+        GROUP BY u.modelo_id, m.nome_exibicao, m.nome
+        ORDER BY ganhos_modelo DESC
         LIMIT 5
       `, [agenciaId])
 
@@ -239,9 +261,7 @@ router.get("/overview", authAgencia, async (req, res) => {
       total_modelos: Number(modelos.rows[0]?.total || 0),
       vips_ativos: Number(vips.rows[0]?.total || 0),
       faturamento_dia: Number(fatd.rows[0]?.total || 0),
-      faturamento_dia_pendente: Number(fatd.rows[0]?.pendente || 0),
       faturamento_mes: Number(fatm.rows[0]?.total || 0),
-      faturamento_mes_pendente: Number(fatm.rows[0]?.pendente || 0),
       faturamento_12m: (fat12m.rows || []).map(r => ({
         mes: r.mes,
         total: Number(r.total || 0)
@@ -253,10 +273,8 @@ router.get("/overview", authAgencia, async (req, res) => {
       top_modelos: (top.rows || []).map(r => ({
         modelo_id: r.modelo_id,
         nome: r.nome,
-        ganhos: Number(r.ganhos || 0),
-        ganhos_pendente: Number(r.ganhos_pendente || 0),
+        ganhos_modelo: Number(r.ganhos_modelo || 0),
         ganhos_agencia: Number(r.ganhos_agencia || 0),
-        ganhos_agencia_pendente: Number(r.ganhos_agencia_pendente || 0),
         assinantes: Number(r.assinantes || 0)
       }))
     });
