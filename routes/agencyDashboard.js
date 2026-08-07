@@ -2252,7 +2252,7 @@ router.get("/transacoes", authAgencia, async (req, res) => {
 
     }
 
-    const [totaisQ, countQ, rowsQ, libRowsQ, stripeDisponiveisResult] = await Promise.all([
+    const [totaisQ, countQ, rowsQ, libRowsQ, extraLibRowsQ, stripeDisponiveisResult] = await Promise.all([
 
       // Totais por mês de compra (para PIX e Stripe do próprio mês — usado como base do liberado)
       db.query(`
@@ -2292,8 +2292,7 @@ router.get("/transacoes", authAgencia, async (req, res) => {
         LIMIT $${limitIdx} OFFSET $${offsetIdx}
       `, [...rowsParams, limit, offset]),
 
-      // libRowsQ: quando mês selecionado, filtra por disponivel_em do mês (não por mês de compra)
-      // assim inclui liberações de compras de meses anteriores que caíram neste mês
+      // libRowsQ: filtra por mês de COMPRA → mostra todas as liberações das compras do mês selecionado
       db.query(`
         SELECT
           TO_CHAR(DATE(t.created_at AT TIME ZONE 'America/Sao_Paulo'), 'YYYY-MM-DD') AS dia,
@@ -2306,43 +2305,64 @@ router.get("/transacoes", authAgencia, async (req, res) => {
           ${hasModelo ? `AND t.modelo_id = $2` : ''}
           AND t.gateway = 'stripe' AND t.status = 'pago'
           AND t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()
-          ${m ? `AND DATE(t.disponivel_em AT TIME ZONE 'UTC') >= $${hasModelo ? 3 : 2}::date
-                 AND DATE(t.disponivel_em AT TIME ZONE 'UTC') <= $${hasModelo ? 4 : 3}::date` : ''}
+          ${m ? `AND EXTRACT(YEAR  FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $${hasModelo ? 3 : 2}
+                 AND EXTRACT(MONTH FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $${hasModelo ? 4 : 3}` : ''}
         GROUP BY 1, 2
         ORDER BY 1 DESC, 2
-      `, [agenciaId, ...(hasModelo ? [Number(modelo_id)] : []), ...(m ? [firstDayStr, lastDayStr] : [])]),
+      `, [agenciaId, ...(hasModelo ? [Number(modelo_id)] : []), ...(m ? [m.ano, m.mes] : [])]),
+
+      // extraLibRowsQ: Stripe com disponivel_em neste mês, de compras de MESES ANTERIORES
+      m ? db.query(`
+        SELECT
+          TO_CHAR(DATE(t.created_at AT TIME ZONE 'America/Sao_Paulo'), 'YYYY-MM-DD') AS dia,
+          TO_CHAR(DATE(t.disponivel_em AT TIME ZONE 'UTC'), 'YYYY-MM-DD') AS dia_lib,
+          COALESCE(SUM(t.valor_modelo), 0) AS lib_modelo,
+          COALESCE(SUM(t.agency_fee),   0) AS lib_agencia
+        FROM transacoes_agency t
+        JOIN modelos m ON m.id = t.modelo_id
+        WHERE m.agencia_id = $1
+          ${hasModelo ? `AND t.modelo_id = $2` : ''}
+          AND t.gateway = 'stripe' AND t.status = 'pago'
+          AND t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()
+          AND DATE(t.disponivel_em AT TIME ZONE 'UTC') >= $${hasModelo ? 3 : 2}::date
+          AND DATE(t.disponivel_em AT TIME ZONE 'UTC') <= $${hasModelo ? 4 : 3}::date
+          AND NOT (
+            EXTRACT(YEAR  FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $${hasModelo ? 5 : 4}
+            AND EXTRACT(MONTH FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $${hasModelo ? 6 : 5}
+          )
+        GROUP BY 1, 2
+        ORDER BY 1 DESC, 2
+      `, [agenciaId, ...(hasModelo ? [Number(modelo_id)] : []), firstDayStr, lastDayStr, m.ano, m.mes])
+      : Promise.resolve({ rows: [] }),
 
       stripeDisponiveisMesQ || Promise.resolve(null),
     ]);
 
-    // Monta libMap keyed por dia_compra
+    // libMap: liberações das compras do mês atual, keyed por dia_compra
     const libMap = {};
     for (const r of libRowsQ.rows) {
       if (!libMap[r.dia]) libMap[r.dia] = [];
       libMap[r.dia].push({ data: r.dia_lib, modelo: Number(r.lib_modelo), agencia: Number(r.lib_agencia) });
     }
 
-    // Dias que já estão nas linhas principais (compras do mês)
-    const rowDias = new Set(rowsQ.rows.map(r => r.dia));
-
-    // Linhas extras: compras de meses anteriores com liberações no mês selecionado
-    const extraRows = [];
-    for (const [diaCompra, libs] of Object.entries(libMap)) {
-      if (!rowDias.has(diaCompra)) {
-        const totLibM = libs.reduce((s, l) => s + l.modelo, 0);
-        const totLibA = libs.reduce((s, l) => s + l.agencia, 0);
-        extraRows.push({
-          dia: diaCompra,
-          ganhos_modelo: totLibM,
-          ganhos_agencia: totLibA,
-          pendente_modelo: 0,
-          pendente_agencia: 0,
-          proxima_liberacao: null,
-          liberacoes: libs,
-          is_prev_month: true,
-        });
-      }
+    // extraLibMap: liberações de compras de meses anteriores que caíram neste mês
+    const extraLibMap = {};
+    for (const r of extraLibRowsQ.rows) {
+      if (!extraLibMap[r.dia]) extraLibMap[r.dia] = [];
+      extraLibMap[r.dia].push({ data: r.dia_lib, modelo: Number(r.lib_modelo), agencia: Number(r.lib_agencia) });
     }
+
+    // Linhas extras: uma por dia de compra anterior que teve liberação neste mês
+    const extraRows = Object.entries(extraLibMap).map(([diaCompra, libs]) => ({
+      dia: diaCompra,
+      ganhos_modelo:  libs.reduce((s, l) => s + l.modelo, 0),
+      ganhos_agencia: libs.reduce((s, l) => s + l.agencia, 0),
+      pendente_modelo: 0,
+      pendente_agencia: 0,
+      proxima_liberacao: null,
+      liberacoes: libs,
+      is_prev_month: true,
+    }));
 
     const rows = [
       ...rowsQ.rows.map(r => ({ ...r, liberacoes: libMap[r.dia] || [] })),
