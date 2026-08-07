@@ -139,7 +139,8 @@ router.get("/overview", authAgencia, async (req, res) => {
           AND agencia_id = $1
       `, [agenciaId]),
 
-      // FATURAMENTO DIA — PIX comprados hoje + Stripe com disponivel_em hoje já liberado
+      // FATURAMENTO DIA — PIX comprados hoje + Stripe com disponivel_em hoje (UTC date) já liberado
+      // disponivel_em é UTC midnight — NÃO aplicar AT TIME ZONE, comparar como date UTC
       db.query(`
         SELECT
           COALESCE(SUM(agency_fee) FILTER (WHERE
@@ -149,14 +150,14 @@ router.get("/overview", authAgencia, async (req, res) => {
             (gateway = 'stripe'
               AND disponivel_em IS NOT NULL
               AND disponivel_em <= NOW()
-              AND DATE(disponivel_em AT TIME ZONE 'America/Sao_Paulo') = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo'))
+              AND disponivel_em::date = (NOW() AT TIME ZONE 'America/Sao_Paulo')::date)
           ), 0) AS total
         FROM vw_transacoes_agencia
         WHERE agencia_id = $1
           AND status = 'pago'
       `, [agenciaId]),
 
-      // FATURAMENTO MÊS — mesma lógica do card "Total Agência Liberado": PIX do mês + Stripe disponivel_em no mês já liberado (qualquer mês de compra)
+      // FATURAMENTO MÊS — PIX do mês + Stripe disponivel_em no mês (UTC) já liberado (qualquer mês de compra)
       db.query(`
         SELECT
           COALESCE(SUM(agency_fee) FILTER (WHERE
@@ -166,14 +167,15 @@ router.get("/overview", authAgencia, async (req, res) => {
             (gateway = 'stripe'
               AND disponivel_em IS NOT NULL
               AND disponivel_em <= NOW()
-              AND DATE_TRUNC('month', disponivel_em AT TIME ZONE 'America/Sao_Paulo') = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo'))
+              AND EXTRACT(YEAR  FROM disponivel_em) = EXTRACT(YEAR  FROM NOW() AT TIME ZONE 'America/Sao_Paulo')
+              AND EXTRACT(MONTH FROM disponivel_em) = EXTRACT(MONTH FROM NOW() AT TIME ZONE 'America/Sao_Paulo'))
           ), 0) AS total
         FROM vw_transacoes_agencia
         WHERE agencia_id = $1
           AND status = 'pago'
       `, [agenciaId]),
 
-      // FATURAMENTO 12 MESES — eixo de liberação: PIX por mês de compra, Stripe por mês do disponivel_em
+      // FATURAMENTO 12 MESES — PIX por mês de compra, Stripe por mês UTC do disponivel_em
       db.query(`
         SELECT
           TO_CHAR(meses.mes, 'YYYY-MM') AS mes,
@@ -190,7 +192,7 @@ router.get("/overview", authAgencia, async (req, res) => {
           WHERE agencia_id = $1 AND status = 'pago' AND gateway IS DISTINCT FROM 'stripe'
           UNION ALL
           SELECT agency_fee,
-            DATE_TRUNC('month', disponivel_em AT TIME ZONE 'America/Sao_Paulo') AS mes_ref
+            DATE_TRUNC('month', disponivel_em::date::timestamp) AS mes_ref
           FROM vw_transacoes_agencia
           WHERE agencia_id = $1 AND status = 'pago' AND gateway = 'stripe'
             AND disponivel_em IS NOT NULL AND disponivel_em <= NOW()
@@ -247,7 +249,8 @@ router.get("/overview", authAgencia, async (req, res) => {
           FROM vw_transacoes_agencia
           WHERE agencia_id = $1 AND status = 'pago' AND gateway = 'stripe'
             AND disponivel_em IS NOT NULL AND disponivel_em <= NOW()
-            AND DATE_TRUNC('month', disponivel_em AT TIME ZONE 'America/Sao_Paulo') = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
+            AND EXTRACT(YEAR  FROM disponivel_em) = EXTRACT(YEAR  FROM NOW() AT TIME ZONE 'America/Sao_Paulo')
+            AND EXTRACT(MONTH FROM disponivel_em) = EXTRACT(MONTH FROM NOW() AT TIME ZONE 'America/Sao_Paulo')
         ) u
         JOIN modelos m ON m.id = u.modelo_id
         GROUP BY u.modelo_id, m.nome_exibicao, m.nome
@@ -1312,7 +1315,7 @@ router.get("/ranking", authAgencia, async (req, res) => {
     const agenciaId = req.agencia.id;
     const mes = String(req.query.mes || '').trim(); // YYYY-MM
     const params = [agenciaId];
-    let whereMes;
+    let pixMesFilter, stripeMesFilter;
 
     if (mes) {
       const match = mes.match(/^(\d{4})-(\d{2})$/);
@@ -1320,32 +1323,40 @@ router.get("/ranking", authAgencia, async (req, res) => {
         return res.status(400).json({ erro: "Parâmetro mes inválido. Use YYYY-MM" });
       }
       params.push(Number(match[1]), Number(match[2]));
-      whereMes = `
-        EXTRACT(YEAR  FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $2
-        AND EXTRACT(MONTH FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $3
-      `;
+      pixMesFilter = `EXTRACT(YEAR FROM created_at AT TIME ZONE 'America/Sao_Paulo') = $2 AND EXTRACT(MONTH FROM created_at AT TIME ZONE 'America/Sao_Paulo') = $3`;
+      stripeMesFilter = `EXTRACT(YEAR FROM disponivel_em) = $2 AND EXTRACT(MONTH FROM disponivel_em) = $3`;
     } else {
-      whereMes = `
-        DATE_TRUNC('month', t.created_at AT TIME ZONE 'America/Sao_Paulo') = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
-      `;
+      pixMesFilter = `DATE_TRUNC('month', created_at AT TIME ZONE 'America/Sao_Paulo') = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')`;
+      stripeMesFilter = `EXTRACT(YEAR FROM disponivel_em) = EXTRACT(YEAR FROM NOW() AT TIME ZONE 'America/Sao_Paulo') AND EXTRACT(MONTH FROM disponivel_em) = EXTRACT(MONTH FROM NOW() AT TIME ZONE 'America/Sao_Paulo')`;
     }
 
+    // Mesma lógica de "Total Modelo Liberado": PIX do mês + Stripe disponivel_em no mês já liberado (qualquer mês de compra)
+    // LEFT JOIN da tabela modelos para incluir todas as modelos da agência, mesmo com ganhos 0
     const { rows } = await db.query(`
       SELECT
-        t.modelo_id,
-        m.nome,
-        ROUND(COALESCE(SUM(t.valor_modelo), 0)::numeric, 2) AS ganhos_total,
-        ROUND(COALESCE(SUM(t.agency_fee), 0)::numeric, 2) AS ganhos_agencia,
-        MAX(t.created_at) AS atualizado_em
-      FROM transacoes_agency t
-      JOIN modelos m ON m.id = t.modelo_id
-      WHERE t.modelo_id IS NOT NULL
-        AND m.agencia_id = $1
-        AND t.status = 'pago'
-        AND ${whereMes}
-      GROUP BY t.modelo_id, m.nome
-      ORDER BY ganhos_total DESC, atualizado_em DESC
-      LIMIT 50
+        m.id AS modelo_id,
+        COALESCE(m.nome_exibicao, m.nome) AS nome,
+        ROUND(COALESCE(SUM(u.valor_modelo), 0)::numeric, 2) AS ganhos_total,
+        ROUND(COALESCE(SUM(u.agency_fee), 0)::numeric, 2) AS ganhos_agencia,
+        MAX(u.created_at) AS atualizado_em
+      FROM modelos m
+      LEFT JOIN (
+        SELECT modelo_id, valor_modelo, agency_fee, created_at
+        FROM vw_transacoes_agencia
+        WHERE agencia_id = $1 AND status = 'pago' AND gateway IS DISTINCT FROM 'stripe'
+          AND ${pixMesFilter}
+        UNION ALL
+        SELECT modelo_id, valor_modelo, agency_fee, created_at
+        FROM vw_transacoes_agencia
+        WHERE agencia_id = $1 AND status = 'pago' AND gateway = 'stripe'
+          AND disponivel_em IS NOT NULL AND disponivel_em <= NOW()
+          AND ${stripeMesFilter}
+      ) u ON u.modelo_id = m.id
+      WHERE m.agencia_id = $1
+        AND m.ativo = true
+        AND m.verificada = true
+      GROUP BY m.id, m.nome_exibicao, m.nome
+      ORDER BY ganhos_total DESC, m.nome ASC
     `, params);
 
     res.json(rows);
