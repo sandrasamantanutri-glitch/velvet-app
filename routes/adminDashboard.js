@@ -3388,12 +3388,12 @@ router.get("/transacoes-agency", async (req, res) => {
       cbIdx += 2;
     }
     const cbTotalQ = await db.query(
-      `SELECT COALESCE(SUM(valor), 0) AS chargebacks FROM chargebacks WHERE ${cbWhere.join(' AND ')}`,
+      `SELECT COALESCE(SUM(COALESCE(valor_modelo, valor)), 0) AS chargebacks FROM chargebacks WHERE ${cbWhere.join(' AND ')}`,
       cbParams
     );
     const cbPerDiaQ = await db.query(
       `SELECT TO_CHAR(DATE(criado_em AT TIME ZONE 'America/Sao_Paulo'), 'YYYY-MM-DD') AS dia,
-              COALESCE(SUM(valor), 0) AS total
+              COALESCE(SUM(COALESCE(valor_modelo, valor)), 0) AS total
        FROM chargebacks WHERE ${cbWhere.join(' AND ')} GROUP BY 1`,
       cbParams
     );
@@ -3583,11 +3583,14 @@ router.get("/ganhos-conciliacao", async (req, res) => {
       ? `${m.ano}-${String(m.mes).padStart(2,'0')}-${new Date(m.ano, m.mes, 0).getDate()}`
       : null;
 
-    // 1. PIX — ganhos do mês (bruto + modelo)
+    // 1. PIX — ganhos do mês (bruto + modelo + velvet + agency + gateway)
     const pixR = await db.query(`
       SELECT
         COALESCE(SUM(t.valor_bruto),  0) AS bruto,
-        COALESCE(SUM(t.valor_modelo), 0) AS modelo
+        COALESCE(SUM(t.valor_modelo), 0) AS modelo,
+        COALESCE(SUM(t.velvet_fee),   0) AS velvet,
+        COALESCE(SUM(t.agency_fee),   0) AS agency,
+        COALESCE(SUM(t.taxa_gateway), 0) AS gateway
       FROM transacoes_agency t ${BASE_JOIN}
       WHERE ${BASE_COND}${modF}
         AND t.gateway != 'stripe'
@@ -3721,13 +3724,16 @@ router.get("/ganhos-conciliacao", async (req, res) => {
     }
 
     // 5. Stripe já liberado neste mês — disponivel_em neste mês E já passou
-    let jaLiberadoBruto = 0, jaLiberadoModelo = 0;
+    let jaLiberadoBruto = 0, jaLiberadoModelo = 0, jaLiberadoVelvet = 0, jaLiberadoAgency = 0, jaLiberadoGateway = 0;
     if (m) {
       const jlPi = modP.length + 1;
       const jlR  = await db.query(`
         SELECT
           COALESCE(SUM(t.valor_bruto),  0) AS bruto,
-          COALESCE(SUM(t.valor_modelo), 0) AS modelo
+          COALESCE(SUM(t.valor_modelo), 0) AS modelo,
+          COALESCE(SUM(t.velvet_fee),   0) AS velvet,
+          COALESCE(SUM(t.agency_fee),   0) AS agency,
+          COALESCE(SUM(t.taxa_gateway), 0) AS gateway
         FROM transacoes_agency t ${BASE_JOIN}
         WHERE ${BASE_COND}${modF}
           AND t.gateway = 'stripe'
@@ -3737,13 +3743,18 @@ router.get("/ganhos-conciliacao", async (req, res) => {
           AND DATE(t.disponivel_em AT TIME ZONE 'UTC') >= $${jlPi}::date
           AND DATE(t.disponivel_em AT TIME ZONE 'UTC') <= $${jlPi + 1}::date
       `, [...modP, firstDayStr, lastDayStr]);
-      jaLiberadoBruto  = Number(jlR.rows[0].bruto);
-      jaLiberadoModelo = Number(jlR.rows[0].modelo);
+      jaLiberadoBruto   = Number(jlR.rows[0].bruto);
+      jaLiberadoModelo  = Number(jlR.rows[0].modelo);
+      jaLiberadoVelvet  = Number(jlR.rows[0].velvet);
+      jaLiberadoAgency  = Number(jlR.rows[0].agency);
+      jaLiberadoGateway = Number(jlR.rows[0].gateway);
     }
 
-    // 6. Ganhos liberados totais (modelo) = PIX modelo + Stripe JÁ liberado neste mês
-    //    Cresce conforme o Stripe vai liberando ao longo do mês
-    const ganhosLiberadosModelo = Number(pixR.rows[0].modelo) + jaLiberadoModelo;
+    // 6. Ganhos liberados totais = PIX + Stripe JÁ liberado neste mês (cresce conforme Stripe vai liberando)
+    const ganhosLiberadosModelo  = Number(pixR.rows[0].modelo)  + jaLiberadoModelo;
+    const ganhosLiberadosVelvet  = Number(pixR.rows[0].velvet)  + jaLiberadoVelvet;
+    const ganhosLiberadosAgency  = Number(pixR.rows[0].agency)  + jaLiberadoAgency;
+    const ganhosLiberadosGateway = Number(pixR.rows[0].gateway) + jaLiberadoGateway;
 
     res.json({
       pix: {
@@ -3766,7 +3777,10 @@ router.get("/ganhos-conciliacao", async (req, res) => {
         ja_liberado_bruto:  jaLiberadoBruto,
         ja_liberado_modelo: jaLiberadoModelo,
       },
-      ganhos_liberados_modelo: ganhosLiberadosModelo,
+      ganhos_liberados_modelo:  ganhosLiberadosModelo,
+      ganhos_liberados_velvet:  ganhosLiberadosVelvet,
+      ganhos_liberados_agency:  ganhosLiberadosAgency,
+      ganhos_liberados_gateway: ganhosLiberadosGateway,
     });
 
   } catch (err) {

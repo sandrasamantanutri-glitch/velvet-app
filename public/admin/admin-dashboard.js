@@ -3955,7 +3955,10 @@ async function carregarGanhos() {
     $('kg-liberar-bruto').textContent     = money(s.liberar_bruto);
     $('kg-liberar-modelo').textContent    = money(s.liberar_modelo);
 
-    $('kg-ganhos-liberados').textContent = money(data.ganhos_liberados_modelo);
+    $('kg-ganhos-liberados').textContent         = money(data.ganhos_liberados_modelo);
+    $('kg-ganhos-liberados-velvet').textContent  = money(data.ganhos_liberados_velvet);
+    $('kg-ganhos-liberados-agency').textContent  = money(data.ganhos_liberados_agency);
+    $('kg-ganhos-liberados-gateway').textContent = money(data.ganhos_liberados_gateway);
   } catch (err) { console.error('Erro ganhos conciliação:', err); }
 }
 
