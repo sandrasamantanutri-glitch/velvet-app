@@ -229,10 +229,21 @@ ORDER BY total DESC;
               AND v.ativo = true
           ) AS assinantes
         FROM transacoes_agency t
-        LEFT JOIN modelos m ON m.id = t.modelo_id
+        INNER JOIN modelos m ON m.id = t.modelo_id AND m.verificada = true AND m.ativo = true
         WHERE t.modelo_id IS NOT NULL
-          AND DATE_TRUNC('month', t.created_at AT TIME ZONE 'America/Sao_Paulo') = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
           AND t.status = 'pago'
+          AND (
+            (
+              t.gateway IS DISTINCT FROM 'stripe'
+              AND DATE_TRUNC('month', t.created_at AT TIME ZONE 'America/Sao_Paulo') = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
+            ) OR (
+              t.gateway = 'stripe'
+              AND t.disponivel_em IS NOT NULL
+              AND t.disponivel_em <= NOW()
+              AND DATE(t.disponivel_em AT TIME ZONE 'UTC') >= DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')::date
+              AND DATE(t.disponivel_em AT TIME ZONE 'UTC') <= (DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo') + INTERVAL '1 month - 1 day')::date
+            )
+          )
         GROUP BY t.modelo_id, m.nome
         ORDER BY ganhos DESC, atualizado_em DESC
         LIMIT 5

@@ -4935,7 +4935,7 @@ function renderChargebacks(chargebacks) {
     return `
     <tr>
       <td>${i + 1}</td>
-      <td><strong>${{safe2pay:'Safe2Pay',stripe:'Stripe',pluggy:'Pluggy',pagarme:'Pagarme'}[cb.plataforma] || cb.plataforma || '—'}</strong></td>
+      <td><strong>${{ipag:'iPag',safe2pay:'iPag',stripe:'Stripe',pluggy:'Pluggy',pagarme:'Pagarme'}[cb.plataforma] || cb.plataforma || '—'}</strong></td>
       <td>${cb.modelo_nome || (cb.modelo_id ? '#' + cb.modelo_id : '—')}</td>
       <td>${money(cb.valor)}</td>
       <td>${cb.valor_modelo != null ? money(cb.valor_modelo) : '—'}</td>
