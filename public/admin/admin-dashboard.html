@@ -73,10 +73,7 @@
       <svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9H9V9h10v2zm-4 4H9v-2h6v2zm4-8H9V5h10v2z"/></svg>
       <span>Transações</span>
     </a>
-    <a class="nav-item" data-page="auditoria-stripe">
-      <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>
-      <span>Auditoria Stripe</span>
-    </a>
+
     <a class="nav-item" data-page="password">
       <svg viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
       <span>Senhas</span>
@@ -970,47 +967,7 @@
   </div>
 </section>
 
-<!-- AUDITORIA STRIPE -->
-<section class="page" id="page-auditoria-stripe">
-  <div class="page-actions" style="flex-wrap:wrap;gap:8px;">
-    <h2 style="margin:0;font-size:16px;">Auditoria Stripe</h2>
-    <button class="btn btn-primary btn-sm" onclick="carregarAuditoriaStripe()">Atualizar</button>
-  </div>
 
-  <!-- KPIs de resumo -->
-  <div class="kpi-grid" id="auditoriaKpis" style="margin-bottom:16px;"></div>
-
-  <!-- Alertas críticos -->
-  <div id="auditoriaAlertas" style="margin-bottom:16px;"></div>
-
-  <!-- Tabela: pendentes por modelo -->
-  <div class="card" style="margin-bottom:16px;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-      <strong>Pendentes por modelo (disponivel_em futuro)</strong>
-      <span style="font-size:12px;color:#888;">valor represado no Stripe aguardando liberação</span>
-    </div>
-    <table class="table" id="tblAuditoriaPendentes">
-      <thead><tr>
-        <th>Modelo</th><th>Qtd</th><th>Bruto Pendente</th><th>Modelo Pendente</th><th>Próxima liberação</th><th>Mais distante</th>
-      </tr></thead>
-      <tbody></tbody>
-    </table>
-  </div>
-
-  <!-- Tabela: órfãos (pagamentos_cartao sem transacao_agency) -->
-  <div class="card" id="auditoriaOrfaosCard" style="display:none;">
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
-      <span style="color:#dc2626;font-size:18px;">⚠️</span>
-      <strong style="color:#dc2626;">Pagamentos sem transação (webhook possivelmente perdido)</strong>
-    </div>
-    <table class="table" id="tblAuditoriaOrfaos">
-      <thead><tr>
-        <th>Data</th><th>Modelo</th><th>Valor</th><th>Payment Intent</th>
-      </tr></thead>
-      <tbody></tbody>
-    </table>
-  </div>
-</section>
 
 <div class="modal" id="modalResetSenha">
   <div class="modal-content">

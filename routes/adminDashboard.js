@@ -157,7 +157,7 @@ router.get("/overview", auth, authAdmin, async (req, res) => {
       db.query(`
         SELECT COALESCE(SUM(t.velvet_fee), 0) AS total
         FROM transacoes_agency t
-        WHERE (CASE WHEN t.disponivel_em IS NOT NULL THEN DATE(t.disponivel_em AT TIME ZONE 'America/Sao_Paulo') ELSE DATE(t.created_at AT TIME ZONE 'America/Sao_Paulo') END) = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
+        WHERE (CASE WHEN t.disponivel_em IS NOT NULL THEN DATE(t.disponivel_em AT TIME ZONE 'UTC') ELSE DATE(t.created_at AT TIME ZONE 'America/Sao_Paulo') END) = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
           AND t.status = 'pago'
           AND (t.gateway IS DISTINCT FROM 'stripe' OR (t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()))
       `),
@@ -165,7 +165,7 @@ router.get("/overview", auth, authAdmin, async (req, res) => {
       db.query(`
         SELECT COALESCE(SUM(t.taxa_gateway), 0) AS total
         FROM transacoes_agency t
-        WHERE (CASE WHEN t.disponivel_em IS NOT NULL THEN DATE(t.disponivel_em AT TIME ZONE 'America/Sao_Paulo') ELSE DATE(t.created_at AT TIME ZONE 'America/Sao_Paulo') END) = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
+        WHERE (CASE WHEN t.disponivel_em IS NOT NULL THEN DATE(t.disponivel_em AT TIME ZONE 'UTC') ELSE DATE(t.created_at AT TIME ZONE 'America/Sao_Paulo') END) = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
           AND t.status = 'pago'
           AND (t.gateway IS DISTINCT FROM 'stripe' OR (t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()))
       `),
@@ -180,7 +180,7 @@ router.get("/overview", auth, authAdmin, async (req, res) => {
           INTERVAL '1 month'
         ) AS meses(mes)
         LEFT JOIN transacoes_agency t
-          ON DATE_TRUNC('month', CASE WHEN t.disponivel_em IS NOT NULL THEN t.disponivel_em AT TIME ZONE 'America/Sao_Paulo' ELSE t.created_at AT TIME ZONE 'America/Sao_Paulo' END) = meses.mes
+          ON DATE_TRUNC('month', CASE WHEN t.disponivel_em IS NOT NULL THEN t.disponivel_em AT TIME ZONE 'UTC' ELSE t.created_at AT TIME ZONE 'America/Sao_Paulo' END) = meses.mes
           AND t.status = 'pago'
           AND (t.gateway IS DISTINCT FROM 'stripe' OR (t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()))
         GROUP BY meses.mes
@@ -3081,7 +3081,7 @@ router.get("/ranking", authAdmin, async (req, res) => {
   try {
     const mes = String(req.query.mes || '').trim(); // YYYY-MM
     const params = [];
-    let whereMes;
+    let pixMes, stripeMes;
 
     if (mes) {
       const match = mes.match(/^(\d{4})-(\d{2})$/);
@@ -3089,13 +3089,20 @@ router.get("/ranking", authAdmin, async (req, res) => {
         return res.status(400).json({ erro: "Parâmetro mes inválido. Use YYYY-MM" });
       }
       params.push(Number(match[1]), Number(match[2]));
-      whereMes = `
+      pixMes = `
         EXTRACT(YEAR  FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $1
         AND EXTRACT(MONTH FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $2
       `;
+      stripeMes = `
+        EXTRACT(YEAR  FROM DATE(t.disponivel_em AT TIME ZONE 'UTC')) = $1
+        AND EXTRACT(MONTH FROM DATE(t.disponivel_em AT TIME ZONE 'UTC')) = $2
+      `;
     } else {
-      whereMes = `
+      pixMes = `
         DATE_TRUNC('month', t.created_at AT TIME ZONE 'America/Sao_Paulo') = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
+      `;
+      stripeMes = `
+        DATE_TRUNC('month', DATE(t.disponivel_em AT TIME ZONE 'UTC')::timestamp) = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
       `;
     }
 
@@ -3109,7 +3116,11 @@ router.get("/ranking", authAdmin, async (req, res) => {
       LEFT JOIN modelos m ON m.id = t.modelo_id
       WHERE t.modelo_id IS NOT NULL
         AND t.status = 'pago'
-        AND ${whereMes}
+        AND (
+          (t.gateway IS DISTINCT FROM 'stripe' AND ${pixMes})
+          OR
+          (t.gateway = 'stripe' AND t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW() AND ${stripeMes})
+        )
       GROUP BY t.modelo_id, m.nome
       ORDER BY ganhos_total DESC, atualizado_em DESC
       LIMIT 50
