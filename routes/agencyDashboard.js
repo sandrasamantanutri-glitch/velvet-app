@@ -2292,6 +2292,8 @@ router.get("/transacoes", authAgencia, async (req, res) => {
         LIMIT $${limitIdx} OFFSET $${offsetIdx}
       `, [...rowsParams, limit, offset]),
 
+      // libRowsQ: quando mês selecionado, filtra por disponivel_em do mês (não por mês de compra)
+      // assim inclui liberações de compras de meses anteriores que caíram neste mês
       db.query(`
         SELECT
           TO_CHAR(DATE(t.created_at AT TIME ZONE 'America/Sao_Paulo'), 'YYYY-MM-DD') AS dia,
@@ -2304,25 +2306,48 @@ router.get("/transacoes", authAgencia, async (req, res) => {
           ${hasModelo ? `AND t.modelo_id = $2` : ''}
           AND t.gateway = 'stripe' AND t.status = 'pago'
           AND t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()
-          ${m ? `AND EXTRACT(YEAR  FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $${hasModelo ? 3 : 2}
-                 AND EXTRACT(MONTH FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $${hasModelo ? 4 : 3}` : ''}
+          ${m ? `AND DATE(t.disponivel_em AT TIME ZONE 'UTC') >= $${hasModelo ? 3 : 2}::date
+                 AND DATE(t.disponivel_em AT TIME ZONE 'UTC') <= $${hasModelo ? 4 : 3}::date` : ''}
         GROUP BY 1, 2
         ORDER BY 1 DESC, 2
-      `, [agenciaId, ...(hasModelo ? [Number(modelo_id)] : []), ...(m ? [m.ano, m.mes] : [])]),
+      `, [agenciaId, ...(hasModelo ? [Number(modelo_id)] : []), ...(m ? [firstDayStr, lastDayStr] : [])]),
 
       stripeDisponiveisMesQ || Promise.resolve(null),
     ]);
 
-    // Monta libMap keyed por dia (liberações Stripe já ocorridas, por mês de compra)
+    // Monta libMap keyed por dia_compra
     const libMap = {};
     for (const r of libRowsQ.rows) {
       if (!libMap[r.dia]) libMap[r.dia] = [];
       libMap[r.dia].push({ data: r.dia_lib, modelo: Number(r.lib_modelo), agencia: Number(r.lib_agencia) });
     }
-    const rows = rowsQ.rows.map(r => ({
-      ...r,
-      liberacoes: libMap[r.dia] || [],
-    }));
+
+    // Dias que já estão nas linhas principais (compras do mês)
+    const rowDias = new Set(rowsQ.rows.map(r => r.dia));
+
+    // Linhas extras: compras de meses anteriores com liberações no mês selecionado
+    const extraRows = [];
+    for (const [diaCompra, libs] of Object.entries(libMap)) {
+      if (!rowDias.has(diaCompra)) {
+        const totLibM = libs.reduce((s, l) => s + l.modelo, 0);
+        const totLibA = libs.reduce((s, l) => s + l.agencia, 0);
+        extraRows.push({
+          dia: diaCompra,
+          ganhos_modelo: totLibM,
+          ganhos_agencia: totLibA,
+          pendente_modelo: 0,
+          pendente_agencia: 0,
+          proxima_liberacao: null,
+          liberacoes: libs,
+          is_prev_month: true,
+        });
+      }
+    }
+
+    const rows = [
+      ...rowsQ.rows.map(r => ({ ...r, liberacoes: libMap[r.dia] || [] })),
+      ...extraRows,
+    ].sort((a, b) => String(b.dia).localeCompare(String(a.dia)));
 
     const t0 = totaisQ.rows[0];
     const sd = stripeDisponiveisResult?.rows?.[0]; // stripe do mês (qualquer mês de compra)

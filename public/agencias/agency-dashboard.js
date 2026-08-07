@@ -1230,14 +1230,21 @@ async function carregarTransacoes() {
     }
 
     const tbody = $('tableTransacoes').querySelector('tbody');
-    tbody.innerHTML = (data.rows || []).map(r => `<tr>
-      <td>${fmtDia(r.dia)}</td>
-      <td>${money(r.ganhos_modelo)}</td>
-      <td>${money(r.ganhos_agencia)}</td>
-      <td>${renderPendentes(r)}</td>
-      <td>${renderDesbloqueados(r)}</td>
-      <td>${renderPrevisao(r)}</td>
-    </tr>`).join('') || `<tr><td colspan="6" style="text-align:center;opacity:0.5">Sem transações</td></tr>`;
+    tbody.innerHTML = (data.rows || []).map(r => {
+      const isPrev = r.is_prev_month;
+      const diaCell = isPrev
+        ? `${fmtDia(r.dia)}<br><small style="opacity:.6;font-size:10px">compra mês ant.</small>`
+        : fmtDia(r.dia);
+      const rowStyle = isPrev ? ' style="background:rgba(139,92,246,.04)"' : '';
+      return `<tr${rowStyle}>
+        <td>${diaCell}</td>
+        <td>${money(r.ganhos_modelo)}</td>
+        <td>${money(r.ganhos_agencia)}</td>
+        <td>${renderPendentes(r)}</td>
+        <td>${renderPrevisao(r)}</td>
+        <td>${renderDesbloqueados(r)}</td>
+      </tr>`;
+    }).join('') || `<tr><td colspan="6" style="text-align:center;opacity:0.5">Sem transações</td></tr>`;
 
     _txTotalPages = data.totalPages || 1;
     renderTxPagination();
