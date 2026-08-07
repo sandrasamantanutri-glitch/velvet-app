@@ -1052,7 +1052,6 @@ function renderContestacao(data) {
           <tr><td>Nome completo</td><td>${c.nome_completo || '—'}</td></tr>
           <tr><td>Email</td><td>${c.email || '—'}</td></tr>
           <tr><td>Cliente ID</td><td>${c.cliente_id}</td></tr>
-          <tr><td>CPF/Documento</td><td>${c.documento || c.cpf || '—'}</td></tr>
           <tr><td>Telefone</td><td>${c.telefone || '—'}</td></tr>
           <tr><td>Data de Nascimento</td><td>${fmtDate(c.data_nascimento)}</td></tr>
           <tr><td>Endereço</td><td>${[c.endereco, c.cidade, c.estado, c.pais_endereco].filter(Boolean).join(', ') || '—'}</td></tr>
@@ -1211,7 +1210,7 @@ const termosCompletos = `
       <td>${p.cpf || p.documento || '—'}</td>
       <td>${p.telefone || '—'}</td>
       <td>${p.aceitou_termos ? `Sim (v${p.versao_termos || '?'} em ${fmtDateTime(p.aceite_timestamp)})` : 'Não'}</td>
-      <td>${p.aceitou_politicas ? 'Sim' : (p.aceitou_execucao_imediata ? 'Sim (legado)' : 'Não')}</td>
+      <td>${p.aceitou_politicas ? 'Sim' : (p.aceitou_execucao_imediata ? 'Sim' : 'Não')}</td>
       <td style="word-break:break-all;">${p.stripe_payment_intent_id || p.stripe_charge_id || '—'}</td>
     </tr>
   `).join('') || emptyRow(14);
@@ -1226,13 +1225,12 @@ const termosCompletos = `
       <td>${fmtDateTime(p.pago_em || p.criado_em)}</td>
       <td>${p.aceite_ip || '—'}</td>
       <td style="max-width:160px;word-break:break-all;">${p.fingerprint || '—'}</td>
-      <td>${p.cpf || '—'}</td>
       <td>${p.telefone || '—'}</td>
       <td>${p.aceitou_termos ? `Sim (v${p.versao_termos || '?'} em ${fmtDateTime(p.aceite_timestamp)})` : 'Não'}</td>
-      <td>${p.aceitou_politicas ? 'Sim' : (p.aceitou_execucao_imediata ? 'Sim (legado)' : 'Não')}</td>
+      <td>${p.aceitou_politicas ? 'Sim' : (p.aceitou_execucao_imediata ? 'Sim' : 'Não')}</td>
       <td style="word-break:break-all;">${p.pagarme_order_id || p.gateway_order_id || '—'}</td>
     </tr>
-  `).join('') || emptyRow(13);
+  `).join('') || emptyRow(12);
 
   const pagamentos = `
     <div class="card contestacao-print">
@@ -1245,7 +1243,7 @@ const termosCompletos = `
     <div class="card contestacao-print">
       <h3>3.1 Pagamentos via PIX</h3>
       <table class="table">
-        <thead><tr><th>Modelo ID</th><th>Tipo</th><th>Status</th><th>Valor</th><th>Gateway</th><th>Pago em</th><th>IP</th><th>Fingerprint</th><th>CPF</th><th>Telefone</th><th>Aceite Termos de Uso</th><th>Aceite Políticas de Utilização</th><th>Order ID</th></tr></thead>
+        <thead><tr><th>Modelo ID</th><th>Tipo</th><th>Status</th><th>Valor</th><th>Gateway</th><th>Pago em</th><th>IP</th><th>Fingerprint</th><th>Telefone</th><th>Aceite Termos de Uso</th><th>Aceite Políticas de Utilização</th><th>Order ID</th></tr></thead>
         <tbody>${pixRows}</tbody>
       </table>
     </div>
@@ -1394,18 +1392,17 @@ const termosCompletos = `
       <td>${r.nivel || '—'}</td>
       <td>${r.motivo || '—'}</td>
       <td>${r.ip || '—'}</td>
-      <td>${r.cpf || '—'}</td>
       <td style="max-width:160px;word-break:break-all;">${r.fingerprint || '—'}</td>
       <td>${r.ativo ? 'Sim' : 'Não'}</td>
       <td>${fmtDateTime(r.criado_em)}</td>
     </tr>
-  `).join('') || emptyRow(7);
+  `).join('') || emptyRow(6);
 
   const risco = `
     <div class="card contestacao-print">
       <h3>9. Antifraude / Risco</h3>
       <table class="table">
-        <thead><tr><th>Nível</th><th>Motivo</th><th>IP</th><th>CPF</th><th>Fingerprint</th><th>Ativo</th><th>Registrado em</th></tr></thead>
+        <thead><tr><th>Nível</th><th>Motivo</th><th>IP</th><th>Fingerprint</th><th>Ativo</th><th>Registrado em</th></tr></thead>
         <tbody>${riscoRows}</tbody>
       </table>
     </div>
@@ -1437,22 +1434,20 @@ const termosCompletos = `
       <td>${b.nivel || '—'}</td>
       <td>${b.motivo || '—'}</td>
       <td>${b.ip || '—'}</td>
-      <td>${b.cpf || '—'}</td>
       <td style="max-width:160px;word-break:break-all;">${b.fingerprint || '—'}</td>
       <td>${b.bloqueio_ip ? 'Sim' : 'Não'}</td>
-      <td>${b.bloqueio_cpf ? 'Sim' : 'Não'}</td>
       <td>${b.bloqueio_fingerprint ? 'Sim' : 'Não'}</td>
       <td>${fmtDateTime(b.criado_em)}</td>
       <td>${fmtDateTime(b.desativado_em)}</td>
       <td>${b.admin || '—'}</td>
     </tr>
-  `).join('') || emptyRow(12);
+  `).join('') || emptyRow(9);
 
   const bloqueadoCadastro = `
     <div class="card contestacao-print">
       <h3>11. Histórico de Bloqueio de Cadastro</h3>
       <table class="table">
-        <thead><tr><th>Status</th><th>Nível</th><th>Motivo</th><th>IP</th><th>CPF</th><th>Fingerprint</th><th>Blq IP</th><th>Blq CPF</th><th>Blq FP</th><th>Registrado em</th><th>Desativado em</th><th>Admin</th></tr></thead>
+        <thead><tr><th>Status</th><th>Nível</th><th>Motivo</th><th>IP</th><th>Fingerprint</th><th>Blq IP</th><th>Blq FP</th><th>Registrado em</th><th>Desativado em</th><th>Admin</th></tr></thead>
         <tbody>${bloqueadoRows}</tbody>
       </table>
     </div>
