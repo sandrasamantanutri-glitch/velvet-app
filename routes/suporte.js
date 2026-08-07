@@ -182,6 +182,11 @@ router.post("/conversa/:id/mensagem", async (req, res) => {
           "UPDATE suporte_conversas SET updated_at = NOW(), status = 'fechada' WHERE id = $1",
           [conversa_id]
         );
+        // Marca mensagens do cliente como lidas ao fechar com auto-resposta
+        await db.query(
+          "UPDATE suporte_mensagens SET lida = true WHERE conversa_id = $1 AND remetente = 'cliente'",
+          [conversa_id]
+        );
         if (io) {
           io.to(`suporte_${conversa_id}`).emit("suporte:resposta", autoRows[0]);
         }
@@ -380,12 +385,36 @@ router.post("/admin/registro-manual", auth, authAdmin, async (req, res) => {
 // ─── ADMIN: fecha conversa ───────────────────────────────────────────────────
 router.patch("/admin/conversa/:id/fechar", auth, authAdmin, async (req, res) => {
   try {
+    const id = parseInt(req.params.id);
     await db.query(
       "UPDATE suporte_conversas SET status = 'fechada', updated_at = NOW() WHERE id = $1",
-      [parseInt(req.params.id)]
+      [id]
+    );
+    // Marca todas as mensagens do cliente como lidas ao fechar
+    await db.query(
+      "UPDATE suporte_mensagens SET lida = true WHERE conversa_id = $1 AND remetente = 'cliente'",
+      [id]
     );
     res.json({ ok: true });
   } catch (err) {
+    res.status(500).json({ error: "Erro interno" });
+  }
+});
+
+// ─── ADMIN: apaga conversas fechadas já lidas ────────────────────────────────
+router.delete("/admin/conversas/fechadas", auth, authAdmin, async (req, res) => {
+  try {
+    const { rowCount } = await db.query(`
+      DELETE FROM suporte_conversas
+      WHERE status = 'fechada'
+      AND id NOT IN (
+        SELECT DISTINCT conversa_id FROM suporte_mensagens
+        WHERE lida = false AND remetente = 'cliente'
+      )
+    `);
+    res.json({ ok: true, removidas: rowCount });
+  } catch (err) {
+    console.error("Erro ao limpar conversas fechadas:", err);
     res.status(500).json({ error: "Erro interno" });
   }
 });

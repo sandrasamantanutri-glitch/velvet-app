@@ -2190,7 +2190,6 @@ router.get("/transacoes", authAgencia, async (req, res) => {
     const limit = 20;
     const offset = (page - 1) * limit;
 
-    // Filtro único por created_at — igual ao relatorio.html e ao top 5.
     let m = null;
     const hasModelo = modelo_id && Number(modelo_id) > 0;
 
@@ -2201,89 +2200,139 @@ router.get("/transacoes", authAgencia, async (req, res) => {
     const filterArr  = [...baseFilter];
     const rowsParams = [...baseParams];
 
+    let firstDayStr = null, lastDayStr = null;
+
     if (mes && /^\d{4}-\d{2}$/.test(mes)) {
       const [ano, mesNum] = mes.split('-').map(Number);
       m = { ano, mes: mesNum };
+      firstDayStr = `${ano}-${String(mesNum).padStart(2,'0')}-01`;
+      lastDayStr  = `${ano}-${String(mesNum).padStart(2,'0')}-${new Date(ano, mesNum, 0).getDate()}`;
       const pi = rowsParams.length + 1;
       filterArr.push(`EXTRACT(YEAR  FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $${pi}
                   AND EXTRACT(MONTH FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $${pi + 1}`);
       rowsParams.push(ano, mesNum);
     }
 
-    const whereRows    = filterArr.join(' AND ');
-    const whereTotais  = whereRows;
+    const whereRows   = filterArr.join(' AND ');
     const totaisParams = rowsParams;
 
     // Liberado = não-Stripe OU Stripe com disponivel_em já passado
     const DISP = "(t.gateway IS DISTINCT FROM 'stripe' OR (t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()))";
 
-    // Dia de compra (sempre created_at)
+    // Dia de compra
     const DIA = `DATE(t.created_at AT TIME ZONE 'America/Sao_Paulo')`;
 
     const limitIdx  = rowsParams.length + 1;
     const offsetIdx = rowsParams.length + 2;
 
-    const [totaisQ, cbQ, countQ, rowsQ] = await Promise.all([
+    // Pendente com previsão neste mês: Stripe pago, disponivel_em dentro do mês selecionado e ainda > NOW()
+    // Inclui compras do mês anterior que liberam neste mês + compras deste mês que liberam neste mês
+    let pendenteMesQ = null;
+    if (m) {
+      const pendBaseFilter = ["m.agencia_id = $1", "t.status = 'pago'", "t.gateway = 'stripe'",
+        "t.disponivel_em IS NOT NULL", "t.disponivel_em > NOW()"];
+      const pendParams = [agenciaId];
+      if (hasModelo) { pendBaseFilter.push(`t.modelo_id = $2`); pendParams.push(Number(modelo_id)); }
+      const pi = pendParams.length + 1;
+      pendBaseFilter.push(`DATE(t.disponivel_em AT TIME ZONE 'UTC') >= $${pi}::date`);
+      pendBaseFilter.push(`DATE(t.disponivel_em AT TIME ZONE 'UTC') <= $${pi+1}::date`);
+      pendParams.push(firstDayStr, lastDayStr);
+      pendenteMesQ = db.query(`
+        SELECT
+          COALESCE(SUM(t.valor_modelo), 0) AS pendente_modelo,
+          COALESCE(SUM(t.agency_fee),   0) AS pendente_agencia
+        FROM transacoes_agency t
+        JOIN modelos m ON m.id = t.modelo_id
+        WHERE ${pendBaseFilter.join(' AND ')}
+      `, pendParams);
+    }
+
+    const [totaisQ, countQ, rowsQ, libRowsQ, pendMesResult] = await Promise.all([
 
       db.query(`
         SELECT
-          COALESCE(SUM(CASE WHEN t.status='pago' AND ${DISP}     THEN t.valor_modelo ELSE 0 END), 0) AS modelo,
-          COALESCE(SUM(CASE WHEN t.status='pago' AND ${DISP}     THEN t.agency_fee   ELSE 0 END), 0) AS agencia,
-          COALESCE(SUM(CASE WHEN t.status='pago' AND NOT ${DISP} THEN t.valor_modelo ELSE 0 END), 0) AS pendente_modelo,
-          COALESCE(SUM(CASE WHEN t.status='pago' AND NOT ${DISP} THEN t.agency_fee   ELSE 0 END), 0) AS pendente_agencia
-        FROM transacoes_agency t
-        JOIN modelos m ON m.id = t.modelo_id
-        WHERE ${whereTotais}
-      `, totaisParams),
-
-      db.query(`
-        SELECT COALESCE(SUM(c.valor), 0) AS chargebacks
-        FROM chargebacks c
-        JOIN modelos m ON m.id = c.modelo_id
-        WHERE m.agencia_id = $1
-          ${hasModelo ? `AND c.modelo_id = $2` : ''}
-          ${m ? `AND EXTRACT(YEAR  FROM c.criado_em AT TIME ZONE 'America/Sao_Paulo') = $${hasModelo ? 3 : 2}
-                 AND EXTRACT(MONTH FROM c.criado_em AT TIME ZONE 'America/Sao_Paulo') = $${hasModelo ? 4 : 3}` : ''}
-      `, [
-        agenciaId,
-        ...(hasModelo ? [Number(modelo_id)] : []),
-        ...(m ? [m.ano, m.mes] : [])
-      ]),
-
-      db.query(`
-        SELECT COUNT(DISTINCT (${DIA})) AS count
+          COALESCE(SUM(CASE WHEN t.status='pago' AND ${DISP}     THEN t.valor_modelo ELSE 0 END), 0) AS liberado_modelo,
+          COALESCE(SUM(CASE WHEN t.status='pago' AND ${DISP}     THEN t.agency_fee   ELSE 0 END), 0) AS liberado_agencia,
+          COALESCE(SUM(CASE WHEN t.status='pago' AND NOT ${DISP} THEN t.valor_modelo ELSE 0 END), 0) AS pendente_modelo_all,
+          COALESCE(SUM(CASE WHEN t.status='pago' AND NOT ${DISP} THEN t.agency_fee   ELSE 0 END), 0) AS pendente_agencia_all
         FROM transacoes_agency t
         JOIN modelos m ON m.id = t.modelo_id
         WHERE ${whereRows}
+      `, totaisParams),
+
+      db.query(`
+        SELECT COUNT(*) AS count FROM (
+          SELECT DISTINCT (${DIA}) AS dia, t.modelo_id
+          FROM transacoes_agency t
+          JOIN modelos m ON m.id = t.modelo_id
+          WHERE ${whereRows}
+        ) sub
       `, rowsParams),
 
       db.query(`
         SELECT
-          (${DIA}) AS dia,
+          TO_CHAR((${DIA}), 'YYYY-MM-DD') AS dia,
+          t.modelo_id,
+          m.nome AS modelo_nome,
           COALESCE(SUM(CASE WHEN t.status='pago' AND ${DISP}     THEN t.valor_modelo ELSE 0 END), 0) AS ganhos_modelo,
           COALESCE(SUM(CASE WHEN t.status='pago' AND ${DISP}     THEN t.agency_fee   ELSE 0 END), 0) AS ganhos_agencia,
           COALESCE(SUM(CASE WHEN t.status='pago' AND NOT ${DISP} THEN t.valor_modelo ELSE 0 END), 0) AS pendente_modelo,
-          COALESCE(SUM(CASE WHEN t.status='pago' AND NOT ${DISP} THEN t.agency_fee   ELSE 0 END), 0) AS pendente_agencia
+          COALESCE(SUM(CASE WHEN t.status='pago' AND NOT ${DISP} THEN t.agency_fee   ELSE 0 END), 0) AS pendente_agencia,
+          TO_CHAR(MIN(CASE WHEN t.status='pago' AND NOT ${DISP} AND t.disponivel_em IS NOT NULL
+            THEN DATE(t.disponivel_em AT TIME ZONE 'UTC') END), 'YYYY-MM-DD') AS proxima_liberacao
         FROM transacoes_agency t
         JOIN modelos m ON m.id = t.modelo_id
         WHERE ${whereRows}
-        GROUP BY (${DIA})
-        ORDER BY dia DESC
+        GROUP BY (${DIA}), t.modelo_id, m.nome
+        ORDER BY dia DESC, m.nome
         LIMIT $${limitIdx} OFFSET $${offsetIdx}
-      `, [...rowsParams, limit, offset])
+      `, [...rowsParams, limit, offset]),
 
+      db.query(`
+        SELECT
+          TO_CHAR(DATE(t.created_at AT TIME ZONE 'America/Sao_Paulo'), 'YYYY-MM-DD') AS dia,
+          t.modelo_id,
+          TO_CHAR(DATE(t.disponivel_em AT TIME ZONE 'UTC'), 'YYYY-MM-DD') AS dia_lib,
+          COALESCE(SUM(t.valor_modelo), 0) AS lib_modelo,
+          COALESCE(SUM(t.agency_fee),   0) AS lib_agencia
+        FROM transacoes_agency t
+        JOIN modelos m ON m.id = t.modelo_id
+        WHERE m.agencia_id = $1
+          ${hasModelo ? `AND t.modelo_id = $2` : ''}
+          AND t.gateway = 'stripe' AND t.status = 'pago'
+          AND t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()
+          ${m ? `AND EXTRACT(YEAR  FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $${hasModelo ? 3 : 2}
+                 AND EXTRACT(MONTH FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $${hasModelo ? 4 : 3}` : ''}
+        GROUP BY 1, 2, 3
+        ORDER BY 1 DESC, 2, 3
+      `, [agenciaId, ...(hasModelo ? [Number(modelo_id)] : []), ...(m ? [m.ano, m.mes] : [])]),
+
+      pendenteMesQ || Promise.resolve(null),
     ]);
 
+    // Monta libMap keyed por "dia|modelo_id"
+    const libMap = {};
+    for (const r of libRowsQ.rows) {
+      const key = `${r.dia}|${r.modelo_id}`;
+      if (!libMap[key]) libMap[key] = [];
+      libMap[key].push({ data: r.dia_lib, modelo: Number(r.lib_modelo), agencia: Number(r.lib_agencia) });
+    }
+    const rows = rowsQ.rows.map(r => ({
+      ...r,
+      liberacoes: libMap[`${r.dia}|${r.modelo_id}`] || [],
+    }));
+
     const t0 = totaisQ.rows[0];
+    const pendMes = pendMesResult?.rows?.[0];
+
     res.json({
       totais: {
-        modelo:           Number(t0.modelo),
-        agencia:          Number(t0.agencia),
-        chargebacks:      Number(cbQ.rows[0].chargebacks || 0),
-        pendente_modelo:  Number(t0.pendente_modelo),
-        pendente_agencia: Number(t0.pendente_agencia),
+        liberado_modelo:  Number(t0.liberado_modelo),
+        liberado_agencia: Number(t0.liberado_agencia),
+        pendente_modelo:  pendMes ? Number(pendMes.pendente_modelo)  : Number(t0.pendente_modelo_all),
+        pendente_agencia: pendMes ? Number(pendMes.pendente_agencia) : Number(t0.pendente_agencia_all),
       },
-      rows: rowsQ.rows,
+      rows,
       totalPages: Math.ceil(Number(countQ.rows[0].count || 0) / limit),
       page,
     });

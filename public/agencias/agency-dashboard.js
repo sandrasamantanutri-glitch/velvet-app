@@ -1158,6 +1158,10 @@ let _txTotalPages = 1;
 
 pageLoaders.transacoes = async function () {
   populateMonthSelect($('transacoesMes'));
+  // Adiciona opção "Acumulado (todas)" no topo
+  const selMes = $('transacoesMes');
+  selMes.insertAdjacentHTML('afterbegin', '<option value="">Acumulado (todas)</option>');
+  selMes.value = selMes.options[1]?.value || ''; // seleciona o mês atual por padrão
   // Popula modelos mantendo a opção "Todas as modelos"
   const selMod = $('transacoesModelo');
   if (selMod.options.length <= 1) {
@@ -1185,28 +1189,50 @@ async function carregarTransacoes() {
     const data = await fetchJSON(`/agency/dashboard/transacoes?${params}`);
     const t = data.totais || {};
 
-    $('tx-modelo').textContent       = money(t.modelo);
-    $('tx-agencia').textContent      = money(t.agencia);
-    $('tx-cb').textContent           = money(t.chargebacks);
+    $('tx-modelo-lib').textContent   = money(t.liberado_modelo);
+    $('tx-agencia-lib').textContent  = money(t.liberado_agencia);
     $('tx-pend-modelo').textContent  = money(t.pendente_modelo);
     $('tx-pend-agencia').textContent = money(t.pendente_agencia);
 
+    const hintMod  = $('tx-pend-modelo-hint');
+    const hintAgen = $('tx-pend-agencia-hint');
+    if (hintMod)  hintMod.textContent  = mes ? 'c/ previsão p/ liberar neste mês' : 'stripe pendente (acumulado)';
+    if (hintAgen) hintAgen.textContent = mes ? 'c/ previsão p/ liberar neste mês' : 'stripe pendente (acumulado)';
+
     const fmtDia = d => { const s = String(d||'').substring(0,10); const [y,mo,dd]=s.split('-'); return dd&&mo&&y?`${dd}/${mo}/${y}`:''; };
+
+    function renderLiberado(row) {
+      const libs = row.liberacoes || [];
+      const parts = libs.map(lib => {
+        const dt  = fmtDia(lib.data);
+        const txt = libs.length > 1 ? `${dt} (${money(lib.modelo)})` : dt;
+        return `<span class="badge badge-success" style="font-size:11px;margin:1px 2px">${txt}</span>`;
+      });
+      const pendMod = Number(row.pendente_modelo || 0);
+      if (pendMod > 0) {
+        const dt2 = row.proxima_liberacao ? fmtDia(row.proxima_liberacao) : '?';
+        parts.push(`<span class="badge badge-warning" style="font-size:11px;margin:1px 2px">libera ${dt2}</span>`);
+      }
+      return parts.length ? parts.join(' ') : '<span style="opacity:0.35">—</span>';
+    }
+
+    function renderPendentes(row) {
+      const pendMod  = Number(row.pendente_modelo  || 0);
+      const pendAgen = Number(row.pendente_agencia || 0);
+      const total = pendMod + pendAgen;
+      if (total <= 0) return '<span style="opacity:0.35">—</span>';
+      return `<span class="badge badge-warning">${money(total)}</span>`
+        + `<br><small style="opacity:.7;font-size:11px">${money(pendMod)} modelo</small>`;
+    }
+
     const tbody = $('tableTransacoes').querySelector('tbody');
-    tbody.innerHTML = (data.rows || []).map(r => {
-      const pendMod  = Number(r.pendente_modelo  || 0);
-      const pendAgen = Number(r.pendente_agencia || 0);
-      const fmtPend  = v => v > 0
-        ? `<span style="color:#f59e0b">⏳ ${money(v)}</span>`
-        : `<span style="opacity:0.35">—</span>`;
-      return `<tr>
-        <td>${fmtDia(r.dia)}</td>
-        <td>${money(r.ganhos_modelo)}</td>
-        <td>${money(r.ganhos_agencia)}</td>
-        <td>${fmtPend(pendMod)}</td>
-        <td>${fmtPend(pendAgen)}</td>
-      </tr>`;
-    }).join('') || `<tr><td colspan="5" style="text-align:center;opacity:0.5">Sem transações</td></tr>`;
+    tbody.innerHTML = (data.rows || []).map(r => `<tr>
+      <td>${fmtDia(r.dia)}</td>
+      <td>${escapeHtml(r.modelo_nome || '')}</td>
+      <td>${money(r.ganhos_agencia)}</td>
+      <td>${renderPendentes(r)}</td>
+      <td>${renderLiberado(r)}</td>
+    </tr>`).join('') || `<tr><td colspan="5" style="text-align:center;opacity:0.5">Sem transações</td></tr>`;
 
     _txTotalPages = data.totalPages || 1;
     renderTxPagination();

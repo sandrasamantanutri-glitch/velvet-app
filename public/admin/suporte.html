@@ -107,6 +107,7 @@
   <div id="lista-header">
     <span class="dot"></span> Suporte ao Cliente
     <button id="btn-registro-manual" title="Registrar atendimento por email" style="margin-left:auto;background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;">+ E-mail</button>
+    <button id="btn-limpar-fechadas" title="Apagar conversas fechadas já lidas" style="background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;">🗑 Limpar</button>
   </div>
   <div id="filtros">
     <button class="filtro-btn" data-status="todas">Todas</button>
@@ -314,6 +315,28 @@
       filtroAtual = btn.dataset.status;
       renderLista();
     });
+  });
+
+  // ─── LIMPAR FECHADAS ──────────────────────────────────────────────────────
+  document.getElementById("btn-limpar-fechadas").addEventListener("click", async () => {
+    if (!confirm("Apagar todas as conversas fechadas já lidas? Esta ação não pode ser desfeita.")) return;
+    try {
+      const r = await fetch("/api/suporte/admin/conversas/fechadas", {
+        method: "DELETE", credentials: "same-origin"
+      });
+      const data = await r.json();
+      if (r.ok) {
+        alert(`${data.removidas || 0} conversa(s) apagada(s).`);
+        conversaAtiva = null;
+        document.getElementById("chat-vazio").style.display = "flex";
+        document.getElementById("chat-header").style.display = "none";
+        document.getElementById("resposta-area").style.display = "none";
+        document.getElementById("msgs").innerHTML = "";
+        carregarLista();
+      } else {
+        alert("Erro ao limpar: " + (data.error || r.status));
+      }
+    } catch (e) { alert("Erro de conexão."); }
   });
 
   // ─── REGISTRO MANUAL DE ATENDIMENTO ──────────────────────────────────────
