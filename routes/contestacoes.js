@@ -317,23 +317,43 @@ router.get('/:identificador', async (req, res) => {
       if (ipPagto) cliente.ultimo_ip = ipPagto;
     }
 
-    // Anexa histórico de rascunhos a cada ocorrência
+    // Anexa histórico de respostas a cada ocorrência
     const ocorrencias = ocorrenciasRes.rows;
+    for (const oc of ocorrencias) oc.historico = [];
     if (ocorrencias.length) {
       const ids = ocorrencias.map(o => o.id);
-      const { rows: rascunhos } = await db.query(
-        `SELECT id, ocorrencia_id, resposta, resposta_admin, status_salvo, anexo_filename, criado_em
-           FROM logs_ocorrencias_rascunhos
-          WHERE ocorrencia_id = ANY($1)
-          ORDER BY criado_em ASC`,
-        [ids]
-      );
-      const byId = {};
-      for (const r of rascunhos) {
-        if (!byId[r.ocorrencia_id]) byId[r.ocorrencia_id] = [];
-        byId[r.ocorrencia_id].push(r);
+      try {
+        const { rows: hist } = await db.query(
+          `SELECT id, ocorrencia_id, resposta, resposta_admin, status_salvo, anexo_filename, criado_em
+             FROM logs_ocorrencias_rascunhos
+            WHERE ocorrencia_id = ANY($1)
+            ORDER BY criado_em ASC`,
+          [ids]
+        );
+        const byId = {};
+        for (const r of hist) {
+          if (!byId[r.ocorrencia_id]) byId[r.ocorrencia_id] = [];
+          byId[r.ocorrencia_id].push(r);
+        }
+        for (const oc of ocorrencias) oc.historico = byId[oc.id] || [];
+      } catch (histErr) {
+        console.error("Busca histórico contestações falhou:", histErr.message);
       }
-      for (const oc of ocorrencias) oc.rascunhos = byId[oc.id] || [];
+    }
+    // Retrocompatibilidade: usa resposta do campo principal se não há histórico
+    for (const oc of ocorrencias) {
+      if (!oc.historico.length && oc.resposta) {
+        oc.historico = [{
+          id: null,
+          ocorrencia_id: oc.id,
+          resposta: oc.resposta,
+          resposta_admin: oc.resposta_admin,
+          status_salvo: oc.status === 'fechada' ? 'fechada' : 'pendente',
+          anexo_filename: oc.anexo_resposta_filename,
+          criado_em: oc.resposta_at
+        }];
+      }
+      oc.rascunhos = oc.historico;
     }
 
     res.json({

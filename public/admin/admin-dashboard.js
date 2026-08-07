@@ -1378,16 +1378,7 @@ const termosCompletos = `
       </div>
       ${oc.modelo_nome ? `<div style="font-size:13px;color:#5e5873;">Influencer: <strong>${oc.modelo_nome}</strong></div>` : ''}
       ${oc.descricao   ? `<div style="font-size:13px;color:#5e5873;margin-top:4px;">${oc.descricao}</div>` : ''}
-      ${(oc.rascunhos && oc.rascunhos.length) ? oc.rascunhos.map(r => `
-        <div style="margin-top:6px;padding:8px 12px;background:#f3eff5;border-left:3px solid #6f3cff;border-radius:0 6px 6px 0;font-size:13px;">
-          <strong style="color:#6f3cff;">Resposta (${fmtDateTime(r.criado_em)}) — ${r.resposta_admin || ''}${r.status_salvo === 'pendente' ? ' <span style="font-size:11px;background:#e8f0ff;color:#2c5fe6;padding:1px 6px;border-radius:10px;font-weight:600;">rascunho</span>' : ' <span style="font-size:11px;background:#e6f9ee;color:#1a7a40;padding:1px 6px;border-radius:10px;font-weight:600;">enviado</span>'}:</strong><br>${r.resposta || ''}
-          ${r.anexo_filename ? `<br><span style="font-size:12px;">📎 ${r.anexo_filename}</span>` : ''}
-        </div>
-      `).join('') : (oc.resposta ? `
-        <div style="margin-top:8px;padding:8px 12px;background:#f3eff5;border-left:3px solid #6f3cff;border-radius:0 6px 6px 0;font-size:13px;">
-          <strong style="color:#6f3cff;">Resposta (${fmtDateTime(oc.resposta_at)}):</strong><br>${oc.resposta}
-        </div>
-      ` : '')}
+      ${renderHistoricoOcorrencia(oc.rascunhos || oc.historico)}
     </div>
   `).join('') || '<p>Nenhuma ocorrência de suporte registrada.</p>';
 
@@ -1525,6 +1516,38 @@ const OC_TIPO_MAP = {
   midia_nao_desbloqueou: "Mídia não desbloqueou", midia_errada: "Mídia errada",
 };
 
+function renderHistoricoOcorrencia(historico) {
+  const lista = historico || [];
+  if (!lista.length) return '';
+  const items = lista.map((r, i) => {
+    const isRascunho = r.status_salvo === 'pendente';
+    const badge = isRascunho
+      ? '<span style="font-size:10px;background:#e8f0ff;color:#2c5fe6;padding:1px 7px;border-radius:10px;font-weight:700;">rascunho</span>'
+      : '<span style="font-size:10px;background:#e6f9ee;color:#1a7a40;padding:1px 7px;border-radius:10px;font-weight:700;">enviado</span>';
+    const sep = i < lista.length - 1 ? 'border-bottom:1px dashed #e5d9ff;' : '';
+    return `
+      <div style="display:flex;gap:10px;align-items:flex-start;padding:8px 0;${sep}">
+        <div style="min-width:22px;height:22px;background:${isRascunho ? '#e8f0ff' : '#e6f9ee'};border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:${isRascunho ? '#2c5fe6' : '#1a7a40'};flex-shrink:0;margin-top:2px;">${i + 1}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;">
+            <span style="font-size:11px;color:#9b87b8;">${fmtDateTime(r.criado_em)}</span>
+            ${r.resposta_admin ? `<span style="font-size:11px;color:#6f3cff;font-weight:600;">${r.resposta_admin}</span>` : ''}
+            ${badge}
+          </div>
+          <div style="font-size:13px;color:#1e1b2e;white-space:pre-wrap;">${r.resposta || '<em style="color:#aaa;">sem texto</em>'}</div>
+          ${r.anexo_filename ? `<div style="font-size:12px;color:#9b87b8;margin-top:4px;">📎 ${r.anexo_filename}</div>` : ''}
+        </div>
+      </div>`;
+  }).join('');
+  return `
+    <div style="background:#f8f5ff;border:1px solid #e5d9ff;border-radius:8px;padding:10px 14px;margin-bottom:8px;">
+      <div style="font-size:12px;font-weight:700;color:#6f3cff;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">
+        Histórico de respostas (${lista.length})
+      </div>
+      ${items}
+    </div>`;
+}
+
 let _ocDebounce;
 function debounceOcorrencias() {
   clearTimeout(_ocDebounce);
@@ -1567,17 +1590,7 @@ async function carregarOcorrenciasAdmin(page = 1) {
           ${oc.nome_completo ? `<div style="font-size:13px;color:#5e5873;margin-bottom:4px;">Cliente: ${oc.nome_completo}</div>` : ''}
           ${oc.descricao ? `<div style="font-size:13px;color:#1e1b2e;margin-bottom:8px;">${oc.descricao}</div>` : ''}
           ${oc.anexo_filename ? `<div style="font-size:12px;color:#9b87b8;margin-bottom:6px;">📎 Anexo cliente: ${oc.anexo_filename}</div>` : ''}
-          ${(oc.rascunhos && oc.rascunhos.length) ? oc.rascunhos.map(r => `
-            <div style="padding:8px 12px;background:#f3eff5;border-left:3px solid #6f3cff;border-radius:0 6px 6px 0;font-size:13px;margin-bottom:6px;">
-              <strong style="color:#6f3cff;">Resposta (${fmtDateTime(r.criado_em)}) — ${r.resposta_admin || ''}${r.status_salvo === 'pendente' ? ' <span style="font-size:11px;background:#e8f0ff;color:#2c5fe6;padding:1px 6px;border-radius:10px;font-weight:600;">rascunho</span>' : ' <span style="font-size:11px;background:#e6f9ee;color:#1a7a40;padding:1px 6px;border-radius:10px;font-weight:600;">enviado</span>'}:</strong><br>${r.resposta || ''}
-              ${r.anexo_filename ? `<br><span style="font-size:12px;">📎 ${r.anexo_filename}</span>` : ''}
-            </div>
-          `).join('') : (oc.resposta ? `
-            <div style="padding:8px 12px;background:#f3eff5;border-left:3px solid #6f3cff;border-radius:0 6px 6px 0;font-size:13px;margin-bottom:8px;">
-              <strong style="color:#6f3cff;">Resposta (${fmtDateTime(oc.resposta_at)}) — ${oc.resposta_admin || ''}:</strong><br>${oc.resposta}
-              ${oc.anexo_resposta_filename ? `<br><span style="font-size:12px;">📎 ${oc.anexo_resposta_filename}</span>` : ''}
-            </div>
-          ` : '')}
+          ${renderHistoricoOcorrencia(oc.rascunhos || oc.historico)}
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
             ${oc.status !== 'pendente' ? `<button class="btn btn-sm" onclick="atualizarOcorrencia(${oc.id},'pendente')">Marcar Em Análise</button>` : ''}
             ${oc.status !== 'fechada'  ? `<button class="btn btn-sm btn-primary" onclick="abrirRespostaOcorrencia(${oc.id})">Responder / Fechar</button>` : ''}
