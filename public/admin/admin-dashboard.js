@@ -3883,13 +3883,19 @@ async function carregarTransacoesCartao(page) {
 
     var data = await fetchJSON('/admin/dashboard/transacoes-agency-cartao?' + qp);
 
-    $('kpi-cartao-bruto').textContent           = money(data.totais && data.totais.bruto);
-    $('kpi-cartao-modelo').textContent          = money(data.totais && data.totais.modelo);
-    $('kpi-cartao-liberado').textContent        = money(data.totais && data.totais.liberado_bruto);
-    $('kpi-cartao-pendente').textContent        = money(data.totais && data.totais.pendente_bruto);
-    $('kpi-cartao-liberado-modelo').textContent = money(data.totais && data.totais.liberado_modelo);
-    $('kpi-cartao-pendente-modelo').textContent = money(data.totais && data.totais.pendente_modelo);
-    $('kpi-cartao-chargebacks').textContent     = money(data.totais && data.totais.chargebacks);
+    $('kpi-cartao-bruto').textContent             = money(data.totais && data.totais.bruto);
+    $('kpi-cartao-modelo').textContent            = money(data.totais && data.totais.modelo);
+    $('kpi-cartao-liberado').textContent          = money(data.totais && data.totais.liberado_bruto);
+    $('kpi-cartao-pendente').textContent          = money(data.totais && data.totais.pendente_bruto);
+    $('kpi-cartao-liberado-modelo').textContent   = money(data.totais && data.totais.liberado_modelo);
+    $('kpi-cartao-pendente-modelo').textContent   = money(data.totais && data.totais.pendente_modelo);
+    $('kpi-cartao-chargebacks').textContent       = money(data.totais && data.totais.chargebacks);
+    $('kpi-cartao-gateway').textContent           = money(data.totais && data.totais.gateway);
+    $('kpi-cartao-gateway-liberado').textContent  = money(data.totais && data.totais.liberado_gateway);
+    $('kpi-cartao-gateway-pendente').textContent  = money(data.totais && data.totais.pendente_gateway);
+    $('kpi-cartao-agency').textContent            = money(data.totais && data.totais.agency);
+    $('kpi-cartao-agency-liberado').textContent   = money(data.totais && data.totais.liberado_agency);
+    $('kpi-cartao-agency-pendente').textContent   = money(data.totais && data.totais.pendente_agency);
 
     console.log('[cartao frontend] rows:', data.rows && data.rows.length, '| row[0]:', data.rows && data.rows[0]);
 
@@ -3909,6 +3915,18 @@ async function carregarTransacoesCartao(page) {
         var cbCell       = temCb
           ? ('<span class="badge badge-danger">' + money(r.chargeback_modelo) + '</span>')
           : '—';
+        var gwTotal    = Number(r.total_gateway);
+        var gwLiberado = Number(r.liberado_gateway);
+        var gwPendente = Number(r.pendente_gateway);
+        var gwCell = gwTotal > 0
+          ? (money(gwTotal) + (gwLiberado > 0 ? '<br><small style="color:#16a34a;opacity:.85">' + money(gwLiberado) + ' lib.</small>' : '') + (gwPendente > 0 ? '<br><small style="color:#d97706;opacity:.85">' + money(gwPendente) + ' pend.</small>' : ''))
+          : '—';
+        var agTotal    = Number(r.total_agency);
+        var agLiberado = Number(r.liberado_agency);
+        var agPendente = Number(r.pendente_agency);
+        var agCell = agTotal > 0
+          ? (money(agTotal) + (agLiberado > 0 ? '<br><small style="color:#16a34a;opacity:.85">' + money(agLiberado) + ' lib.</small>' : '') + (agPendente > 0 ? '<br><small style="color:#d97706;opacity:.85">' + money(agPendente) + ' pend.</small>' : ''))
+          : '—';
         html += '<tr' + rowBg + '>' +
           '<td>' + _isoToDDMM(r.dia_compra) + '</td>' +
           '<td>' + modeloNome + '</td>' +
@@ -3916,13 +3934,15 @@ async function carregarTransacoesCartao(page) {
           '<td>' + money(r.total_modelo) + '</td>' +
           '<td>' + cbCell + '</td>' +
           '<td>' + pendCell + '</td>' +
+          '<td>' + gwCell + '</td>' +
+          '<td>' + agCell + '</td>' +
           '<td style="white-space:nowrap">' + _renderLiberado(r) + '</td>' +
           '</tr>';
       } catch (rowErr) { console.error('[cartao] erro na linha ' + i, rowErr, rows[i]); }
     }
 
     var tbody = $('tableTransacoesCartao') && $('tableTransacoesCartao').querySelector('tbody');
-    if (tbody) tbody.innerHTML = html || emptyRow(7);
+    if (tbody) tbody.innerHTML = html || emptyRow(9);
 
     buildPagination('paginationCartao', page, data.totalPages || 1, 'carregarTransacoesCartao');
   } catch (err) { console.error('Erro transações cartão:', err); }

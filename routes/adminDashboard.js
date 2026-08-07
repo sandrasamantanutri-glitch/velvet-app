@@ -3488,6 +3488,12 @@ router.get("/transacoes-agency-cartao", async (req, res) => {
         COALESCE(SUM(CASE WHEN t.status = 'pago' AND t.disponivel_em IS NOT NULL AND t.disponivel_em >  NOW() THEN t.valor_modelo ELSE 0 END), 0) AS pendente_modelo,
         COALESCE(SUM(CASE WHEN t.status = 'pago' AND t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW() THEN t.valor_bruto  ELSE 0 END), 0) AS liberado_bruto,
         COALESCE(SUM(CASE WHEN t.status = 'pago' AND t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW() THEN t.valor_modelo ELSE 0 END), 0) AS liberado_modelo,
+        COALESCE(SUM(CASE WHEN t.status = 'pago'                                                                                              THEN t.taxa_gateway ELSE 0 END), 0) AS total_gateway,
+        COALESCE(SUM(CASE WHEN t.status = 'pago' AND t.disponivel_em IS NOT NULL AND t.disponivel_em >  NOW() THEN t.taxa_gateway ELSE 0 END), 0) AS pendente_gateway,
+        COALESCE(SUM(CASE WHEN t.status = 'pago' AND t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW() THEN t.taxa_gateway ELSE 0 END), 0) AS liberado_gateway,
+        COALESCE(SUM(CASE WHEN t.status = 'pago'                                                                                              THEN t.agency_fee   ELSE 0 END), 0) AS total_agency,
+        COALESCE(SUM(CASE WHEN t.status = 'pago' AND t.disponivel_em IS NOT NULL AND t.disponivel_em >  NOW() THEN t.agency_fee   ELSE 0 END), 0) AS pendente_agency,
+        COALESCE(SUM(CASE WHEN t.status = 'pago' AND t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW() THEN t.agency_fee   ELSE 0 END), 0) AS liberado_agency,
         TO_CHAR(MIN(CASE WHEN t.status = 'pago' AND t.disponivel_em IS NOT NULL AND t.disponivel_em > NOW()
           THEN DATE(t.disponivel_em AT TIME ZONE 'UTC') END), 'YYYY-MM-DD') AS proxima_liberacao
       FROM transacoes_agency t
@@ -3528,15 +3534,21 @@ router.get("/transacoes-agency-cartao", async (req, res) => {
     }
 
     // Totais = soma de TODAS as linhas do período (sem LIMIT)
-    const totais = { bruto: 0, modelo: 0, pendente_bruto: 0, pendente_modelo: 0, liberado_bruto: 0, liberado_modelo: 0, chargebacks: 0 };
+    const totais = { bruto: 0, modelo: 0, pendente_bruto: 0, pendente_modelo: 0, liberado_bruto: 0, liberado_modelo: 0, chargebacks: 0, gateway: 0, pendente_gateway: 0, liberado_gateway: 0, agency: 0, pendente_agency: 0, liberado_agency: 0 };
     for (const r of allRows) {
-      totais.bruto           += Number(r.total_bruto);
-      totais.modelo          += Number(r.total_modelo);
-      totais.pendente_bruto  += Number(r.pendente_bruto);
-      totais.pendente_modelo += Number(r.pendente_modelo);
-      totais.liberado_bruto  += Number(r.liberado_bruto);
-      totais.liberado_modelo += Number(r.liberado_modelo);
-      totais.chargebacks     += Number(r.chargeback_modelo);
+      totais.bruto            += Number(r.total_bruto);
+      totais.modelo           += Number(r.total_modelo);
+      totais.pendente_bruto   += Number(r.pendente_bruto);
+      totais.pendente_modelo  += Number(r.pendente_modelo);
+      totais.liberado_bruto   += Number(r.liberado_bruto);
+      totais.liberado_modelo  += Number(r.liberado_modelo);
+      totais.chargebacks      += Number(r.chargeback_modelo);
+      totais.gateway          += Number(r.total_gateway);
+      totais.pendente_gateway += Number(r.pendente_gateway);
+      totais.liberado_gateway += Number(r.liberado_gateway);
+      totais.agency           += Number(r.total_agency);
+      totais.pendente_agency  += Number(r.pendente_agency);
+      totais.liberado_agency  += Number(r.liberado_agency);
     }
 
     res.json({
