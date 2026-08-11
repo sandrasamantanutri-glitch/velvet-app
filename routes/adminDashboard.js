@@ -5536,7 +5536,12 @@ router.get("/chargebacks-list", async (req, res) => {
   }
 });
 
-router.post("/chargebacks", authAdmin, uploadPublico.single('comprovante'), async (req, res) => {
+router.post("/chargebacks", authAdmin, (req, res, next) => {
+  uploadPublico.single('comprovante')(req, res, (err) => {
+    if (err) return res.status(500).json({ erro: "Erro no upload do comprovante: " + err.message });
+    next();
+  });
+}, async (req, res) => {
   try {
     let { plataforma, valor, data, motivo, email, modelo_id, tipo, gateway, valor_modelo } = req.body;
     const comprovante = req.file ? req.file.location : null;

@@ -4969,7 +4969,9 @@ async function salvarChargeback(event) {
     });
 
     if (!res.ok) {
-      throw new Error(`HTTP ${res.status}`);
+      let msg = `HTTP ${res.status}`;
+      try { const body = await res.json(); if (body?.erro) msg = body.erro; } catch (_) {}
+      throw new Error(msg);
     }
 
     toast('Chargeback registrado com sucesso!', 'success');

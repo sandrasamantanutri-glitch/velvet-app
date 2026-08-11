@@ -681,7 +681,7 @@ async function desativarNotificacoes() {
     "/", "/index.html", "/me.html",
     "/inbox.html", "/inboxc.html",
     "/chat.html", "/chatc.html", "/chat.html",
-    "/chat-app.html", "/chatc.html", "/paginaChat.html", "/allmessage.html",
+    "/chat-app.html", "/chatc.html", "/paginaChat.html", "/allmessage.html", "/chat-agency.html",
     "/terms.html", "/privacy.html", "/policies.html", "/creatorterms.html", "/about.html",
   ]);
 
