@@ -3757,11 +3757,18 @@ router.get("/ganhos-conciliacao", async (req, res) => {
       liberarModelo = Number(lcR.rows[0].modelo);
     }
 
-    // 5. Stripe já liberado neste mês — disponivel_em neste mês E já passou
+    // 5. Stripe já liberado — disponivel_em já passou (filtra pelo mês se selecionado)
     let jaLiberadoBruto = 0, jaLiberadoModelo = 0, jaLiberadoVelvet = 0, jaLiberadoAgency = 0, jaLiberadoGateway = 0;
-    if (m) {
-      const jlPi = modP.length + 1;
-      const jlR  = await db.query(`
+    {
+      let jlCond = '';
+      let jlParams = [...modP];
+      if (m) {
+        const jlPi = modP.length + 1;
+        jlCond = ` AND DATE(t.disponivel_em AT TIME ZONE 'UTC') >= $${jlPi}::date
+                   AND DATE(t.disponivel_em AT TIME ZONE 'UTC') <= $${jlPi + 1}::date`;
+        jlParams.push(firstDayStr, lastDayStr);
+      }
+      const jlR = await db.query(`
         SELECT
           COALESCE(SUM(t.valor_bruto),  0) AS bruto,
           COALESCE(SUM(t.valor_modelo), 0) AS modelo,
@@ -3774,9 +3781,8 @@ router.get("/ganhos-conciliacao", async (req, res) => {
           AND t.status = 'pago'
           AND t.disponivel_em IS NOT NULL
           AND t.disponivel_em <= NOW()
-          AND DATE(t.disponivel_em AT TIME ZONE 'UTC') >= $${jlPi}::date
-          AND DATE(t.disponivel_em AT TIME ZONE 'UTC') <= $${jlPi + 1}::date
-      `, [...modP, firstDayStr, lastDayStr]);
+          ${jlCond}
+      `, jlParams);
       jaLiberadoBruto   = Number(jlR.rows[0].bruto);
       jaLiberadoModelo  = Number(jlR.rows[0].modelo);
       jaLiberadoVelvet  = Number(jlR.rows[0].velvet);
