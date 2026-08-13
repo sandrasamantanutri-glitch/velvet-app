@@ -376,6 +376,7 @@ function renderChargebackCards(dados, lista, emptyMsg) {
           <span>⚠️ Contestação: ${r.data_fmt || "—"}</span><br>
           <span>Cliente: ${r.cliente_id || "—"}</span>
           <span>${gw}</span>
+          ${r.motivo ? `<br><span style="color:#c00;font-size:12px;">💬 ${r.motivo}</span>` : ''}
         </div>
       </div>
     `;
