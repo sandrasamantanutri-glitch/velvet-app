@@ -28,10 +28,30 @@
       color: #fff;
       padding: 28px 24px 20px;
       text-align: center;
+      position: relative;
     }
     header img { height: 36px; margin-bottom: 12px; display: block; margin-inline: auto; }
     header h1 { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
     header p  { font-size: 13px; opacity: .85; max-width: 480px; margin-inline: auto; line-height: 1.5; }
+
+    .lang-switcher {
+      position: absolute;
+      top: 16px; right: 16px;
+      display: flex; gap: 6px;
+    }
+    .lang-btn {
+      background: rgba(255,255,255,.15);
+      border: 1.5px solid rgba(255,255,255,.4);
+      color: #fff;
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 12px; font-weight: 600;
+      cursor: pointer;
+      transition: background .15s, border-color .15s;
+      letter-spacing: .5px;
+    }
+    .lang-btn:hover { background: rgba(255,255,255,.28); }
+    .lang-btn.active { background: #fff; color: var(--purple); border-color: #fff; }
 
     .container { max-width: 680px; margin: 0 auto; padding: 0 16px; }
 
@@ -147,9 +167,14 @@
 <body>
 
 <header>
+  <div class="lang-switcher">
+    <button class="lang-btn active" onclick="setLang('pt')" id="btn-pt">PT</button>
+    <button class="lang-btn" onclick="setLang('en')" id="btn-en">EN</button>
+    <button class="lang-btn" onclick="setLang('es')" id="btn-es">ES</button>
+  </div>
   <img src="/assets/velvet-white.webp" onerror="this.style.display='none'" alt="Velvet">
-  <h1>Informações para Gestão de Chat Velvet</h1>
-  <p>Este formulário recolhe o máximo de informações para que possamos interagir de forma natural com os seus fãs.</p>
+  <h1 data-i18n="header_title"></h1>
+  <p data-i18n="header_subtitle"></p>
 </header>
 
 <div class="container">
@@ -161,157 +186,163 @@
   <div id="loadingInicial" class="loading-spinner"><div class="spinner"></div></div>
 
   <div id="erroModelo">
-    <h3>❌ Link inválido ou modelo não encontrado.</h3>
+    <h3 data-i18n="erro_modelo"></h3>
   </div>
 
   <form id="formChat" style="display:none" onsubmit="salvarFormulario(event)">
 
     <!-- INFORMAÇÕES PESSOAIS -->
     <section class="bloco">
-      <h2>👤 Informações Pessoais</h2>
+      <h2>👤 <span data-i18n="sec_pessoais"></span></h2>
       <div class="duas-colunas">
-        <div class="campo"><label>Nome *</label><input name="nome" placeholder="Seu nome completo"></div>
-        <div class="campo"><label>Apelido (se tiver)</label><input name="apelido" placeholder="Apelido"></div>
-        <div class="campo"><label>Data de nascimento</label><input name="data_nascimento" type="date"></div>
-        <div class="campo"><label>Signo</label><input name="signo" placeholder="Ex: Escorpião"></div>
-        <div class="campo"><label>Estado civil</label>
+        <div class="campo"><label data-i18n="label_nome"></label><input name="nome" data-i18n-placeholder="ph_nome"></div>
+        <div class="campo"><label data-i18n="label_apelido"></label><input name="apelido" data-i18n-placeholder="ph_apelido"></div>
+        <div class="campo"><label data-i18n="label_nascimento"></label><input name="data_nascimento" type="date"></div>
+        <div class="campo"><label data-i18n="label_signo"></label><input name="signo" data-i18n-placeholder="ph_signo"></div>
+        <div class="campo"><label data-i18n="label_estado_civil"></label>
           <select name="estado_civil">
-            <option value="">Selecione...</option>
-            <option>Solteira</option><option>Namorando</option>
-            <option>Casada</option><option>Divorciada</option><option>Prefere não dizer</option>
+            <option value="" data-i18n="opt_selecione"></option>
+            <option value="Solteira" data-i18n="opt_solteira"></option>
+            <option value="Namorando" data-i18n="opt_namorando"></option>
+            <option value="Casada" data-i18n="opt_casada"></option>
+            <option value="Divorciada" data-i18n="opt_divorciada"></option>
+            <option value="Prefere não dizer" data-i18n="opt_prefere_nao"></option>
           </select>
         </div>
-        <div class="campo"><label>De onde é (cidade/estado)</label><input name="cidade_estado" placeholder="Ex: São Paulo, SP"></div>
-        <div class="campo"><label>Onde mora atualmente</label><input name="mora_atualmente" placeholder="Cidade atual"></div>
-        <div class="campo"><label>Número do calçado</label><input name="numero_calcado" placeholder="Ex: 37"></div>
+        <div class="campo"><label data-i18n="label_cidade_estado"></label><input name="cidade_estado" data-i18n-placeholder="ph_cidade_estado"></div>
+        <div class="campo"><label data-i18n="label_mora_atualmente"></label><input name="mora_atualmente" data-i18n-placeholder="ph_mora_atualmente"></div>
+        <div class="campo"><label data-i18n="label_calcado"></label><input name="numero_calcado" data-i18n-placeholder="ph_calcado"></div>
       </div>
-      <div class="campo"><label>Tem filhos? Quantos? (Se prefere não divulgar, informar)</label><input name="filhos" placeholder="Ex: Sim, 1 filho / Não / Prefiro não dizer"></div>
-      <div class="campo"><label>Mora sozinha? Se não, com quem?</label><input name="mora_sozinha" placeholder="Ex: Sim / Não, moro com minha mãe"></div>
-      <div class="campo"><label>Estuda? O quê?</label><input name="estuda" placeholder="Ex: Sim, Psicologia / Não"></div>
-      <div class="campo"><label>Trabalha além da Velvet?</label><input name="trabalha_alem" placeholder="Ex: Sim, sou enfermeira / Não"></div>
+      <div class="campo"><label data-i18n="label_filhos"></label><input name="filhos" data-i18n-placeholder="ph_filhos"></div>
+      <div class="campo"><label data-i18n="label_mora_sozinha"></label><input name="mora_sozinha" data-i18n-placeholder="ph_mora_sozinha"></div>
+      <div class="campo"><label data-i18n="label_estuda"></label><input name="estuda" data-i18n-placeholder="ph_estuda"></div>
+      <div class="campo"><label data-i18n="label_trabalha_alem"></label><input name="trabalha_alem" data-i18n-placeholder="ph_trabalha_alem"></div>
     </section>
 
     <!-- PERSONALIDADE -->
     <section class="bloco">
-      <h2>💜 Personalidade</h2>
-      <div class="campo"><label>Como descreveria a sua personalidade em 5 palavras?</label><input name="personalidade_5_palavras" placeholder="Ex: divertida, carinhosa, determinada, curiosa, leal"></div>
-      <div class="campo"><label>É mais tímida ou extrovertida?</label>
+      <h2>💜 <span data-i18n="sec_personalidade"></span></h2>
+      <div class="campo"><label data-i18n="label_5_palavras"></label><input name="personalidade_5_palavras" data-i18n-placeholder="ph_5_palavras"></div>
+      <div class="campo"><label data-i18n="label_timida"></label>
         <div class="radio-group">
-          <label><input type="radio" name="timida_extrovertida" value="Tímida"> Tímida</label>
-          <label><input type="radio" name="timida_extrovertida" value="Extrovertida"> Extrovertida</label>
-          <label><input type="radio" name="timida_extrovertida" value="Meio a meio"> Meio a meio</label>
+          <label><input type="radio" name="timida_extrovertida" value="Tímida"> <span data-i18n="opt_timida"></span></label>
+          <label><input type="radio" name="timida_extrovertida" value="Extrovertida"> <span data-i18n="opt_extrovertida"></span></label>
+          <label><input type="radio" name="timida_extrovertida" value="Meio a meio"> <span data-i18n="opt_meio_a_meio"></span></label>
         </div>
       </div>
-      <div class="campo"><label>É romântica, divertida, provocadora ou mais carinhosa?</label>
+      <div class="campo"><label data-i18n="label_estilo_pers"></label>
         <div class="radio-group">
-          <label><input type="radio" name="estilo_personalidade" value="Romântica"> Romântica</label>
-          <label><input type="radio" name="estilo_personalidade" value="Divertida"> Divertida</label>
-          <label><input type="radio" name="estilo_personalidade" value="Provocadora"> Provocadora</label>
-          <label><input type="radio" name="estilo_personalidade" value="Carinhosa"> Carinhosa</label>
-          <label><input type="radio" name="estilo_personalidade" value="Todas"> Todas</label>
+          <label><input type="radio" name="estilo_personalidade" value="Romântica"> <span data-i18n="opt_romantica"></span></label>
+          <label><input type="radio" name="estilo_personalidade" value="Divertida"> <span data-i18n="opt_divertida"></span></label>
+          <label><input type="radio" name="estilo_personalidade" value="Provocadora"> <span data-i18n="opt_provocadora"></span></label>
+          <label><input type="radio" name="estilo_personalidade" value="Carinhosa"> <span data-i18n="opt_carinhosa"></span></label>
+          <label><input type="radio" name="estilo_personalidade" value="Todas"> <span data-i18n="opt_todas"></span></label>
         </div>
       </div>
-      <div class="campo"><label>É ciumenta?</label>
+      <div class="campo"><label data-i18n="label_ciumenta"></label>
         <div class="radio-group">
-          <label><input type="radio" name="ciumenta" value="Sim"> Sim</label>
-          <label><input type="radio" name="ciumenta" value="Não"> Não</label>
-          <label><input type="radio" name="ciumenta" value="Depende"> Depende</label>
+          <label><input type="radio" name="ciumenta" value="Sim"> <span data-i18n="opt_sim"></span></label>
+          <label><input type="radio" name="ciumenta" value="Não"> <span data-i18n="opt_nao"></span></label>
+          <label><input type="radio" name="ciumenta" value="Depende"> <span data-i18n="opt_depende"></span></label>
         </div>
       </div>
       <div class="duas-colunas">
-        <div class="campo"><label>Caseira ou gosta de sair?</label>
+        <div class="campo"><label data-i18n="label_caseira"></label>
           <div class="radio-group">
-            <label><input type="radio" name="caseira_sair" value="Caseira"> Caseira</label>
-            <label><input type="radio" name="caseira_sair" value="Gosta de sair"> Gosta de sair</label>
-            <label><input type="radio" name="caseira_sair" value="As duas"> As duas</label>
+            <label><input type="radio" name="caseira_sair" value="Caseira"> <span data-i18n="opt_caseira"></span></label>
+            <label><input type="radio" name="caseira_sair" value="Gosta de sair"> <span data-i18n="opt_gosta_sair"></span></label>
+            <label><input type="radio" name="caseira_sair" value="As duas"> <span data-i18n="opt_as_duas"></span></label>
           </div>
         </div>
-        <div class="campo"><label>Praia ou piscina?</label>
+        <div class="campo"><label data-i18n="label_praia_piscina"></label>
           <div class="radio-group">
-            <label><input type="radio" name="praia_piscina" value="Praia"> Praia</label>
-            <label><input type="radio" name="praia_piscina" value="Piscina"> Piscina</label>
-            <label><input type="radio" name="praia_piscina" value="As duas"> As duas</label>
+            <label><input type="radio" name="praia_piscina" value="Praia"> <span data-i18n="opt_praia"></span></label>
+            <label><input type="radio" name="praia_piscina" value="Piscina"> <span data-i18n="opt_piscina"></span></label>
+            <label><input type="radio" name="praia_piscina" value="As duas"> <span data-i18n="opt_as_duas"></span></label>
           </div>
         </div>
-        <div class="campo"><label>Campo ou cidade?</label>
+        <div class="campo"><label data-i18n="label_campo_cidade"></label>
           <div class="radio-group">
-            <label><input type="radio" name="campo_cidade" value="Campo"> Campo</label>
-            <label><input type="radio" name="campo_cidade" value="Cidade"> Cidade</label>
-            <label><input type="radio" name="campo_cidade" value="Os dois"> Os dois</label>
+            <label><input type="radio" name="campo_cidade" value="Campo"> <span data-i18n="opt_campo"></span></label>
+            <label><input type="radio" name="campo_cidade" value="Cidade"> <span data-i18n="opt_cidade"></span></label>
+            <label><input type="radio" name="campo_cidade" value="Os dois"> <span data-i18n="opt_os_dois"></span></label>
           </div>
         </div>
-        <div class="campo"><label>Frio ou calor?</label>
+        <div class="campo"><label data-i18n="label_frio_calor"></label>
           <div class="radio-group">
-            <label><input type="radio" name="frio_calor" value="Frio"> Frio</label>
-            <label><input type="radio" name="frio_calor" value="Calor"> Calor</label>
-            <label><input type="radio" name="frio_calor" value="Tanto faz"> Tanto faz</label>
+            <label><input type="radio" name="frio_calor" value="Frio"> <span data-i18n="opt_frio"></span></label>
+            <label><input type="radio" name="frio_calor" value="Calor"> <span data-i18n="opt_calor"></span></label>
+            <label><input type="radio" name="frio_calor" value="Tanto faz"> <span data-i18n="opt_tanto_faz"></span></label>
           </div>
         </div>
-        <div class="campo"><label>Matutina ou noturna?</label>
+        <div class="campo"><label data-i18n="label_manha_noite"></label>
           <div class="radio-group">
-            <label><input type="radio" name="manha_noite" value="Manhã"> Manhã</label>
-            <label><input type="radio" name="manha_noite" value="Noite"> Noite</label>
-            <label><input type="radio" name="manha_noite" value="As duas"> As duas</label>
+            <label><input type="radio" name="manha_noite" value="Manhã"> <span data-i18n="opt_manha"></span></label>
+            <label><input type="radio" name="manha_noite" value="Noite"> <span data-i18n="opt_noite"></span></label>
+            <label><input type="radio" name="manha_noite" value="As duas"> <span data-i18n="opt_as_duas"></span></label>
           </div>
         </div>
       </div>
-      <div class="campo"><label>Qual é o seu maior sonho?</label><textarea name="maior_sonho" placeholder="Conte-nos..."></textarea></div>
+      <div class="campo"><label data-i18n="label_maior_sonho"></label><textarea name="maior_sonho" data-i18n-placeholder="ph_maior_sonho"></textarea></div>
     </section>
 
     <!-- GOSTOS PESSOAIS -->
     <section class="bloco">
-      <h2>🎵 Gostos Pessoais</h2>
+      <h2>🎵 <span data-i18n="sec_gostos"></span></h2>
       <div class="duas-colunas">
-        <div class="campo"><label>Hobbies</label><input name="hobbies" placeholder="Ex: dançar, cozinhar, viajar"></div>
-        <div class="campo"><label>Esportes favoritos</label><input name="esportes_favoritos" placeholder="Ex: natação, yoga"></div>
-        <div class="campo"><label>Música favorita</label><input name="musica_favorita" placeholder="Ex: funk, sertanejo, pop"></div>
-        <div class="campo"><label>Artistas favoritos</label><input name="artistas_favoritos" placeholder="Ex: Anitta, The Weeknd"></div>
-        <div class="campo"><label>Filmes favoritos</label><input name="filmes_favoritos" placeholder="Ex: La La Land, Titanic"></div>
-        <div class="campo"><label>Séries favoritas</label><input name="series_favoritas" placeholder="Ex: Grey's Anatomy, Friends"></div>
-        <div class="campo"><label>Livros favoritos</label><input name="livros_favoritos" placeholder="Ex: não gosta / título"></div>
-        <div class="campo"><label>Jogos favoritos</label><input name="jogos_favoritos" placeholder="Ex: não joga / título"></div>
-        <div class="campo"><label>Cor favorita</label><input name="cor_favorita" placeholder="Ex: roxo, rosa"></div>
-        <div class="campo"><label>Estação do ano favorita</label>
+        <div class="campo"><label data-i18n="label_hobbies"></label><input name="hobbies" data-i18n-placeholder="ph_hobbies"></div>
+        <div class="campo"><label data-i18n="label_esportes"></label><input name="esportes_favoritos" data-i18n-placeholder="ph_esportes"></div>
+        <div class="campo"><label data-i18n="label_musica"></label><input name="musica_favorita" data-i18n-placeholder="ph_musica"></div>
+        <div class="campo"><label data-i18n="label_artistas"></label><input name="artistas_favoritos" data-i18n-placeholder="ph_artistas"></div>
+        <div class="campo"><label data-i18n="label_filmes"></label><input name="filmes_favoritos" data-i18n-placeholder="ph_filmes"></div>
+        <div class="campo"><label data-i18n="label_series"></label><input name="series_favoritas" data-i18n-placeholder="ph_series"></div>
+        <div class="campo"><label data-i18n="label_livros"></label><input name="livros_favoritos" data-i18n-placeholder="ph_livros"></div>
+        <div class="campo"><label data-i18n="label_jogos"></label><input name="jogos_favoritos" data-i18n-placeholder="ph_jogos"></div>
+        <div class="campo"><label data-i18n="label_cor"></label><input name="cor_favorita" data-i18n-placeholder="ph_cor"></div>
+        <div class="campo"><label data-i18n="label_estacao"></label>
           <select name="estacao_favorita">
-            <option value="">Selecione...</option>
-            <option>Verão</option><option>Outono</option><option>Inverno</option><option>Primavera</option>
+            <option value="" data-i18n="opt_selecione"></option>
+            <option value="Verão" data-i18n="opt_verao"></option>
+            <option value="Outono" data-i18n="opt_outono"></option>
+            <option value="Inverno" data-i18n="opt_inverno"></option>
+            <option value="Primavera" data-i18n="opt_primavera"></option>
           </select>
         </div>
-        <div class="campo"><label>Marca de roupa favorita</label><input name="marca_roupa" placeholder="Ex: Zara, Farm, sem preferência"></div>
+        <div class="campo"><label data-i18n="label_marca_roupa"></label><input name="marca_roupa" data-i18n-placeholder="ph_marca_roupa"></div>
       </div>
     </section>
 
     <!-- COMIDA -->
     <section class="bloco">
-      <h2>🍔 Comida</h2>
+      <h2>🍔 <span data-i18n="sec_comida"></span></h2>
       <div class="duas-colunas">
-        <div class="campo"><label>Comida favorita</label><input name="comida_favorita" placeholder="Ex: pizza, sushi"></div>
-        <div class="campo"><label>Sobremesa favorita</label><input name="sobremesa_favorita" placeholder="Ex: brownie, sorvete"></div>
-        <div class="campo"><label>Bebida favorita (sem álcool)</label><input name="bebida_favorita" placeholder="Ex: suco de laranja, refrigerante"></div>
-        <div class="campo"><label>Bebida alcoólica favorita</label><input name="bebida_alcoolica" placeholder="Ex: vinho, não bebo"></div>
-        <div class="campo"><label>Fast food favorito</label><input name="fast_food" placeholder="Ex: McDonald's, Burger King"></div>
+        <div class="campo"><label data-i18n="label_comida_fav"></label><input name="comida_favorita" data-i18n-placeholder="ph_comida_fav"></div>
+        <div class="campo"><label data-i18n="label_sobremesa"></label><input name="sobremesa_favorita" data-i18n-placeholder="ph_sobremesa"></div>
+        <div class="campo"><label data-i18n="label_bebida"></label><input name="bebida_favorita" data-i18n-placeholder="ph_bebida"></div>
+        <div class="campo"><label data-i18n="label_bebida_alc"></label><input name="bebida_alcoolica" data-i18n-placeholder="ph_bebida_alc"></div>
+        <div class="campo"><label data-i18n="label_fast_food"></label><input name="fast_food" data-i18n-placeholder="ph_fast_food"></div>
       </div>
       <div class="duas-colunas">
-        <div class="campo"><label>Doce ou salgado?</label>
+        <div class="campo"><label data-i18n="label_doce_salgado"></label>
           <div class="radio-group">
-            <label><input type="radio" name="doce_salgado" value="Doce"> Doce</label>
-            <label><input type="radio" name="doce_salgado" value="Salgado"> Salgado</label>
-            <label><input type="radio" name="doce_salgado" value="Os dois"> Os dois</label>
+            <label><input type="radio" name="doce_salgado" value="Doce"> <span data-i18n="opt_doce"></span></label>
+            <label><input type="radio" name="doce_salgado" value="Salgado"> <span data-i18n="opt_salgado"></span></label>
+            <label><input type="radio" name="doce_salgado" value="Os dois"> <span data-i18n="opt_os_dois"></span></label>
           </div>
         </div>
-        <div class="campo"><label>Café ou chá?</label>
+        <div class="campo"><label data-i18n="label_cafe_cha"></label>
           <div class="radio-group">
-            <label><input type="radio" name="cafe_cha" value="Café"> Café</label>
-            <label><input type="radio" name="cafe_cha" value="Chá"> Chá</label>
-            <label><input type="radio" name="cafe_cha" value="Nenhum"> Nenhum</label>
-            <label><input type="radio" name="cafe_cha" value="Os dois"> Os dois</label>
+            <label><input type="radio" name="cafe_cha" value="Café"> <span data-i18n="opt_cafe"></span></label>
+            <label><input type="radio" name="cafe_cha" value="Chá"> <span data-i18n="opt_cha"></span></label>
+            <label><input type="radio" name="cafe_cha" value="Nenhum"> <span data-i18n="opt_nenhum"></span></label>
+            <label><input type="radio" name="cafe_cha" value="Os dois"> <span data-i18n="opt_os_dois"></span></label>
           </div>
         </div>
-        <div class="campo"><label>Cozinha?</label>
+        <div class="campo"><label data-i18n="label_cozinha"></label>
           <div class="radio-group">
-            <label><input type="radio" name="cozinha" value="Sim, adoro"> Sim, adoro</label>
-            <label><input type="radio" name="cozinha" value="Às vezes"> Às vezes</label>
-            <label><input type="radio" name="cozinha" value="Não"> Não</label>
+            <label><input type="radio" name="cozinha" value="Sim, adoro"> <span data-i18n="opt_cozinha_sim"></span></label>
+            <label><input type="radio" name="cozinha" value="Às vezes"> <span data-i18n="opt_as_vezes"></span></label>
+            <label><input type="radio" name="cozinha" value="Não"> <span data-i18n="opt_nao"></span></label>
           </div>
         </div>
       </div>
@@ -319,26 +350,26 @@
 
     <!-- VIAGENS -->
     <section class="bloco">
-      <h2>✈️ Viagens</h2>
-      <div class="campo"><label>Melhor viagem que já fez</label><input name="melhor_viagem" placeholder="Ex: Disney em Orlando"></div>
-      <div class="campo"><label>Próximo destino dos sonhos</label><input name="proximo_destino" placeholder="Ex: Japão, Paris"></div>
-      <div class="campo"><label>País que gostaria de conhecer</label><input name="pais_conhecer" placeholder="Ex: Itália"></div>
-      <div class="campo"><label>Lugar onde nunca moraria</label><input name="lugar_nao_moraria" placeholder="Ex: uma cidade muito fria"></div>
+      <h2>✈️ <span data-i18n="sec_viagens"></span></h2>
+      <div class="campo"><label data-i18n="label_melhor_viagem"></label><input name="melhor_viagem" data-i18n-placeholder="ph_melhor_viagem"></div>
+      <div class="campo"><label data-i18n="label_proximo_destino"></label><input name="proximo_destino" data-i18n-placeholder="ph_proximo_destino"></div>
+      <div class="campo"><label data-i18n="label_pais_conhecer"></label><input name="pais_conhecer" data-i18n-placeholder="ph_pais_conhecer"></div>
+      <div class="campo"><label data-i18n="label_lugar_nao_moraria"></label><input name="lugar_nao_moraria" data-i18n-placeholder="ph_lugar_nao_moraria"></div>
     </section>
 
     <!-- ANIMAIS -->
     <section class="bloco">
-      <h2>🐶 Animais</h2>
+      <h2>🐶 <span data-i18n="sec_animais"></span></h2>
       <div class="duas-colunas">
-        <div class="campo"><label>Tem animais?</label>
+        <div class="campo"><label data-i18n="label_tem_animais"></label>
           <div class="radio-group">
-            <label><input type="radio" name="tem_animais" value="Sim"> Sim</label>
-            <label><input type="radio" name="tem_animais" value="Não"> Não</label>
+            <label><input type="radio" name="tem_animais" value="Sim"> <span data-i18n="opt_sim"></span></label>
+            <label><input type="radio" name="tem_animais" value="Não"> <span data-i18n="opt_nao"></span></label>
           </div>
         </div>
-        <div class="campo"><label>Nome dos animais</label><input name="nome_animais" placeholder="Ex: Bob e Luna / —"></div>
-        <div class="campo"><label>Animal favorito</label><input name="animal_favorito" placeholder="Ex: gato, cachorro"></div>
-        <div class="campo"><label>Tem alergia a algum animal?</label><input name="alergia_animal" placeholder="Ex: Sim, gato / Não"></div>
+        <div class="campo"><label data-i18n="label_nome_animais"></label><input name="nome_animais" data-i18n-placeholder="ph_nome_animais"></div>
+        <div class="campo"><label data-i18n="label_animal_fav"></label><input name="animal_favorito" data-i18n-placeholder="ph_animal_fav"></div>
+        <div class="campo"><label data-i18n="label_alergia_animal"></label><input name="alergia_animal" data-i18n-placeholder="ph_alergia_animal"></div>
       </div>
     </section>
 
@@ -346,273 +377,856 @@
     <section class="bloco">
       <h2>🎮 Lifestyle</h2>
       <div class="duas-colunas">
-        <div class="campo"><label>Faz alguma atividade física?</label><input name="atividade_fisica" placeholder="Ex: academia, corrida / Não"></div>
-        <div class="campo"><label>Time favorito</label><input name="time_favorito" placeholder="Ex: Flamengo / Não assisto futebol"></div>
+        <div class="campo"><label data-i18n="label_atividade_fisica"></label><input name="atividade_fisica" data-i18n-placeholder="ph_atividade_fisica"></div>
+        <div class="campo"><label data-i18n="label_time_favorito"></label><input name="time_favorito" data-i18n-placeholder="ph_time_favorito"></div>
       </div>
       <div class="duas-colunas">
-        <div class="campo"><label>Assiste futebol?</label>
+        <div class="campo"><label data-i18n="label_futebol"></label>
           <div class="radio-group">
-            <label><input type="radio" name="assiste_futebol" value="Sim"> Sim</label>
-            <label><input type="radio" name="assiste_futebol" value="Às vezes"> Às vezes</label>
-            <label><input type="radio" name="assiste_futebol" value="Não"> Não</label>
+            <label><input type="radio" name="assiste_futebol" value="Sim"> <span data-i18n="opt_sim"></span></label>
+            <label><input type="radio" name="assiste_futebol" value="Às vezes"> <span data-i18n="opt_as_vezes"></span></label>
+            <label><input type="radio" name="assiste_futebol" value="Não"> <span data-i18n="opt_nao"></span></label>
           </div>
         </div>
-        <div class="campo"><label>Gosta de videogames?</label>
+        <div class="campo"><label data-i18n="label_videogames"></label>
           <div class="radio-group">
-            <label><input type="radio" name="gosta_videogames" value="Sim"> Sim</label>
-            <label><input type="radio" name="gosta_videogames" value="Às vezes"> Às vezes</label>
-            <label><input type="radio" name="gosta_videogames" value="Não"> Não</label>
+            <label><input type="radio" name="gosta_videogames" value="Sim"> <span data-i18n="opt_sim"></span></label>
+            <label><input type="radio" name="gosta_videogames" value="Às vezes"> <span data-i18n="opt_as_vezes"></span></label>
+            <label><input type="radio" name="gosta_videogames" value="Não"> <span data-i18n="opt_nao"></span></label>
           </div>
         </div>
-        <div class="campo"><label>Assiste anime?</label>
+        <div class="campo"><label data-i18n="label_anime"></label>
           <div class="radio-group">
-            <label><input type="radio" name="assiste_anime" value="Sim"> Sim</label>
-            <label><input type="radio" name="assiste_anime" value="Não"> Não</label>
+            <label><input type="radio" name="assiste_anime" value="Sim"> <span data-i18n="opt_sim"></span></label>
+            <label><input type="radio" name="assiste_anime" value="Não"> <span data-i18n="opt_nao"></span></label>
           </div>
         </div>
-        <div class="campo"><label>Assiste streamers?</label>
+        <div class="campo"><label data-i18n="label_streamers"></label>
           <div class="radio-group">
-            <label><input type="radio" name="assiste_streamers" value="Sim"> Sim</label>
-            <label><input type="radio" name="assiste_streamers" value="Às vezes"> Às vezes</label>
-            <label><input type="radio" name="assiste_streamers" value="Não"> Não</label>
+            <label><input type="radio" name="assiste_streamers" value="Sim"> <span data-i18n="opt_sim"></span></label>
+            <label><input type="radio" name="assiste_streamers" value="Às vezes"> <span data-i18n="opt_as_vezes"></span></label>
+            <label><input type="radio" name="assiste_streamers" value="Não"> <span data-i18n="opt_nao"></span></label>
           </div>
         </div>
       </div>
-      <div class="campo"><label>Redes sociais que usa</label>
+      <div class="campo"><label data-i18n="label_redes_sociais"></label>
         <div class="radio-group">
           <label><input type="checkbox" name="redes_sociais" value="TikTok"> TikTok</label>
           <label><input type="checkbox" name="redes_sociais" value="Instagram"> Instagram</label>
           <label><input type="checkbox" name="redes_sociais" value="X (Twitter)"> X (Twitter)</label>
           <label><input type="checkbox" name="redes_sociais" value="Threads"> Threads</label>
           <label><input type="checkbox" name="redes_sociais" value="YouTube"> YouTube</label>
-          <label><input type="checkbox" name="redes_sociais" value="Nenhuma"> Nenhuma das acima</label>
+          <label><input type="checkbox" name="redes_sociais" value="Nenhuma"> <span data-i18n="opt_nenhuma_acima"></span></label>
         </div>
       </div>
     </section>
 
     <!-- APARÊNCIA -->
     <section class="bloco">
-      <h2>💄 Aparência</h2>
+      <h2>💄 <span data-i18n="sec_aparencia"></span></h2>
       <div class="duas-colunas">
-        <div class="campo"><label>Cor natural do cabelo</label><input name="cor_cabelo" placeholder="Ex: castanho escuro"></div>
-        <div class="campo"><label>Usa extensões?</label>
+        <div class="campo"><label data-i18n="label_cor_cabelo"></label><input name="cor_cabelo" data-i18n-placeholder="ph_cor_cabelo"></div>
+        <div class="campo"><label data-i18n="label_extensoes"></label>
           <div class="radio-group">
-            <label><input type="radio" name="usa_extensoes" value="Sim"> Sim</label>
-            <label><input type="radio" name="usa_extensoes" value="Não"> Não</label>
+            <label><input type="radio" name="usa_extensoes" value="Sim"> <span data-i18n="opt_sim"></span></label>
+            <label><input type="radio" name="usa_extensoes" value="Não"> <span data-i18n="opt_nao"></span></label>
           </div>
         </div>
-        <div class="campo"><label>Tatuagens? Quantas?</label><input name="tatuagens" placeholder="Ex: Sim, 3 / Não"></div>
-        <div class="campo"><label>Piercings? Quantos?</label><input name="piercings" placeholder="Ex: Sim, 2 / Não"></div>
-        <div class="campo"><label>Altura</label><input name="altura" placeholder="Ex: 1,65 m"></div>
-        <div class="campo"><label>Peso (opcional)</label><input name="peso" placeholder="Ex: 55 kg / Prefiro não dizer"></div>
+        <div class="campo"><label data-i18n="label_tatuagens"></label><input name="tatuagens" data-i18n-placeholder="ph_tatuagens"></div>
+        <div class="campo"><label data-i18n="label_piercings"></label><input name="piercings" data-i18n-placeholder="ph_piercings"></div>
+        <div class="campo"><label data-i18n="label_altura"></label><input name="altura" data-i18n-placeholder="ph_altura"></div>
+        <div class="campo"><label data-i18n="label_peso"></label><input name="peso" data-i18n-placeholder="ph_peso"></div>
       </div>
     </section>
 
     <!-- RELACIONAMENTO COM OS FÃS -->
     <section class="bloco">
-      <h2>❤️ Relacionamento com os Fãs</h2>
-      <div class="campo"><label>Como prefere tratar os fãs?</label><input name="preferencia_tratamento" placeholder="Ex: com carinho mas com limites claros"></div>
-      <div class="campo"><label>Quais apelidos gosta de usar com os fãs?</label>
+      <h2>❤️ <span data-i18n="sec_fas"></span></h2>
+      <div class="campo"><label data-i18n="label_tratamento_fas"></label><input name="preferencia_tratamento" data-i18n-placeholder="ph_tratamento_fas"></div>
+      <div class="campo"><label data-i18n="label_apelidos_fas"></label>
         <div class="radio-group">
-          <label><input type="checkbox" name="apelidos" value="amor"> amor</label>
-          <label><input type="checkbox" name="apelidos" value="lindo"> lindo</label>
-          <label><input type="checkbox" name="apelidos" value="bebê"> bebê</label>
-          <label><input type="checkbox" name="apelidos" value="gatinho"> gatinho</label>
-          <label><input type="checkbox" name="apelidos" value="gato"> gato</label>
-          <label><input type="checkbox" name="apelidos" value="meu bem"> meu bem</label>
-          <label><input type="checkbox" name="apelidos" value="sem apelidos"> sem apelidos</label>
+          <label><input type="checkbox" name="apelidos" value="amor"> <span data-i18n="opt_ap_amor"></span></label>
+          <label><input type="checkbox" name="apelidos" value="lindo"> <span data-i18n="opt_ap_lindo"></span></label>
+          <label><input type="checkbox" name="apelidos" value="bebê"> <span data-i18n="opt_ap_bebe"></span></label>
+          <label><input type="checkbox" name="apelidos" value="gatinho"> <span data-i18n="opt_ap_gatinho"></span></label>
+          <label><input type="checkbox" name="apelidos" value="gato"> <span data-i18n="opt_ap_gato"></span></label>
+          <label><input type="checkbox" name="apelidos" value="meu bem"> <span data-i18n="opt_ap_meu_bem"></span></label>
+          <label><input type="checkbox" name="apelidos" value="sem apelidos"> <span data-i18n="opt_ap_sem"></span></label>
         </div>
       </div>
-      <div class="campo"><label>Apelidos personalizados (opcional)</label><input name="apelidos_custom" placeholder="Outros apelidos que usa..."></div>
-      <div class="campo"><label>Que tipo de conversa não gosta?</label><textarea name="conversa_nao_gosta" placeholder="Ex: conversas muito agressivas, pedidos de conteúdo explícito sem pagamento..."></textarea></div>
+      <div class="campo"><label data-i18n="label_apelidos_custom"></label><input name="apelidos_custom" data-i18n-placeholder="ph_apelidos_custom"></div>
+      <div class="campo"><label data-i18n="label_conversa_nao_gosta"></label><textarea name="conversa_nao_gosta" data-i18n-placeholder="ph_conversa_nao_gosta"></textarea></div>
     </section>
 
     <!-- LIMITES -->
     <section class="bloco" style="border: 1.5px solid #f5c2c7;">
-      <h2>🚫 Limites <span style="font-size:12px;font-weight:400;color:#c00;">(muito importante)</span></h2>
-      <div class="campo"><label>Quais assuntos a chatter nunca deve abordar?</label><textarea name="assuntos_proibidos" placeholder="Ex: família, relacionamentos passados, localização, trabalho anterior..."></textarea></div>
-      <div class="campo"><label>Existe alguma mentira que devemos manter? (idade, profissão, cidade, etc.)</label><textarea name="mentiras_manter" placeholder="Ex: dizer que tenho 22 anos / que moro no Rio / nenhuma"></textarea></div>
-      <div class="campo"><label>Existem palavras que não gosta de utilizar?</label><textarea name="palavras_nao_gosta" placeholder="Ex: palavrões específicos, termos depreciavos..."></textarea></div>
-      <div class="campo"><label>Existem promessas que nunca devemos fazer?</label><textarea name="promessas_nao_fazer" placeholder="Ex: nunca prometer encontros / ligações / conteúdos de graça..."></textarea></div>
+      <h2>🚫 <span data-i18n="sec_limites"></span> <span style="font-size:12px;font-weight:400;color:#c00;" data-i18n="sec_limites_sub"></span></h2>
+      <div class="campo"><label data-i18n="label_assuntos_proibidos"></label><textarea name="assuntos_proibidos" data-i18n-placeholder="ph_assuntos_proibidos"></textarea></div>
+      <div class="campo"><label data-i18n="label_mentiras"></label><textarea name="mentiras_manter" data-i18n-placeholder="ph_mentiras"></textarea></div>
+      <div class="campo"><label data-i18n="label_palavras_nao_gosta"></label><textarea name="palavras_nao_gosta" data-i18n-placeholder="ph_palavras_nao_gosta"></textarea></div>
+      <div class="campo"><label data-i18n="label_promessas"></label><textarea name="promessas_nao_fazer" data-i18n-placeholder="ph_promessas"></textarea></div>
     </section>
 
     <!-- CONTEÚDO -->
     <section class="bloco">
-      <h2>💎 Conteúdo</h2>
-      <div class="campo"><label>Faria conteúdos personalizados?</label>
+      <h2>💎 <span data-i18n="sec_conteudo"></span></h2>
+      <div class="campo"><label data-i18n="label_personalizados"></label>
         <div class="radio-group">
-          <label><input type="radio" name="faria_personalizados" value="Sim"> Sim</label>
-          <label><input type="radio" name="faria_personalizados" value="Não"> Não</label>
-          <label><input type="radio" name="faria_personalizados" value="Depende do pedido"> Depende do pedido</label>
+          <label><input type="radio" name="faria_personalizados" value="Sim"> <span data-i18n="opt_sim"></span></label>
+          <label><input type="radio" name="faria_personalizados" value="Não"> <span data-i18n="opt_nao"></span></label>
+          <label><input type="radio" name="faria_personalizados" value="Depende do pedido"> <span data-i18n="opt_depende_pedido"></span></label>
         </div>
       </div>
-      <div class="campo"><label>Qual conteúdo gosta mais de produzir?</label><textarea name="conteudo_favorito" placeholder="Ex: fotos sensuais, vídeos de dança, bastidores do dia a dia..."></textarea></div>
+      <div class="campo"><label data-i18n="label_conteudo_fav"></label><textarea name="conteudo_favorito" data-i18n-placeholder="ph_conteudo_fav"></textarea></div>
     </section>
 
     <!-- ESTILO DO CHAT -->
     <section class="bloco" style="border: 1.5px solid var(--purple);">
-      <h2>💬 Estilo do Chat <span style="font-size:12px;font-weight:400;color:var(--muted);">(a parte mais importante)</span></h2>
-      <div class="campo"><label>Como gostaria que a chatter escrevesse por si?</label><textarea name="como_escrever" placeholder="Ex: de forma descontraída, com emojis, linguagem jovem, como se fosse a própria modelo..."></textarea></div>
-      <div class="campo"><label>Nível de intimidade <span style="font-size:11px;color:var(--muted);font-weight:400">(pode escolher mais de um)</span></label>
+      <h2>💬 <span data-i18n="sec_chat"></span> <span style="font-size:12px;font-weight:400;color:var(--muted);" data-i18n="sec_chat_sub"></span></h2>
+      <div class="campo"><label data-i18n="label_como_escrever"></label><textarea name="como_escrever" data-i18n-placeholder="ph_como_escrever"></textarea></div>
+      <div class="campo"><label><span data-i18n="label_nivel_intimidade"></span> <span style="font-size:11px;color:var(--muted);font-weight:400" data-i18n="label_multi_escolha"></span></label>
         <div class="radio-group">
-          <label><input type="checkbox" name="nivel_intimidade" value="Muito educado"> Muito educado</label>
-          <label><input type="checkbox" name="nivel_intimidade" value="Carinhoso"> Carinhoso</label>
-          <label><input type="checkbox" name="nivel_intimidade" value="Romântico"> Romântico</label>
-          <label><input type="checkbox" name="nivel_intimidade" value="Sedutor"> Sedutor</label>
-          <label><input type="checkbox" name="nivel_intimidade" value="Muito provocador"> Muito provocador</label>
+          <label><input type="checkbox" name="nivel_intimidade" value="Muito educado"> <span data-i18n="opt_muito_educado"></span></label>
+          <label><input type="checkbox" name="nivel_intimidade" value="Carinhoso"> <span data-i18n="opt_carinhoso"></span></label>
+          <label><input type="checkbox" name="nivel_intimidade" value="Romântico"> <span data-i18n="opt_romantico"></span></label>
+          <label><input type="checkbox" name="nivel_intimidade" value="Sedutor"> <span data-i18n="opt_sedutor"></span></label>
+          <label><input type="checkbox" name="nivel_intimidade" value="Muito provocador"> <span data-i18n="opt_muito_provocador"></span></label>
         </div>
       </div>
-      <div class="campo"><label>Gosta de chamar os fãs pelo nome?</label>
+      <div class="campo"><label data-i18n="label_chamar_nome"></label>
         <div class="radio-group">
-          <label><input type="radio" name="chamar_pelo_nome" value="Sim, sempre"> Sim, sempre</label>
-          <label><input type="radio" name="chamar_pelo_nome" value="Às vezes"> Às vezes</label>
-          <label><input type="radio" name="chamar_pelo_nome" value="Prefiro apelidos"> Prefiro apelidos</label>
+          <label><input type="radio" name="chamar_pelo_nome" value="Sim, sempre"> <span data-i18n="opt_sim_sempre"></span></label>
+          <label><input type="radio" name="chamar_pelo_nome" value="Às vezes"> <span data-i18n="opt_as_vezes"></span></label>
+          <label><input type="radio" name="chamar_pelo_nome" value="Prefiro apelidos"> <span data-i18n="opt_prefiro_apelidos"></span></label>
         </div>
       </div>
-      <div class="campo"><label>Usa gírias? Quais?</label><input name="girias" placeholder="Ex: 'bb', 'né', 'tipo assim' / Não uso gírias"></div>
+      <div class="campo"><label data-i18n="label_girias"></label><input name="girias" data-i18n-placeholder="ph_girias"></div>
     </section>
 
     <!-- OBSERVAÇÕES -->
     <section class="bloco">
-      <h2>📝 Observações Finais</h2>
-      <div class="campo"><label>Há algo que os fãs costumam perguntar frequentemente?</label><textarea name="perguntas_frequentes" placeholder="Ex: se tenho namorado, quando faço live..."></textarea></div>
-      <div class="campo"><label>Existe alguma curiosidade sobre si que os fãs adorariam saber?</label><textarea name="curiosidades" placeholder="Ex: que sou formada em medicina, que viajei para 10 países..."></textarea></div>
-      <div class="campo"><label>Alguma informação importante para que a chatter consiga responder como se fosse realmente você?</label><textarea name="informacao_importante" placeholder="Escreva à vontade — quanto mais detalhes, melhor!"></textarea></div>
+      <h2>📝 <span data-i18n="sec_obs"></span></h2>
+      <div class="campo"><label data-i18n="label_perguntas_freq"></label><textarea name="perguntas_frequentes" data-i18n-placeholder="ph_perguntas_freq"></textarea></div>
+      <div class="campo"><label data-i18n="label_curiosidades"></label><textarea name="curiosidades" data-i18n-placeholder="ph_curiosidades"></textarea></div>
+      <div class="campo"><label data-i18n="label_info_importante"></label><textarea name="informacao_importante" data-i18n-placeholder="ph_info_importante"></textarea></div>
     </section>
 
-    <button type="submit" class="btn-submit" id="btnSubmit">Enviar Formulário</button>
+    <button type="submit" class="btn-submit" id="btnSubmit" data-i18n="btn_enviar"></button>
 
   </form>
 
   <div id="mensagemSucesso">
     <div class="check">✅</div>
-    <h3>Formulário enviado com sucesso!</h3>
-    <p>As suas informações foram guardadas. A equipa da Velvet irá utilizá-las para gerir o chat de forma personalizada.</p>
+    <h3 data-i18n="sucesso_titulo"></h3>
+    <p data-i18n="sucesso_msg"></p>
   </div>
 
 </div>
 
 <script>
-  const params = new URLSearchParams(location.search);
-  const modeloId = Number(params.get("modelo"));
+const i18n = {
+  pt: {
+    header_title: "Informações para Gestão de Chat Velvet",
+    header_subtitle: "Este formulário recolhe o máximo de informações para que possamos interagir de forma natural com os seus fãs.",
+    erro_modelo: "❌ Link inválido ou modelo não encontrado.",
+    sec_pessoais: "Informações Pessoais",
+    sec_personalidade: "Personalidade",
+    sec_gostos: "Gostos Pessoais",
+    sec_comida: "Comida",
+    sec_viagens: "Viagens",
+    sec_animais: "Animais",
+    sec_aparencia: "Aparência",
+    sec_fas: "Relacionamento com os Fãs",
+    sec_limites: "Limites",
+    sec_limites_sub: "(muito importante)",
+    sec_conteudo: "Conteúdo",
+    sec_chat: "Estilo do Chat",
+    sec_chat_sub: "(a parte mais importante)",
+    sec_obs: "Observações Finais",
+    label_nome: "Nome *",
+    label_apelido: "Apelido (se tiver)",
+    label_nascimento: "Data de nascimento",
+    label_signo: "Signo",
+    label_estado_civil: "Estado civil",
+    label_cidade_estado: "De onde é (cidade/estado)",
+    label_mora_atualmente: "Onde mora atualmente",
+    label_calcado: "Número do calçado",
+    label_filhos: "Tem filhos? Quantos? (Se prefere não divulgar, informar)",
+    label_mora_sozinha: "Mora sozinha? Se não, com quem?",
+    label_estuda: "Estuda? O quê?",
+    label_trabalha_alem: "Trabalha além da Velvet?",
+    label_5_palavras: "Como descreveria a sua personalidade em 5 palavras?",
+    label_timida: "É mais tímida ou extrovertida?",
+    label_estilo_pers: "É romântica, divertida, provocadora ou mais carinhosa?",
+    label_ciumenta: "É ciumenta?",
+    label_caseira: "Caseira ou gosta de sair?",
+    label_praia_piscina: "Praia ou piscina?",
+    label_campo_cidade: "Campo ou cidade?",
+    label_frio_calor: "Frio ou calor?",
+    label_manha_noite: "Matutina ou noturna?",
+    label_maior_sonho: "Qual é o seu maior sonho?",
+    label_hobbies: "Hobbies",
+    label_esportes: "Esportes favoritos",
+    label_musica: "Música favorita",
+    label_artistas: "Artistas favoritos",
+    label_filmes: "Filmes favoritos",
+    label_series: "Séries favoritas",
+    label_livros: "Livros favoritos",
+    label_jogos: "Jogos favoritos",
+    label_cor: "Cor favorita",
+    label_estacao: "Estação do ano favorita",
+    label_marca_roupa: "Marca de roupa favorita",
+    label_comida_fav: "Comida favorita",
+    label_sobremesa: "Sobremesa favorita",
+    label_bebida: "Bebida favorita (sem álcool)",
+    label_bebida_alc: "Bebida alcoólica favorita",
+    label_fast_food: "Fast food favorito",
+    label_doce_salgado: "Doce ou salgado?",
+    label_cafe_cha: "Café ou chá?",
+    label_cozinha: "Cozinha?",
+    label_melhor_viagem: "Melhor viagem que já fez",
+    label_proximo_destino: "Próximo destino dos sonhos",
+    label_pais_conhecer: "País que gostaria de conhecer",
+    label_lugar_nao_moraria: "Lugar onde nunca moraria",
+    label_tem_animais: "Tem animais?",
+    label_nome_animais: "Nome dos animais",
+    label_animal_fav: "Animal favorito",
+    label_alergia_animal: "Tem alergia a algum animal?",
+    label_atividade_fisica: "Faz alguma atividade física?",
+    label_time_favorito: "Time favorito",
+    label_futebol: "Assiste futebol?",
+    label_videogames: "Gosta de videogames?",
+    label_anime: "Assiste anime?",
+    label_streamers: "Assiste streamers?",
+    label_redes_sociais: "Redes sociais que usa",
+    label_cor_cabelo: "Cor natural do cabelo",
+    label_extensoes: "Usa extensões?",
+    label_tatuagens: "Tatuagens? Quantas?",
+    label_piercings: "Piercings? Quantos?",
+    label_altura: "Altura",
+    label_peso: "Peso (opcional)",
+    label_tratamento_fas: "Como prefere tratar os fãs?",
+    label_apelidos_fas: "Quais apelidos gosta de usar com os fãs?",
+    label_apelidos_custom: "Apelidos personalizados (opcional)",
+    label_conversa_nao_gosta: "Que tipo de conversa não gosta?",
+    label_assuntos_proibidos: "Quais assuntos a chatter nunca deve abordar?",
+    label_mentiras: "Existe alguma mentira que devemos manter? (idade, profissão, cidade, etc.)",
+    label_palavras_nao_gosta: "Existem palavras que não gosta de utilizar?",
+    label_promessas: "Existem promessas que nunca devemos fazer?",
+    label_personalizados: "Faria conteúdos personalizados?",
+    label_conteudo_fav: "Qual conteúdo gosta mais de produzir?",
+    label_como_escrever: "Como gostaria que a chatter escrevesse por si?",
+    label_nivel_intimidade: "Nível de intimidade",
+    label_multi_escolha: "(pode escolher mais de um)",
+    label_chamar_nome: "Gosta de chamar os fãs pelo nome?",
+    label_girias: "Usa gírias? Quais?",
+    label_perguntas_freq: "Há algo que os fãs costumam perguntar frequentemente?",
+    label_curiosidades: "Existe alguma curiosidade sobre si que os fãs adorariam saber?",
+    label_info_importante: "Alguma informação importante para que a chatter consiga responder como se fosse realmente você?",
+    btn_enviar: "Enviar Formulário",
+    btn_saving: "A guardar...",
+    btn_error: "Enviar Formulário",
+    sucesso_titulo: "Formulário enviado com sucesso!",
+    sucesso_msg: "As suas informações foram guardadas. A equipa da Velvet irá utilizá-las para gerir o chat de forma personalizada.",
+    alert_erro: "Erro ao guardar. Por favor tente novamente.",
+    opt_selecione: "Selecione...",
+    opt_solteira: "Solteira", opt_namorando: "Namorando", opt_casada: "Casada",
+    opt_divorciada: "Divorciada", opt_prefere_nao: "Prefere não dizer",
+    opt_verao: "Verão", opt_outono: "Outono", opt_inverno: "Inverno", opt_primavera: "Primavera",
+    opt_sim: "Sim", opt_nao: "Não", opt_depende: "Depende", opt_as_vezes: "Às vezes",
+    opt_timida: "Tímida", opt_extrovertida: "Extrovertida", opt_meio_a_meio: "Meio a meio",
+    opt_romantica: "Romântica", opt_divertida: "Divertida", opt_provocadora: "Provocadora",
+    opt_carinhosa: "Carinhosa", opt_todas: "Todas",
+    opt_caseira: "Caseira", opt_gosta_sair: "Gosta de sair", opt_as_duas: "As duas",
+    opt_praia: "Praia", opt_piscina: "Piscina",
+    opt_campo: "Campo", opt_cidade: "Cidade", opt_os_dois: "Os dois",
+    opt_frio: "Frio", opt_calor: "Calor", opt_tanto_faz: "Tanto faz",
+    opt_manha: "Manhã", opt_noite: "Noite",
+    opt_doce: "Doce", opt_salgado: "Salgado",
+    opt_cafe: "Café", opt_cha: "Chá", opt_nenhum: "Nenhum",
+    opt_cozinha_sim: "Sim, adoro",
+    opt_nenhuma_acima: "Nenhuma das acima",
+    opt_ap_amor: "amor", opt_ap_lindo: "lindo", opt_ap_bebe: "bebê",
+    opt_ap_gatinho: "gatinho", opt_ap_gato: "gato", opt_ap_meu_bem: "meu bem", opt_ap_sem: "sem apelidos",
+    opt_depende_pedido: "Depende do pedido",
+    opt_muito_educado: "Muito educado", opt_carinhoso: "Carinhoso", opt_romantico: "Romântico",
+    opt_sedutor: "Sedutor", opt_muito_provocador: "Muito provocador",
+    opt_sim_sempre: "Sim, sempre", opt_prefiro_apelidos: "Prefiro apelidos",
+    ph_nome: "Seu nome completo", ph_apelido: "Apelido", ph_signo: "Ex: Escorpião",
+    ph_cidade_estado: "Ex: São Paulo, SP", ph_mora_atualmente: "Cidade atual",
+    ph_calcado: "Ex: 37", ph_filhos: "Ex: Sim, 1 filho / Não / Prefiro não dizer",
+    ph_mora_sozinha: "Ex: Sim / Não, moro com minha mãe",
+    ph_estuda: "Ex: Sim, Psicologia / Não",
+    ph_trabalha_alem: "Ex: Sim, sou enfermeira / Não",
+    ph_5_palavras: "Ex: divertida, carinhosa, determinada, curiosa, leal",
+    ph_maior_sonho: "Conte-nos...",
+    ph_hobbies: "Ex: dançar, cozinhar, viajar",
+    ph_esportes: "Ex: natação, yoga",
+    ph_musica: "Ex: funk, sertanejo, pop",
+    ph_artistas: "Ex: Anitta, The Weeknd",
+    ph_filmes: "Ex: La La Land, Titanic",
+    ph_series: "Ex: Grey's Anatomy, Friends",
+    ph_livros: "Ex: não gosta / título",
+    ph_jogos: "Ex: não joga / título",
+    ph_cor: "Ex: roxo, rosa",
+    ph_marca_roupa: "Ex: Zara, Farm, sem preferência",
+    ph_comida_fav: "Ex: pizza, sushi",
+    ph_sobremesa: "Ex: brownie, sorvete",
+    ph_bebida: "Ex: suco de laranja, refrigerante",
+    ph_bebida_alc: "Ex: vinho, não bebo",
+    ph_fast_food: "Ex: McDonald's, Burger King",
+    ph_melhor_viagem: "Ex: Disney em Orlando",
+    ph_proximo_destino: "Ex: Japão, Paris",
+    ph_pais_conhecer: "Ex: Itália",
+    ph_lugar_nao_moraria: "Ex: uma cidade muito fria",
+    ph_nome_animais: "Ex: Bob e Luna / —",
+    ph_animal_fav: "Ex: gato, cachorro",
+    ph_alergia_animal: "Ex: Sim, gato / Não",
+    ph_atividade_fisica: "Ex: academia, corrida / Não",
+    ph_time_favorito: "Ex: Flamengo / Não assisto futebol",
+    ph_cor_cabelo: "Ex: castanho escuro",
+    ph_tatuagens: "Ex: Sim, 3 / Não",
+    ph_piercings: "Ex: Sim, 2 / Não",
+    ph_altura: "Ex: 1,65 m",
+    ph_peso: "Ex: 55 kg / Prefiro não dizer",
+    ph_tratamento_fas: "Ex: com carinho mas com limites claros",
+    ph_apelidos_custom: "Outros apelidos que usa...",
+    ph_conversa_nao_gosta: "Ex: conversas muito agressivas, pedidos de conteúdo explícito sem pagamento...",
+    ph_assuntos_proibidos: "Ex: família, relacionamentos passados, localização, trabalho anterior...",
+    ph_mentiras: "Ex: dizer que tenho 22 anos / que moro no Rio / nenhuma",
+    ph_palavras_nao_gosta: "Ex: palavrões específicos, termos depreciativos...",
+    ph_promessas: "Ex: nunca prometer encontros / ligações / conteúdos de graça...",
+    ph_conteudo_fav: "Ex: fotos sensuais, vídeos de dança, bastidores do dia a dia...",
+    ph_como_escrever: "Ex: de forma descontraída, com emojis, linguagem jovem, como se fosse a própria modelo...",
+    ph_girias: "Ex: 'bb', 'né', 'tipo assim' / Não uso gírias",
+    ph_perguntas_freq: "Ex: se tenho namorado, quando faço live...",
+    ph_curiosidades: "Ex: que sou formada em medicina, que viajei para 10 países...",
+    ph_info_importante: "Escreva à vontade — quanto mais detalhes, melhor!",
+  },
 
-  async function init() {
-    if (!modeloId) {
-      document.getElementById("loadingInicial").style.display = "none";
-      document.getElementById("erroModelo").style.display = "block";
-      return;
-    }
+  en: {
+    header_title: "Velvet Chat Management Information",
+    header_subtitle: "This form collects as much information as possible so we can interact naturally with your fans.",
+    erro_modelo: "❌ Invalid link or model not found.",
+    sec_pessoais: "Personal Information",
+    sec_personalidade: "Personality",
+    sec_gostos: "Personal Tastes",
+    sec_comida: "Food",
+    sec_viagens: "Travel",
+    sec_animais: "Animals",
+    sec_aparencia: "Appearance",
+    sec_fas: "Relationship with Fans",
+    sec_limites: "Limits",
+    sec_limites_sub: "(very important)",
+    sec_conteudo: "Content",
+    sec_chat: "Chat Style",
+    sec_chat_sub: "(the most important part)",
+    sec_obs: "Final Notes",
+    label_nome: "Name *",
+    label_apelido: "Nickname (if any)",
+    label_nascimento: "Date of birth",
+    label_signo: "Zodiac sign",
+    label_estado_civil: "Relationship status",
+    label_cidade_estado: "Where are you from (city/state)",
+    label_mora_atualmente: "Where do you currently live",
+    label_calcado: "Shoe size",
+    label_filhos: "Do you have children? How many? (If you prefer not to say, let us know)",
+    label_mora_sozinha: "Do you live alone? If not, with whom?",
+    label_estuda: "Do you study? What?",
+    label_trabalha_alem: "Do you work besides Velvet?",
+    label_5_palavras: "How would you describe your personality in 5 words?",
+    label_timida: "Are you more shy or outgoing?",
+    label_estilo_pers: "Are you romantic, fun, provocative, or more affectionate?",
+    label_ciumenta: "Are you jealous?",
+    label_caseira: "Homebody or do you like going out?",
+    label_praia_piscina: "Beach or pool?",
+    label_campo_cidade: "Countryside or city?",
+    label_frio_calor: "Cold or warm weather?",
+    label_manha_noite: "Morning or night person?",
+    label_maior_sonho: "What is your biggest dream?",
+    label_hobbies: "Hobbies",
+    label_esportes: "Favorite sports",
+    label_musica: "Favorite music",
+    label_artistas: "Favorite artists",
+    label_filmes: "Favorite movies",
+    label_series: "Favorite TV shows",
+    label_livros: "Favorite books",
+    label_jogos: "Favorite games",
+    label_cor: "Favorite color",
+    label_estacao: "Favorite season",
+    label_marca_roupa: "Favorite clothing brand",
+    label_comida_fav: "Favorite food",
+    label_sobremesa: "Favorite dessert",
+    label_bebida: "Favorite non-alcoholic drink",
+    label_bebida_alc: "Favorite alcoholic drink",
+    label_fast_food: "Favorite fast food",
+    label_doce_salgado: "Sweet or salty?",
+    label_cafe_cha: "Coffee or tea?",
+    label_cozinha: "Do you cook?",
+    label_melhor_viagem: "Best trip you've ever taken",
+    label_proximo_destino: "Next dream destination",
+    label_pais_conhecer: "Country you'd love to visit",
+    label_lugar_nao_moraria: "Place you'd never live",
+    label_tem_animais: "Do you have pets?",
+    label_nome_animais: "Pets' names",
+    label_animal_fav: "Favorite animal",
+    label_alergia_animal: "Are you allergic to any animal?",
+    label_atividade_fisica: "Do you exercise?",
+    label_time_favorito: "Favorite team",
+    label_futebol: "Do you watch soccer?",
+    label_videogames: "Do you like video games?",
+    label_anime: "Do you watch anime?",
+    label_streamers: "Do you watch streamers?",
+    label_redes_sociais: "Social media you use",
+    label_cor_cabelo: "Natural hair color",
+    label_extensoes: "Do you use hair extensions?",
+    label_tatuagens: "Tattoos? How many?",
+    label_piercings: "Piercings? How many?",
+    label_altura: "Height",
+    label_peso: "Weight (optional)",
+    label_tratamento_fas: "How do you prefer to treat fans?",
+    label_apelidos_fas: "What nicknames do you like to use with fans?",
+    label_apelidos_custom: "Custom nicknames (optional)",
+    label_conversa_nao_gosta: "What type of conversation do you dislike?",
+    label_assuntos_proibidos: "What topics should the chatter never bring up?",
+    label_mentiras: "Is there any story we must keep up? (age, profession, city, etc.)",
+    label_palavras_nao_gosta: "Are there words you don't like to use?",
+    label_promessas: "Are there promises we should never make?",
+    label_personalizados: "Would you create personalized content?",
+    label_conteudo_fav: "What content do you enjoy producing most?",
+    label_como_escrever: "How would you like the chatter to write on your behalf?",
+    label_nivel_intimidade: "Intimacy level",
+    label_multi_escolha: "(you can choose more than one)",
+    label_chamar_nome: "Do you like calling fans by their name?",
+    label_girias: "Do you use slang? Which ones?",
+    label_perguntas_freq: "Is there something fans frequently ask about?",
+    label_curiosidades: "Is there a fun fact about you that fans would love to know?",
+    label_info_importante: "Any important information so the chatter can respond as if they were really you?",
+    btn_enviar: "Submit Form",
+    btn_saving: "Saving...",
+    btn_error: "Submit Form",
+    sucesso_titulo: "Form submitted successfully!",
+    sucesso_msg: "Your information has been saved. The Velvet team will use it to manage your chat in a personalized way.",
+    alert_erro: "Error saving. Please try again.",
+    opt_selecione: "Select...",
+    opt_solteira: "Single", opt_namorando: "Dating", opt_casada: "Married",
+    opt_divorciada: "Divorced", opt_prefere_nao: "Prefer not to say",
+    opt_verao: "Summer", opt_outono: "Autumn", opt_inverno: "Winter", opt_primavera: "Spring",
+    opt_sim: "Yes", opt_nao: "No", opt_depende: "Depends", opt_as_vezes: "Sometimes",
+    opt_timida: "Shy", opt_extrovertida: "Outgoing", opt_meio_a_meio: "In between",
+    opt_romantica: "Romantic", opt_divertida: "Fun", opt_provocadora: "Provocative",
+    opt_carinhosa: "Affectionate", opt_todas: "All of them",
+    opt_caseira: "Homebody", opt_gosta_sair: "Likes going out", opt_as_duas: "Both",
+    opt_praia: "Beach", opt_piscina: "Pool",
+    opt_campo: "Countryside", opt_cidade: "City", opt_os_dois: "Both",
+    opt_frio: "Cold", opt_calor: "Warm", opt_tanto_faz: "Either",
+    opt_manha: "Morning", opt_noite: "Night",
+    opt_doce: "Sweet", opt_salgado: "Salty",
+    opt_cafe: "Coffee", opt_cha: "Tea", opt_nenhum: "Neither",
+    opt_cozinha_sim: "Yes, I love it",
+    opt_nenhuma_acima: "None of the above",
+    opt_ap_amor: "love", opt_ap_lindo: "handsome", opt_ap_bebe: "baby",
+    opt_ap_gatinho: "kitty", opt_ap_gato: "hottie", opt_ap_meu_bem: "my dear", opt_ap_sem: "no nicknames",
+    opt_depende_pedido: "Depends on the request",
+    opt_muito_educado: "Very polite", opt_carinhoso: "Affectionate", opt_romantico: "Romantic",
+    opt_sedutor: "Seductive", opt_muito_provocador: "Very provocative",
+    opt_sim_sempre: "Yes, always", opt_prefiro_apelidos: "I prefer nicknames",
+    ph_nome: "Your full name", ph_apelido: "Nickname", ph_signo: "E.g.: Scorpio",
+    ph_cidade_estado: "E.g.: Miami, FL", ph_mora_atualmente: "Current city",
+    ph_calcado: "E.g.: 7", ph_filhos: "E.g.: Yes, 1 child / No / Prefer not to say",
+    ph_mora_sozinha: "E.g.: Yes / No, I live with my mom",
+    ph_estuda: "E.g.: Yes, Psychology / No",
+    ph_trabalha_alem: "E.g.: Yes, I'm a nurse / No",
+    ph_5_palavras: "E.g.: fun, caring, determined, curious, loyal",
+    ph_maior_sonho: "Tell us...",
+    ph_hobbies: "E.g.: dancing, cooking, traveling",
+    ph_esportes: "E.g.: swimming, yoga",
+    ph_musica: "E.g.: pop, R&B, hip-hop",
+    ph_artistas: "E.g.: Beyoncé, The Weeknd",
+    ph_filmes: "E.g.: La La Land, Titanic",
+    ph_series: "E.g.: Grey's Anatomy, Friends",
+    ph_livros: "E.g.: doesn't like / title",
+    ph_jogos: "E.g.: doesn't play / title",
+    ph_cor: "E.g.: purple, pink",
+    ph_marca_roupa: "E.g.: Zara, H&M, no preference",
+    ph_comida_fav: "E.g.: pizza, sushi",
+    ph_sobremesa: "E.g.: brownie, ice cream",
+    ph_bebida: "E.g.: orange juice, soda",
+    ph_bebida_alc: "E.g.: wine, I don't drink",
+    ph_fast_food: "E.g.: McDonald's, Burger King",
+    ph_melhor_viagem: "E.g.: Disney World in Orlando",
+    ph_proximo_destino: "E.g.: Japan, Paris",
+    ph_pais_conhecer: "E.g.: Italy",
+    ph_lugar_nao_moraria: "E.g.: a very cold city",
+    ph_nome_animais: "E.g.: Max and Luna / —",
+    ph_animal_fav: "E.g.: cat, dog",
+    ph_alergia_animal: "E.g.: Yes, cats / No",
+    ph_atividade_fisica: "E.g.: gym, running / No",
+    ph_time_favorito: "E.g.: Lakers / I don't watch sports",
+    ph_cor_cabelo: "E.g.: dark brown",
+    ph_tatuagens: "E.g.: Yes, 3 / No",
+    ph_piercings: "E.g.: Yes, 2 / No",
+    ph_altura: "E.g.: 5'5\"",
+    ph_peso: "E.g.: 121 lbs / Prefer not to say",
+    ph_tratamento_fas: "E.g.: with affection but clear boundaries",
+    ph_apelidos_custom: "Other nicknames you use...",
+    ph_conversa_nao_gosta: "E.g.: very aggressive conversations, explicit content requests without payment...",
+    ph_assuntos_proibidos: "E.g.: family, past relationships, location, previous job...",
+    ph_mentiras: "E.g.: say I'm 22 / that I live in Miami / none",
+    ph_palavras_nao_gosta: "E.g.: specific swear words, derogatory terms...",
+    ph_promessas: "E.g.: never promise meetups / calls / free content...",
+    ph_conteudo_fav: "E.g.: sensual photos, dance videos, day-to-day behind the scenes...",
+    ph_como_escrever: "E.g.: casually, with emojis, young language, as if it were the model herself...",
+    ph_girias: "E.g.: 'tbh', 'lol', 'omg' / I don't use slang",
+    ph_perguntas_freq: "E.g.: if I have a boyfriend, when I go live...",
+    ph_curiosidades: "E.g.: that I graduated in medicine, that I've traveled to 10 countries...",
+    ph_info_importante: "Write freely — the more details, the better!",
+  },
 
-    try {
-      const res = await fetch(`/api/chat-form/${modeloId}`);
-      if (!res.ok) throw new Error("não encontrado");
-      const data = await res.json();
+  es: {
+    header_title: "Información para la Gestión del Chat Velvet",
+    header_subtitle: "Este formulario recopila la mayor cantidad de información posible para que podamos interactuar de forma natural con tus fans.",
+    erro_modelo: "❌ Enlace inválido o modelo no encontrado.",
+    sec_pessoais: "Información Personal",
+    sec_personalidade: "Personalidad",
+    sec_gostos: "Gustos Personales",
+    sec_comida: "Comida",
+    sec_viagens: "Viajes",
+    sec_animais: "Animales",
+    sec_aparencia: "Apariencia",
+    sec_fas: "Relación con los Fans",
+    sec_limites: "Límites",
+    sec_limites_sub: "(muy importante)",
+    sec_conteudo: "Contenido",
+    sec_chat: "Estilo del Chat",
+    sec_chat_sub: "(la parte más importante)",
+    sec_obs: "Observaciones Finales",
+    label_nome: "Nombre *",
+    label_apelido: "Apodo (si tiene)",
+    label_nascimento: "Fecha de nacimiento",
+    label_signo: "Signo zodiacal",
+    label_estado_civil: "Estado civil",
+    label_cidade_estado: "De dónde eres (ciudad/estado)",
+    label_mora_atualmente: "Dónde vives actualmente",
+    label_calcado: "Número de calzado",
+    label_filhos: "¿Tienes hijos? ¿Cuántos? (Si prefieres no decirlo, indícalo)",
+    label_mora_sozinha: "¿Vives sola? Si no, ¿con quién?",
+    label_estuda: "¿Estudias? ¿Qué?",
+    label_trabalha_alem: "¿Trabajas además de Velvet?",
+    label_5_palavras: "¿Cómo describirías tu personalidad en 5 palabras?",
+    label_timida: "¿Eres más tímida o extrovertida?",
+    label_estilo_pers: "¿Eres romántica, divertida, provocadora o más cariñosa?",
+    label_ciumenta: "¿Eres celosa?",
+    label_caseira: "¿Eres hogareña o te gusta salir?",
+    label_praia_piscina: "¿Playa o piscina?",
+    label_campo_cidade: "¿Campo o ciudad?",
+    label_frio_calor: "¿Frío o calor?",
+    label_manha_noite: "¿Eres mañanera o nocturna?",
+    label_maior_sonho: "¿Cuál es tu mayor sueño?",
+    label_hobbies: "Hobbies",
+    label_esportes: "Deportes favoritos",
+    label_musica: "Música favorita",
+    label_artistas: "Artistas favoritos",
+    label_filmes: "Películas favoritas",
+    label_series: "Series favoritas",
+    label_livros: "Libros favoritos",
+    label_jogos: "Juegos favoritos",
+    label_cor: "Color favorito",
+    label_estacao: "Estación del año favorita",
+    label_marca_roupa: "Marca de ropa favorita",
+    label_comida_fav: "Comida favorita",
+    label_sobremesa: "Postre favorito",
+    label_bebida: "Bebida favorita (sin alcohol)",
+    label_bebida_alc: "Bebida alcohólica favorita",
+    label_fast_food: "Fast food favorito",
+    label_doce_salgado: "¿Dulce o salado?",
+    label_cafe_cha: "¿Café o té?",
+    label_cozinha: "¿Cocinas?",
+    label_melhor_viagem: "Mejor viaje que has hecho",
+    label_proximo_destino: "Próximo destino soñado",
+    label_pais_conhecer: "País que te gustaría conocer",
+    label_lugar_nao_moraria: "Lugar donde nunca vivirías",
+    label_tem_animais: "¿Tienes mascotas?",
+    label_nome_animais: "Nombre de las mascotas",
+    label_animal_fav: "Animal favorito",
+    label_alergia_animal: "¿Eres alérgica a algún animal?",
+    label_atividade_fisica: "¿Haces alguna actividad física?",
+    label_time_favorito: "Equipo favorito",
+    label_futebol: "¿Ves fútbol?",
+    label_videogames: "¿Te gustan los videojuegos?",
+    label_anime: "¿Ves anime?",
+    label_streamers: "¿Ves streamers?",
+    label_redes_sociais: "Redes sociales que usas",
+    label_cor_cabelo: "Color natural del cabello",
+    label_extensoes: "¿Usas extensiones?",
+    label_tatuagens: "¿Tatuajes? ¿Cuántos?",
+    label_piercings: "¿Piercings? ¿Cuántos?",
+    label_altura: "Altura",
+    label_peso: "Peso (opcional)",
+    label_tratamento_fas: "¿Cómo prefieres tratar a los fans?",
+    label_apelidos_fas: "¿Qué apodos te gusta usar con los fans?",
+    label_apelidos_custom: "Apodos personalizados (opcional)",
+    label_conversa_nao_gosta: "¿Qué tipo de conversación no te gusta?",
+    label_assuntos_proibidos: "¿Qué temas nunca debe abordar la chatter?",
+    label_mentiras: "¿Hay alguna historia que debamos mantener? (edad, profesión, ciudad, etc.)",
+    label_palavras_nao_gosta: "¿Hay palabras que no te gusta usar?",
+    label_promessas: "¿Hay promesas que nunca debemos hacer?",
+    label_personalizados: "¿Harías contenido personalizado?",
+    label_conteudo_fav: "¿Qué contenido te gusta más producir?",
+    label_como_escrever: "¿Cómo te gustaría que la chatter escribiera por ti?",
+    label_nivel_intimidade: "Nivel de intimidad",
+    label_multi_escolha: "(puedes elegir más de uno)",
+    label_chamar_nome: "¿Te gusta llamar a los fans por su nombre?",
+    label_girias: "¿Usas jerga? ¿Cuál?",
+    label_perguntas_freq: "¿Hay algo que los fans suelen preguntar frecuentemente?",
+    label_curiosidades: "¿Hay alguna curiosidad tuya que los fans adorarían saber?",
+    label_info_importante: "¿Alguna información importante para que la chatter pueda responder como si fuera realmente tú?",
+    btn_enviar: "Enviar Formulario",
+    btn_saving: "Guardando...",
+    btn_error: "Enviar Formulario",
+    sucesso_titulo: "¡Formulario enviado con éxito!",
+    sucesso_msg: "Tu información ha sido guardada. El equipo de Velvet la utilizará para gestionar el chat de forma personalizada.",
+    alert_erro: "Error al guardar. Por favor intenta de nuevo.",
+    opt_selecione: "Selecciona...",
+    opt_solteira: "Soltera", opt_namorando: "De novio/a", opt_casada: "Casada",
+    opt_divorciada: "Divorciada", opt_prefere_nao: "Prefiere no decir",
+    opt_verao: "Verano", opt_outono: "Otoño", opt_inverno: "Invierno", opt_primavera: "Primavera",
+    opt_sim: "Sí", opt_nao: "No", opt_depende: "Depende", opt_as_vezes: "A veces",
+    opt_timida: "Tímida", opt_extrovertida: "Extrovertida", opt_meio_a_meio: "Intermedia",
+    opt_romantica: "Romántica", opt_divertida: "Divertida", opt_provocadora: "Provocadora",
+    opt_carinhosa: "Cariñosa", opt_todas: "Todas",
+    opt_caseira: "Hogareña", opt_gosta_sair: "Le gusta salir", opt_as_duas: "Ambas",
+    opt_praia: "Playa", opt_piscina: "Piscina",
+    opt_campo: "Campo", opt_cidade: "Ciudad", opt_os_dois: "Ambos",
+    opt_frio: "Frío", opt_calor: "Calor", opt_tanto_faz: "Cualquiera",
+    opt_manha: "Mañana", opt_noite: "Noche",
+    opt_doce: "Dulce", opt_salgado: "Salado",
+    opt_cafe: "Café", opt_cha: "Té", opt_nenhum: "Ninguno",
+    opt_cozinha_sim: "Sí, me encanta",
+    opt_nenhuma_acima: "Ninguna de las anteriores",
+    opt_ap_amor: "amor", opt_ap_lindo: "guapo", opt_ap_bebe: "bebé",
+    opt_ap_gatinho: "gatito", opt_ap_gato: "guapetón", opt_ap_meu_bem: "mi bien", opt_ap_sem: "sin apodos",
+    opt_depende_pedido: "Depende del pedido",
+    opt_muito_educado: "Muy educado", opt_carinhoso: "Cariñoso", opt_romantico: "Romántico",
+    opt_sedutor: "Seductor", opt_muito_provocador: "Muy provocador",
+    opt_sim_sempre: "Sí, siempre", opt_prefiro_apelidos: "Prefiero apodos",
+    ph_nome: "Tu nombre completo", ph_apelido: "Apodo", ph_signo: "Ej: Escorpio",
+    ph_cidade_estado: "Ej: Buenos Aires, BA", ph_mora_atualmente: "Ciudad actual",
+    ph_calcado: "Ej: 37", ph_filhos: "Ej: Sí, 1 hijo / No / Prefiero no decir",
+    ph_mora_sozinha: "Ej: Sí / No, vivo con mi mamá",
+    ph_estuda: "Ej: Sí, Psicología / No",
+    ph_trabalha_alem: "Ej: Sí, soy enfermera / No",
+    ph_5_palavras: "Ej: divertida, cariñosa, determinada, curiosa, leal",
+    ph_maior_sonho: "Cuéntanos...",
+    ph_hobbies: "Ej: bailar, cocinar, viajar",
+    ph_esportes: "Ej: natación, yoga",
+    ph_musica: "Ej: reggaeton, pop, cumbia",
+    ph_artistas: "Ej: Shakira, Bad Bunny",
+    ph_filmes: "Ej: La La Land, Titanic",
+    ph_series: "Ej: Grey's Anatomy, Friends",
+    ph_livros: "Ej: no le gusta / título",
+    ph_jogos: "Ej: no juega / título",
+    ph_cor: "Ej: morado, rosa",
+    ph_marca_roupa: "Ej: Zara, H&M, sin preferencia",
+    ph_comida_fav: "Ej: pizza, sushi",
+    ph_sobremesa: "Ej: brownie, helado",
+    ph_bebida: "Ej: jugo de naranja, refresco",
+    ph_bebida_alc: "Ej: vino, no bebo",
+    ph_fast_food: "Ej: McDonald's, Burger King",
+    ph_melhor_viagem: "Ej: Disney en Orlando",
+    ph_proximo_destino: "Ej: Japón, París",
+    ph_pais_conhecer: "Ej: Italia",
+    ph_lugar_nao_moraria: "Ej: una ciudad muy fría",
+    ph_nome_animais: "Ej: Max y Luna / —",
+    ph_animal_fav: "Ej: gato, perro",
+    ph_alergia_animal: "Ej: Sí, gatos / No",
+    ph_atividade_fisica: "Ej: gimnasio, correr / No",
+    ph_time_favorito: "Ej: Boca Juniors / No veo fútbol",
+    ph_cor_cabelo: "Ej: castaño oscuro",
+    ph_tatuagens: "Ej: Sí, 3 / No",
+    ph_piercings: "Ej: Sí, 2 / No",
+    ph_altura: "Ej: 1,65 m",
+    ph_peso: "Ej: 55 kg / Prefiero no decir",
+    ph_tratamento_fas: "Ej: con cariño pero con límites claros",
+    ph_apelidos_custom: "Otros apodos que usas...",
+    ph_conversa_nao_gosta: "Ej: conversaciones muy agresivas, pedidos de contenido explícito sin pago...",
+    ph_assuntos_proibidos: "Ej: familia, relaciones pasadas, ubicación, trabajo anterior...",
+    ph_mentiras: "Ej: decir que tengo 22 años / que vivo en Miami / ninguna",
+    ph_palavras_nao_gosta: "Ej: palabrotas específicas, términos despectivos...",
+    ph_promessas: "Ej: nunca prometer encuentros / llamadas / contenido gratis...",
+    ph_conteudo_fav: "Ej: fotos sensuales, videos de baile, detrás de escena...",
+    ph_como_escrever: "Ej: de forma relajada, con emojis, lenguaje joven, como si fuera la propia modelo...",
+    ph_girias: "Ej: 'bb', 'dale', 'obvio' / No uso jerga",
+    ph_perguntas_freq: "Ej: si tengo novio, cuándo hago live...",
+    ph_curiosidades: "Ej: que me gradué en medicina, que viajé a 10 países...",
+    ph_info_importante: "Escribe libremente — ¡cuantos más detalles, mejor!",
+  }
+};
 
-      document.getElementById("nomeModeloTexto").textContent = data.nome_modelo;
-      document.getElementById("nomeModeloBadge").style.display = "flex";
-      document.getElementById("loadingInicial").style.display = "none";
-      document.getElementById("formChat").style.display = "block";
+let currentLang = 'pt';
 
-      if (data.respostas) preencherFormulario(data.respostas);
+function setLang(lang) {
+  currentLang = lang;
+  const t = i18n[lang];
 
-    } catch (e) {
-      document.getElementById("loadingInicial").style.display = "none";
-      document.getElementById("erroModelo").style.display = "block";
-    }
+  // Buttons
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('btn-' + lang).classList.add('active');
+
+  // html lang
+  document.documentElement.lang = lang === 'pt' ? 'pt-BR' : lang;
+
+  // Text nodes
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (t[key] !== undefined) el.textContent = t[key];
+  });
+
+  // Placeholders
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const key = el.getAttribute('data-i18n-placeholder');
+    if (t[key] !== undefined) el.placeholder = t[key];
+  });
+
+  // Select options
+  document.querySelectorAll('select option[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (t[key] !== undefined) el.textContent = t[key];
+  });
+
+  // Submit button (also has data-i18n already handled above, but handle disabled state)
+  const btn = document.getElementById('btnSubmit');
+  if (btn && !btn.disabled) btn.textContent = t['btn_enviar'];
+
+  // Store for alert messages
+  window._i18nAlert = t['alert_erro'];
+  window._i18nSaving = t['btn_saving'];
+  window._i18nBtn = t['btn_enviar'];
+}
+
+// Init
+window._i18nAlert = i18n.pt.alert_erro;
+window._i18nSaving = i18n.pt.btn_saving;
+window._i18nBtn = i18n.pt.btn_enviar;
+setLang('pt');
+
+// ── App logic ──────────────────────────────────────────────
+const params = new URLSearchParams(location.search);
+const modeloId = Number(params.get("modelo"));
+
+async function init() {
+  if (!modeloId) {
+    document.getElementById("loadingInicial").style.display = "none";
+    document.getElementById("erroModelo").style.display = "block";
+    return;
   }
 
-  function preencherFormulario(r) {
-    const form = document.getElementById("formChat");
+  try {
+    const res = await fetch(`/api/chat-form/${modeloId}`);
+    if (!res.ok) throw new Error("não encontrado");
+    const data = await res.json();
 
-    for (const [key, val] of Object.entries(r)) {
-      if (Array.isArray(val)) {
-        // checkboxes
-        form.querySelectorAll(`input[name="${key}"]`).forEach(el => {
-          el.checked = val.includes(el.value);
+    document.getElementById("nomeModeloTexto").textContent = data.nome_modelo;
+    document.getElementById("nomeModeloBadge").style.display = "flex";
+    document.getElementById("loadingInicial").style.display = "none";
+    document.getElementById("formChat").style.display = "block";
+
+    if (data.respostas) preencherFormulario(data.respostas);
+
+  } catch (e) {
+    document.getElementById("loadingInicial").style.display = "none";
+    document.getElementById("erroModelo").style.display = "block";
+  }
+}
+
+function preencherFormulario(r) {
+  const form = document.getElementById("formChat");
+
+  for (const [key, val] of Object.entries(r)) {
+    if (Array.isArray(val)) {
+      form.querySelectorAll(`input[name="${key}"]`).forEach(el => {
+        el.checked = val.includes(el.value);
+      });
+    } else {
+      const el = form.elements[key];
+      if (!el) continue;
+      if (el.type === "radio") {
+        form.querySelectorAll(`input[name="${key}"]`).forEach(r => {
+          if (r.value === val) r.checked = true;
         });
       } else {
-        const el = form.elements[key];
-        if (!el) continue;
-        if (el.type === "radio") {
-          form.querySelectorAll(`input[name="${key}"]`).forEach(r => {
-            if (r.value === val) r.checked = true;
-          });
-        } else {
-          el.value = val || "";
-        }
+        el.value = val || "";
       }
     }
   }
+}
 
-  async function salvarFormulario(e) {
-    e.preventDefault();
-    const btn = document.getElementById("btnSubmit");
-    btn.disabled = true;
-    btn.textContent = "A guardar...";
+async function salvarFormulario(e) {
+  e.preventDefault();
+  const btn = document.getElementById("btnSubmit");
+  btn.disabled = true;
+  btn.textContent = window._i18nSaving;
 
-    const form = e.target;
-    const respostas = {};
+  const form = e.target;
+  const respostas = {};
 
-    // Campos simples
-    const simples = ["nome","apelido","data_nascimento","signo","estado_civil","cidade_estado",
-      "mora_atualmente","filhos","mora_sozinha","estuda","trabalha_alem","numero_calcado",
-      "personalidade_5_palavras","maior_sonho",
-      "hobbies","esportes_favoritos","musica_favorita","artistas_favoritos","filmes_favoritos",
-      "series_favoritas","livros_favoritos","jogos_favoritos","cor_favorita","estacao_favorita","marca_roupa",
-      "comida_favorita","sobremesa_favorita","bebida_favorita","bebida_alcoolica","fast_food",
-      "melhor_viagem","proximo_destino","pais_conhecer","lugar_nao_moraria",
-      "nome_animais","animal_favorito","alergia_animal","atividade_fisica","time_favorito",
-      "cor_cabelo","tatuagens","piercings","altura","peso",
-      "preferencia_tratamento","apelidos_custom","conversa_nao_gosta",
-      "assuntos_proibidos","mentiras_manter","palavras_nao_gosta","promessas_nao_fazer",
-      "conteudo_favorito","como_escrever","girias",
-      "perguntas_frequentes","curiosidades","informacao_importante"
-    ];
+  const simples = ["nome","apelido","data_nascimento","signo","estado_civil","cidade_estado",
+    "mora_atualmente","filhos","mora_sozinha","estuda","trabalha_alem","numero_calcado",
+    "personalidade_5_palavras","maior_sonho",
+    "hobbies","esportes_favoritos","musica_favorita","artistas_favoritos","filmes_favoritos",
+    "series_favoritas","livros_favoritos","jogos_favoritos","cor_favorita","estacao_favorita","marca_roupa",
+    "comida_favorita","sobremesa_favorita","bebida_favorita","bebida_alcoolica","fast_food",
+    "melhor_viagem","proximo_destino","pais_conhecer","lugar_nao_moraria",
+    "nome_animais","animal_favorito","alergia_animal","atividade_fisica","time_favorito",
+    "cor_cabelo","tatuagens","piercings","altura","peso",
+    "preferencia_tratamento","apelidos_custom","conversa_nao_gosta",
+    "assuntos_proibidos","mentiras_manter","palavras_nao_gosta","promessas_nao_fazer",
+    "conteudo_favorito","como_escrever","girias",
+    "perguntas_frequentes","curiosidades","informacao_importante"
+  ];
 
-    simples.forEach(name => {
-      const el = form.elements[name];
-      if (el) respostas[name] = el.value.trim();
+  simples.forEach(name => {
+    const el = form.elements[name];
+    if (el) respostas[name] = el.value.trim();
+  });
+
+  const radios = ["timida_extrovertida","estilo_personalidade","ciumenta","caseira_sair",
+    "praia_piscina","campo_cidade","frio_calor","manha_noite","doce_salgado","cafe_cha","cozinha",
+    "assiste_futebol","gosta_videogames","assiste_anime","assiste_streamers",
+    "usa_extensoes","faria_personalizados","chamar_pelo_nome","tem_animais"
+  ];
+
+  radios.forEach(name => {
+    const checked = form.querySelector(`input[name="${name}"]:checked`);
+    if (checked) respostas[name] = checked.value;
+  });
+
+  const multiCheck = ["redes_sociais","apelidos","nivel_intimidade"];
+  multiCheck.forEach(name => {
+    respostas[name] = Array.from(
+      form.querySelectorAll(`input[name="${name}"]:checked`)
+    ).map(el => el.value);
+  });
+
+  try {
+    const res = await fetch("/api/chat-form/salvar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ modelo_id: modeloId, respostas })
     });
+    if (!res.ok) throw new Error("Erro ao guardar");
 
-    // Radios
-    const radios = ["timida_extrovertida","estilo_personalidade","ciumenta","caseira_sair",
-      "praia_piscina","campo_cidade","frio_calor","manha_noite","doce_salgado","cafe_cha","cozinha",
-      "assiste_futebol","gosta_videogames","assiste_anime","assiste_streamers",
-      "usa_extensoes","faria_personalizados","chamar_pelo_nome","tem_animais"
-    ];
-
-    radios.forEach(name => {
-      const checked = form.querySelector(`input[name="${name}"]:checked`);
-      if (checked) respostas[name] = checked.value;
-    });
-
-    // Checkboxes múltiplos
-    const multiCheck = ["redes_sociais","apelidos","nivel_intimidade"];
-    multiCheck.forEach(name => {
-      respostas[name] = Array.from(
-        form.querySelectorAll(`input[name="${name}"]:checked`)
-      ).map(el => el.value);
-    });
-
-    try {
-      const res = await fetch("/api/chat-form/salvar", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ modelo_id: modeloId, respostas })
-      });
-      if (!res.ok) throw new Error("Erro ao guardar");
-
-      document.getElementById("formChat").style.display = "none";
-      document.getElementById("mensagemSucesso").style.display = "block";
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    } catch (err) {
-      btn.disabled = false;
-      btn.textContent = "Enviar Formulário";
-      alert("Erro ao guardar. Por favor tente novamente.");
-    }
+    document.getElementById("formChat").style.display = "none";
+    document.getElementById("mensagemSucesso").style.display = "block";
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  } catch (err) {
+    btn.disabled = false;
+    btn.textContent = window._i18nBtn;
+    alert(window._i18nAlert);
   }
+}
 
-  init();
+init();
 </script>
 </body>
 </html>
