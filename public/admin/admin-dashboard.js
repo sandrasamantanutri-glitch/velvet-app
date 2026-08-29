@@ -5864,10 +5864,11 @@ function rcAutocomplete(inputId, sugId, tagId, hiddenId, apiPath, labelFn) {
         if (!rows.length) { sug.style.display = 'none'; return; }
         sug.innerHTML = rows.map(r => `
           <div data-id="${r.cliente_id || r.modelo_id}" data-label="${labelFn(r)}"
-            style="padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--border,#2a2a4a);font-size:13px;">
+            style="padding:10px 14px;cursor:pointer;border-bottom:1px solid #e5e7eb;font-size:13px;color:#111;background:#fff;"
+            onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='#fff'">
             ${labelFn(r)}
           </div>`).join('');
-        sug.style.display = 'block';
+        sug.style.cssText = 'display:block;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #d1d5db;border-radius:8px;z-index:9999;max-height:220px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,0.15);';
         sug.querySelectorAll('div').forEach(el => {
           el.addEventListener('click', () => {
             hidden.value = el.dataset.id;

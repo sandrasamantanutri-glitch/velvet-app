@@ -6549,8 +6549,7 @@ router.post("/restricoes-cliente", authAdmin, async (req, res) => {
     if (!cRes.rows.length) return res.status(404).json({ erro: "Cliente não encontrado" });
     if (!mRes.rows.length) return res.status(404).json({ erro: "Modelo não encontrada" });
 
-    const adminRes = await db.query("SELECT id FROM admin WHERE user_id = $1", [req.user.id]);
-    const adminId = adminRes.rows[0]?.id || null;
+    const adminId = req.user.id || null;
 
     const { rows } = await db.query(`
       INSERT INTO cliente_modelo_restricoes (cliente_id, modelo_id, motivo, criado_por)
