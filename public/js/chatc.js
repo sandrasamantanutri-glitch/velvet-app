@@ -564,6 +564,7 @@ if (msg.tipo === "conteudo" || msg.tipo === "conteudo_ppv_mass") {
 const cardLiberado =
   Number(msg.preco) === 0 ||
   msg.liberado === true ||
+  msg.todosAcessiveis === true ||
   conteudosLiberados.has(Number(msg.id));
 
  div.innerHTML = `
@@ -1035,6 +1036,7 @@ if (msg.tipo === "conteudo" || msg.tipo === "conteudo_ppv_mass") {
 const cardLiberado =
   Number(msg.preco) === 0 ||
   msg.liberado === true ||
+  msg.todosAcessiveis === true ||
   conteudosLiberados.has(Number(msg.id));
 
 div.innerHTML = `

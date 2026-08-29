@@ -4748,9 +4748,10 @@ socket.on("getHistory", async ({ cliente_id, modelo_id, offset = 0, limit = 20 }
         msg.quantidade = msg.midias.length;
 
         if (Number(msg.preco) > 0) {
-          const todasLiberadas = msg.midias.every(m => m.liberado);
-          msg.liberado = pago || todasLiberadas;
-          msg.bloqueado = !msg.liberado;
+          const todasAcessiveis = msg.midias.every(m => m.liberado);
+          msg.liberado = pago;           // só true se ESTA mensagem foi paga (modelo vê correto)
+          msg.todosAcessiveis = todasAcessiveis; // true se cliente pode ver via posse de outra msg
+          msg.bloqueado = !pago;
           msg.tem_parcial_liberado = msg.midias.some(m => m.liberado);
           msg.tem_parcial_bloqueado = msg.midias.some(m => m.bloqueado);
         } else {
