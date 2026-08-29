@@ -3642,7 +3642,6 @@ async function buscarConteudosJaPossuidosPorCliente(client, { cliente_id, modelo
     WHERE m.modelo_id = $1
       AND m.cliente_id = $2
       AND m.visto = true
-      AND m.deletada IS NOT TRUE
     `,
     [modelo_id, cliente_id]
   );
@@ -3685,19 +3684,30 @@ async function notificarNovaMensagem(userIdDestino, textoMensagem, url = "/inbox
   if (process.env.VAPID_SUBJECT && process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
     try {
       const subRes = await db.query(
-        `SELECT subscription_json FROM push_subscriptions WHERE user_id = $1 LIMIT 1`,
+        `SELECT subscription_json FROM push_subscriptions WHERE user_id = $1`,
         [userIdDestino]
       );
-      if (subRes.rowCount > 0) {
-        await enviarPush(subRes.rows[0].subscription_json, textoMensagem, url, remetente);
-        console.log("Web push enviado para user_id:", userIdDestino);
+      for (const row of subRes.rows) {
+        try {
+          await enviarPush(row.subscription_json, textoMensagem, url, remetente);
+          console.log("Web push enviado para user_id:", userIdDestino);
+        } catch (err) {
+          if (err.statusCode === 404 || err.statusCode === 410) {
+            // Subscription expirada/inválida — remove apenas este endpoint
+            const endpoint = row.subscription_json?.endpoint;
+            if (endpoint) {
+              await db.query(
+                `DELETE FROM push_subscriptions WHERE user_id = $1 AND subscription_json->>'endpoint' = $2`,
+                [userIdDestino, endpoint]
+              );
+            }
+          } else {
+            erros.push(err);
+          }
+        }
       }
     } catch (err) {
-      if (err.statusCode === 404 || err.statusCode === 410) {
-        await db.query(`DELETE FROM push_subscriptions WHERE user_id = $1`, [userIdDestino]);
-      } else {
-        erros.push(err);
-      }
+      erros.push(err);
     }
   }
 
