@@ -891,6 +891,21 @@ async function aplicarRegrasDeAcesso() {
       return;
     }
 
+    // Verifica restrição admin antes de mostrar o botão de assinatura
+    try {
+      const restRes = await fetch(`/api/cliente/restricao/${modelo_id}`, {
+        headers: { Authorization: "Bearer " + s.tokenAtual }
+      });
+      if (restRes.ok) {
+        const restData = await restRes.json();
+        if (restData.restrito) {
+          if (ofertaCard) ofertaCard.style.display = "none";
+          if (btnAssinar) btnAssinar.style.display = "none";
+          return;
+        }
+      }
+    } catch (_) {}
+
     if (ofertaCard) ofertaCard.style.display = "block";
 
     if (btnAssinar && window.OFERTA_ATUAL) {

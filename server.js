@@ -5526,6 +5526,23 @@ app.get("/api/ofertas/ativa/:modelo_id", async (req, res) => {
 // STATUS VIP
 // ===========================
 
+app.get("/api/cliente/restricao/:modelo_id", authCliente, async (req, res) => {
+  try {
+    const modelo_id = Number(req.params.modelo_id);
+    if (!Number.isInteger(modelo_id) || modelo_id <= 0) {
+      return res.status(400).json({ error: "modelo_id inválido" });
+    }
+    const { rowCount } = await db.query(
+      "SELECT 1 FROM cliente_modelo_restricoes WHERE cliente_id = $1 AND modelo_id = $2",
+      [req.cliente_id, modelo_id]
+    );
+    res.json({ restrito: rowCount > 0 });
+  } catch (err) {
+    console.error("Erro verificar restrição:", err);
+    res.status(500).json({ error: "Erro interno" });
+  }
+});
+
 app.get("/api/vip/status/:modelo_id", authCliente, async (req, res) => {
   try {
 
