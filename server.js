@@ -4855,7 +4855,7 @@ socket.on("sendConteudo", async ({
     // 6️⃣ BUSCAR MÍDIAS
     const midiasRes = await db.query(
       `
-      SELECT url, thumbnail_url, tipo AS tipo_media
+      SELECT id AS conteudo_id, url, thumbnail_url, tipo AS tipo_media
       FROM conteudos
       WHERE id = ANY($1)
       ORDER BY array_position($1, id)
@@ -4896,7 +4896,7 @@ socket.on("sendConteudo", async ({
     // Cliente recebe preview borrado enquanto não pagar — URL real só após confirmação
     const midiasParaCliente = precoNum > 0
       ? midias.map(m => ({ conteudo_id: m.conteudo_id, thumbnail_url: getPreviewUrl(m.url, m.thumbnail_url), tipo_media: m.tipo_media, url: null }))
-      : midias;
+      : midias.map(m => ({ conteudo_id: m.conteudo_id, url: m.url, thumbnail_url: m.thumbnail_url, tipo_media: m.tipo_media }));
     socket.to(sala).emit("newMessage", { ...payloadBase, midias: midiasParaCliente });
 
     // 🔔 INBOX MODELO
