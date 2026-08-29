@@ -5760,7 +5760,7 @@ async function rcCarregar(pagina = 1) {
   rcPaginaAtual = pagina;
   const q = document.getElementById('rcFiltro')?.value.trim() || '';
   try {
-    const data = await fetchJSON(`/api/admin/dashboard/restricoes-cliente?page=${pagina}&q=${encodeURIComponent(q)}`);
+    const data = await fetchJSON(`/admin/dashboard/restricoes-cliente?page=${pagina}&q=${encodeURIComponent(q)}`);
     const tbody = document.getElementById('rcBody');
     if (!tbody) return;
 
@@ -5803,7 +5803,7 @@ async function rcCarregar(pagina = 1) {
 async function rcRemover(id) {
   if (!confirm('Remover esta restrição?')) return;
   try {
-    const res = await authFetch(`/api/admin/dashboard/restricoes-cliente/${id}`, { method: 'DELETE' });
+    const res = await authFetch(`/admin/dashboard/restricoes-cliente/${id}`, { method: 'DELETE' });
     if (!res.ok) throw new Error();
     toast('Restrição removida', 'success');
     rcCarregar(rcPaginaAtual);
@@ -5823,7 +5823,7 @@ async function rcCriarRestricao() {
   }
 
   try {
-    const res = await authFetch('/api/admin/dashboard/restricoes-cliente', {
+    const res = await authFetch('/admin/dashboard/restricoes-cliente', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ cliente_id: Number(clienteId), modelo_id: Number(modeloId), motivo })
@@ -5859,7 +5859,7 @@ function rcAutocomplete(inputId, sugId, tagId, hiddenId, apiPath, labelFn) {
     if (!q) { sug.style.display = 'none'; return; }
     timer = setTimeout(async () => {
       try {
-        const res = await authFetch(`/api/admin/dashboard/${apiPath}?q=${encodeURIComponent(q)}`);
+        const res = await authFetch(`/admin/dashboard/${apiPath}?q=${encodeURIComponent(q)}`);
         const rows = await res.json();
         if (!rows.length) { sug.style.display = 'none'; return; }
         sug.innerHTML = rows.map(r => `
