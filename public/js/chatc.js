@@ -463,6 +463,12 @@ socket.on("conteudoVisto", async ({ message_id, cliente_id: cid }) => {
     if (todasLiberadas) {
       el.classList.add("livre");
       conteudosLiberados.add(Number(message_id));
+
+      // Se o card já tem mídias livres renderizadas com data-full (veio de liberarConteudo
+      // ou de um render anterior correto), não sobrescreve — a UI já está correta.
+      if (el.querySelector(".midia-item.midia-livre[data-full]")) {
+        return;
+      }
     }
 
     el.innerHTML = `
@@ -473,17 +479,18 @@ socket.on("conteudoVisto", async ({ message_id, cliente_id: cid }) => {
           return `
             <div class="midia-item ${liberado ? "midia-livre" : "midia-bloqueada"}"
                  data-index="${index}"
-                 data-liberado="${liberado ? "true" : "false"}">
+                 data-full="${liberado ? (m.url || "") : ""}"
+                 data-thumb="${m.thumbnail_url || ""}"
+                 data-liberado="${liberado ? "true" : "false"}"
+                 style="${!liberado && m.thumbnail_url ? `background-image:url('${m.thumbnail_url}')` : ""}">
               ${
                 liberado
                   ? (
                       m.tipo_media === "video"
                         ? `<video src="${m.url}" muted playsinline></video>`
-                        : `<img src="${m.url}">`
+                        : `<img src="${m.url}" alt="">`
                     )
-                  : `
-                    <div class="midia-preview" style="background-image:url('${m.thumbnail_url || m.url}')"></div>
-                  `
+                  : `<div class="midia-preview" style="${m.thumbnail_url ? `background-image:url('${m.thumbnail_url}')` : ""}"></div>`
               }
             </div>
           `;
