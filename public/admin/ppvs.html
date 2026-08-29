@@ -17,7 +17,6 @@
       overflow: hidden;
     }
 
-    /* ===== TOOLBAR ===== */
     .toolbar {
       display: flex;
       align-items: center;
@@ -41,9 +40,7 @@
     }
 
     .toolbar input[type="search"]:focus { border-color: #7b2cff; }
-
     .toolbar-spacer { flex: 1; }
-
     .toolbar-info { font-size: 12px; color: #888; }
 
     .btn-reset {
@@ -58,14 +55,8 @@
 
     .btn-reset:hover { border-color: #7b2cff; color: #fff; }
 
-    /* ===== LAYOUT ===== */
-    .layout {
-      display: flex;
-      flex: 1;
-      overflow: hidden;
-    }
+    .layout { display: flex; flex: 1; overflow: hidden; }
 
-    /* ===== SIDEBAR ===== */
     .sidebar {
       width: 220px;
       flex-shrink: 0;
@@ -129,7 +120,6 @@
     .modelo-item-all:hover,
     .modelo-item-all.active { background: #2a1a4a; }
 
-    /* ===== MAIN ÁREA ===== */
     .main-area {
       flex: 1;
       overflow-y: auto;
@@ -145,7 +135,6 @@
       background: #14141e;
       border-bottom: 1px solid #2a2a3a;
       flex-shrink: 0;
-      flex-wrap: wrap;
     }
 
     .filter-bar select {
@@ -162,17 +151,9 @@
     .filter-bar-label { font-size: 12px; color: #666; }
     .filter-bar-spacer { flex: 1; }
 
-    /* ===== TABELA ===== */
-    .table-wrap {
-      flex: 1;
-      overflow: auto;
-    }
+    .table-wrap { flex: 1; overflow: auto; }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-    }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
 
     thead th {
       background: #1a1a24;
@@ -195,20 +176,13 @@
     }
 
     tbody tr:hover { background: #1e1e2e; }
+    tbody td { padding: 10px 14px; vertical-align: middle; }
 
-    tbody td {
-      padding: 10px 14px;
-      vertical-align: middle;
-    }
-
-    .td-thumb {
-      width: 48px;
-      padding: 6px 10px;
-    }
+    .td-thumb { width: 54px; padding: 6px 10px; }
 
     .td-thumb img {
-      width: 40px;
-      height: 40px;
+      width: 44px;
+      height: 44px;
       object-fit: cover;
       border-radius: 6px;
       display: block;
@@ -216,19 +190,19 @@
     }
 
     .td-thumb .no-thumb {
-      width: 40px;
-      height: 40px;
+      width: 44px;
+      height: 44px;
       border-radius: 6px;
       background: #2a2a3a;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 18px;
+      font-size: 20px;
       color: #555;
     }
 
     .text-truncate {
-      max-width: 260px;
+      max-width: 300px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -248,18 +222,6 @@
     .badge-tipo.mass { background: #7b2cff22; color: #9b6cff; }
     .badge-tipo.individual { background: #1a7aff22; color: #5aaaff; }
 
-    .badge-status {
-      display: inline-block;
-      border-radius: 10px;
-      padding: 2px 8px;
-      font-size: 11px;
-      font-weight: 500;
-    }
-
-    .badge-status.pago { background: #1a4a2a; color: #4caf50; }
-    .badge-status.pendente { background: #4a2a1a; color: #ff8a65; }
-    .badge-status.unknown { background: #2a2a3a; color: #888; }
-
     .midias-count {
       display: inline-flex;
       align-items: center;
@@ -268,13 +230,10 @@
       font-size: 12px;
     }
 
-    .price-tag {
-      color: #4caf50;
-      font-weight: 600;
-      white-space: nowrap;
-    }
+    .price-tag { color: #4caf50; font-weight: 600; white-space: nowrap; }
 
-    /* ===== PAGINAÇÃO ===== */
+    .enviados-count { color: #888; font-size: 12px; }
+
     .pagination {
       display: flex;
       align-items: center;
@@ -299,7 +258,6 @@
     .pagination button:disabled { opacity: 0.4; cursor: default; }
     .pagination span { font-size: 12px; color: #888; }
 
-    /* ===== ESTADOS ===== */
     .empty {
       display: flex;
       flex-direction: column;
@@ -351,9 +309,8 @@
     .modal-backdrop.open { display: flex; }
 
     .modal-box {
-      position: relative;
       width: 100%;
-      max-width: 680px;
+      max-width: 660px;
       max-height: 90vh;
       background: #1a1a24;
       border-radius: 12px;
@@ -419,8 +376,8 @@
 
     .modal-info-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-      gap: 12px;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 10px;
     }
 
     .modal-info-card {
@@ -434,11 +391,10 @@
     .modal-info-card .value { font-size: 13px; color: #e2e2e2; font-weight: 500; }
     .modal-info-card .value.green { color: #4caf50; }
     .modal-info-card .value.purple { color: #9b6cff; }
-    .modal-info-card .value.orange { color: #ff8a65; }
 
     .midias-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
       gap: 8px;
     }
 
@@ -449,6 +405,7 @@
       overflow: hidden;
       background: #0f0f13;
       cursor: pointer;
+      border: 1px solid #2a2a3a;
     }
 
     .midia-thumb img {
@@ -464,20 +421,16 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 28px;
+      font-size: 30px;
       color: #ffffffcc;
       pointer-events: none;
     }
 
-    .midia-thumb:hover { opacity: 0.85; }
+    .midia-thumb:hover { opacity: 0.82; }
 
-    .no-midias {
-      color: #555;
-      font-size: 13px;
-      padding: 16px 0;
-    }
+    .no-midias { color: #555; font-size: 13px; }
 
-    /* ===== MEDIA VIEWER ===== */
+    /* ===== VIEWER ===== */
     .viewer-backdrop {
       display: none;
       position: fixed;
@@ -490,11 +443,7 @@
 
     .viewer-backdrop.open { display: flex; }
 
-    .viewer-box {
-      position: relative;
-      max-width: 90vw;
-      max-height: 90vh;
-    }
+    .viewer-box { position: relative; max-width: 90vw; max-height: 90vh; }
 
     .viewer-box img {
       max-width: 90vw;
@@ -526,7 +475,6 @@
 </head>
 <body>
 
-<!-- TOOLBAR -->
 <div class="toolbar">
   <input type="search" id="searchInput" placeholder="Buscar modelo..." oninput="filtrarModelos()">
   <div class="toolbar-spacer"></div>
@@ -534,30 +482,22 @@
   <button class="btn-reset" onclick="resetFiltros()">Limpar filtros</button>
 </div>
 
-<!-- LAYOUT -->
 <div class="layout">
 
-  <!-- SIDEBAR -->
   <div class="sidebar">
     <div class="sidebar-header">Modelos</div>
     <div class="modelo-item-all active" onclick="selecionarModelo(null, this)">Todos os modelos</div>
     <div id="modelosList"></div>
   </div>
 
-  <!-- MAIN -->
   <div class="main-area">
     <div class="filter-bar">
-      <span class="filter-bar-label">Filtrar:</span>
+      <span class="filter-bar-label">Tipo:</span>
       <select id="filtroTipo" onchange="carregar(1)">
-        <option value="">Todos os tipos</option>
+        <option value="">Todos</option>
         <option value="conteudo_ppv_mass">Mass PPV</option>
         <option value="conteudo_ppv">PPV Individual</option>
         <option value="ppv">PPV</option>
-      </select>
-      <select id="filtroStatus" onchange="carregar(1)">
-        <option value="">Todos os status</option>
-        <option value="pago">Pago</option>
-        <option value="pendente">Pendente</option>
       </select>
       <div class="filter-bar-spacer"></div>
       <select id="filtroLimite" onchange="carregar(1)">
@@ -579,9 +519,9 @@
   </div>
 </div>
 
-<!-- MODAL DETALHE PPV -->
+<!-- MODAL DETALHE -->
 <div class="modal-backdrop" id="modalBackdrop" onclick="fecharModal(event)">
-  <div class="modal-box" id="modalBox">
+  <div class="modal-box">
     <div class="modal-header">
       <div>
         <h3 id="modalTitulo">PPV</h3>
@@ -593,7 +533,7 @@
   </div>
 </div>
 
-<!-- VIEWER DE MÍDIA -->
+<!-- VIEWER MÍDIA -->
 <div class="viewer-backdrop" id="viewerBackdrop" onclick="fecharViewer()">
   <div class="viewer-box" id="viewerBox">
     <button class="viewer-close" onclick="fecharViewer()">×</button>
@@ -611,7 +551,6 @@
     return res.json();
   }
 
-  // ===== SIDEBAR =====
   async function carregarModelos() {
     const lista = document.getElementById('modelosList');
     lista.innerHTML = '<div style="padding:12px;color:#555;font-size:12px;">Carregando...</div>';
@@ -623,14 +562,11 @@
         el.className = 'modelo-item';
         el.dataset.id = m.id;
         el.dataset.nome = (m.nome || '').toLowerCase();
-        el.innerHTML = `
-          <span class="nome" title="${m.nome}">${m.nome}</span>
-          <span class="badge">${m.total_ppvs}</span>
-        `;
+        el.innerHTML = `<span class="nome" title="${m.nome}">${m.nome}</span><span class="badge">${m.total_ppvs}</span>`;
         el.onclick = () => selecionarModelo(m.id, el);
         lista.appendChild(el);
       });
-    } catch (e) {
+    } catch {
       lista.innerHTML = '<div style="padding:12px;color:#f55;font-size:12px;">Erro ao carregar</div>';
     }
   }
@@ -649,12 +585,10 @@
     carregar(1);
   }
 
-  // ===== TABELA =====
   async function carregar(pagina = 1) {
     paginaAtual = pagina;
     const wrap = document.getElementById('tableWrap');
-    const tipo = document.getElementById('filtroTipo').value;
-    const status = document.getElementById('filtroStatus').value;
+    const tipo   = document.getElementById('filtroTipo').value;
     const limite = document.getElementById('filtroLimite').value;
 
     wrap.innerHTML = '<div class="loading"><div class="spinner"></div> Carregando PPVs...</div>';
@@ -663,37 +597,29 @@
     let qs = `?page=${pagina}&limit=${limite}`;
     if (modeloSelecionado) qs += `&modelo_id=${modeloSelecionado}`;
     if (tipo) qs += `&tipo=${tipo}`;
-    if (status) qs += `&status=${status}`;
 
     try {
       const data = await fetchAdmin('/ppvs-admin' + qs);
       totalPaginas = data.totalPages || 1;
-      document.getElementById('totalInfo').textContent = `${data.total} PPV(s)`;
+      document.getElementById('totalInfo').textContent = `${data.total} PPV(s) enviado(s)`;
 
       if (!data.rows.length) {
-        wrap.innerHTML = `
-          <div class="empty">
-            <div class="empty-icon">💌</div>
-            Nenhum PPV encontrado com os filtros selecionados.
-          </div>`;
+        wrap.innerHTML = `<div class="empty"><div class="empty-icon">💌</div>Nenhum PPV encontrado.</div>`;
         return;
       }
 
       const table = document.createElement('table');
       table.innerHTML = `
-        <thead>
-          <tr>
-            <th class="td-thumb"></th>
-            <th>Modelo</th>
-            <th>Cliente</th>
-            <th>Texto</th>
-            <th>Preço</th>
-            <th>Mídias</th>
-            <th>Tipo</th>
-            <th>Status</th>
-            <th>Data</th>
-          </tr>
-        </thead>
+        <thead><tr>
+          <th class="td-thumb"></th>
+          <th>Modelo</th>
+          <th>Texto</th>
+          <th>Preço</th>
+          <th>Mídias</th>
+          <th>Tipo</th>
+          <th>Enviados</th>
+          <th>Data</th>
+        </tr></thead>
         <tbody id="tableBody"></tbody>
       `;
       wrap.innerHTML = '';
@@ -709,11 +635,6 @@
           ? '<span class="badge-tipo mass">Mass PPV</span>'
           : '<span class="badge-tipo individual">Individual</span>';
 
-        const statusMap = { pago: 'pago', pendente: 'pendente' };
-        const statusCls = statusMap[r.pagamento_status] || 'unknown';
-        const statusLabel = r.pagamento_status || '—';
-        const statusBadge = `<span class="badge-status ${statusCls}">${statusLabel}</span>`;
-
         const thumb = r.thumb
           ? `<img src="${r.thumb}" alt="" onerror="this.parentNode.innerHTML='<div class=no-thumb>🔒</div>'">`
           : `<div class="no-thumb">🔒</div>`;
@@ -723,12 +644,11 @@
         tr.innerHTML = `
           <td class="td-thumb">${thumb}</td>
           <td><strong>${r.modelo_nome || '#' + r.modelo_id}</strong></td>
-          <td>${r.cliente_nome || '<span class="text-muted">#' + r.cliente_id + '</span>'}</td>
           <td><div class="text-truncate">${r.text ? escHtml(r.text) : '<span class="text-muted">sem texto</span>'}</div></td>
           <td><span class="price-tag">€ ${Number(r.preco).toFixed(2)}</span></td>
           <td><span class="midias-count">🖼 ${r.total_midias}</span></td>
           <td>${tipoBadge}</td>
-          <td>${statusBadge}</td>
+          <td><span class="enviados-count">${isMass ? r.total_enviados + ' dest.' : '—'}</span></td>
           <td><span class="text-muted">${data_fmt}</span></td>
         `;
         tbody.appendChild(tr);
@@ -736,7 +656,7 @@
 
       document.getElementById('paginaInfo').textContent = `${paginaAtual} / ${totalPaginas}`;
       document.getElementById('btnAnterior').disabled = paginaAtual <= 1;
-      document.getElementById('btnProxima').disabled = paginaAtual >= totalPaginas;
+      document.getElementById('btnProxima').disabled  = paginaAtual >= totalPaginas;
       document.getElementById('pagination').style.display = 'flex';
 
     } catch (e) {
@@ -744,24 +664,20 @@
     }
   }
 
-  // ===== MODAL DETALHE =====
   async function abrirDetalhe(id) {
     document.getElementById('modalTitulo').textContent = 'Carregando...';
     document.getElementById('modalMeta').textContent = '';
-    document.getElementById('modalBody').innerHTML = '<div class="loading"><div class="spinner"></div> Buscando detalhes...</div>';
+    document.getElementById('modalBody').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
     document.getElementById('modalBackdrop').classList.add('open');
 
     try {
       const d = await fetchAdmin('/ppvs-admin/' + id);
 
-      document.getElementById('modalTitulo').textContent =
-        `PPV de ${d.modelo_nome || '#' + d.modelo_id}`;
+      document.getElementById('modalTitulo').textContent = `PPV — ${d.modelo_nome || '#' + d.modelo_id}`;
       document.getElementById('modalMeta').textContent =
-        `ID: #${d.id} · ${new Date(d.created_at).toLocaleString('pt-BR')}`;
+        `${new Date(d.created_at).toLocaleString('pt-BR')} · ${d.tipo}`;
 
       const isMass = d.tipo === 'conteudo_ppv_mass';
-      const statusCls = { pago: 'green', pendente: 'orange' }[d.pagamento_status] || '';
-      const statusLabel = d.pagamento_status || '—';
 
       let midiasHtml = '';
       if (d.midias && d.midias.length) {
@@ -773,11 +689,10 @@
                 const isVid = m.tipo === 'video';
                 const thumb = m.thumbnail_url || obterThumbVideo(m.url) || m.url;
                 return `
-                  <div class="midia-thumb" onclick="abrirViewer(${JSON.stringify(m).replace(/"/g, '&quot;')})">
-                    <img src="${thumb}" alt="" onerror="this.style.background='#2a2a3a'">
+                  <div class="midia-thumb" onclick='abrirViewer(${JSON.stringify(m)})'>
+                    <img src="${thumb}" alt="" onerror="this.style.opacity='0.2'">
                     ${isVid ? '<div class="play-icon">▶</div>' : ''}
-                  </div>
-                `;
+                  </div>`;
               }).join('')}
             </div>
           </div>`;
@@ -785,7 +700,7 @@
         midiasHtml = `
           <div>
             <div class="modal-section-label">Mídias anexadas</div>
-            <div class="no-midias">Nenhuma mídia anexada neste PPV.</div>
+            <div class="no-midias">Nenhuma mídia neste PPV.</div>
           </div>`;
       }
 
@@ -794,26 +709,17 @@
           <div class="modal-section-label">Texto enviado</div>
           <div class="modal-text-box">${d.text ? escHtml(d.text) : '<em style="color:#555">Sem texto</em>'}</div>
         </div>
-
         <div class="modal-info-grid">
           <div class="modal-info-card">
             <div class="label">Modelo</div>
             <div class="value purple">${d.modelo_nome || '#' + d.modelo_id}</div>
           </div>
           <div class="modal-info-card">
-            <div class="label">Cliente</div>
-            <div class="value">${d.cliente_nome || '#' + d.cliente_id}</div>
-          </div>
-          <div class="modal-info-card">
             <div class="label">Preço</div>
             <div class="value green">€ ${Number(d.preco).toFixed(2)}</div>
           </div>
           <div class="modal-info-card">
-            <div class="label">Status pagamento</div>
-            <div class="value ${statusCls}">${statusLabel}</div>
-          </div>
-          <div class="modal-info-card">
-            <div class="label">Tipo de envio</div>
+            <div class="label">Tipo</div>
             <div class="value">${isMass ? 'Mass PPV' : 'PPV Individual'}</div>
           </div>
           <div class="modal-info-card">
@@ -821,13 +727,11 @@
             <div class="value">${new Date(d.created_at).toLocaleString('pt-BR')}</div>
           </div>
         </div>
-
         ${midiasHtml}
       `;
-
     } catch (e) {
       document.getElementById('modalBody').innerHTML =
-        `<div class="empty">Erro ao carregar: ${escHtml(e.message)}</div>`;
+        `<div class="empty">Erro: ${escHtml(e.message)}</div>`;
     }
   }
 
@@ -836,20 +740,15 @@
     document.getElementById('modalBackdrop').classList.remove('open');
   }
 
-  // ===== VIEWER MÍDIA =====
   function abrirViewer(m) {
     const box = document.getElementById('viewerBox');
-    // Limpa conteúdo anterior (mantém o botão fechar)
     Array.from(box.children).forEach(c => { if (!c.classList.contains('viewer-close')) c.remove(); });
-
     const el = document.createElement('div');
     if (m.tipo === 'video') {
       const vid = extrairVideoId(m.url);
-      if (vid) {
-        el.innerHTML = `<iframe src="https://iframe.videodelivery.net/${vid}" allow="autoplay; fullscreen" allowfullscreen></iframe>`;
-      } else {
-        el.innerHTML = `<video src="${m.url}" controls style="max-width:90vw;max-height:90vh;border-radius:8px;"></video>`;
-      }
+      el.innerHTML = vid
+        ? `<iframe src="https://iframe.videodelivery.net/${vid}" allow="autoplay; fullscreen" allowfullscreen></iframe>`
+        : `<video src="${m.url}" controls style="max-width:90vw;max-height:90vh;border-radius:8px;"></video>`;
     } else {
       el.innerHTML = `<img src="${m.url}" alt="mídia">`;
     }
@@ -863,10 +762,8 @@
     Array.from(box.children).forEach(c => { if (!c.classList.contains('viewer-close')) c.remove(); });
   }
 
-  // ===== RESET =====
   function resetFiltros() {
     document.getElementById('filtroTipo').value = '';
-    document.getElementById('filtroStatus').value = '';
     document.getElementById('searchInput').value = '';
     document.querySelectorAll('.modelo-item, .modelo-item-all').forEach(e => e.classList.remove('active'));
     document.querySelector('.modelo-item-all').classList.add('active');
@@ -875,20 +772,14 @@
     carregar(1);
   }
 
-  // ===== UTILS =====
   function escHtml(str) {
-    return String(str)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
   function obterThumbVideo(url) {
     if (!url) return null;
     const m = url.match(/videodelivery\.net\/([^/?]+)|iframe\.videodelivery\.net\/([^/?]+)/);
-    if (m) return `https://videodelivery.net/${m[1] || m[2]}/thumbnails/thumbnail.jpg`;
-    return null;
+    return m ? `https://videodelivery.net/${m[1]||m[2]}/thumbnails/thumbnail.jpg` : null;
   }
 
   function extrairVideoId(url) {
@@ -897,7 +788,6 @@
     return m ? m[1] : null;
   }
 
-  // Init
   carregarModelos();
   carregar(1);
 </script>
