@@ -92,7 +92,7 @@ socket.on("disconnect", reason => {
 // SOCKET — INBOX
 // ===========================
 socket.on("inboxMessage", async dados => {
-  tocarSomNotificacao();
+  if (dados.sender === "cliente") tocarSomNotificacao();
   const chatId         = dados.cliente_id || dados.modelo_id;
   const jaExisteNaTela = chatsMap.has(chatId);
 
