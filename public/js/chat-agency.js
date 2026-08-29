@@ -498,18 +498,12 @@ function rerenderizarInboxCompleta() {
     div.onclick = () => abrirChat(c.cliente_id);
 
     div.innerHTML = `
-      <div class="chat-body">
-        <div class="chat-top">
-          <span class="chat-name">
-            ${c.username || c.nome || t("inbox.chat_client")}
-            ${c.resumo_curto ? `<span class="chat-resumo-curto">${c.resumo_curto}</span>` : ""}
-            <span class="spend-level">${c.spend_level || ""}</span>
-          </span>
-          <span class="chat-time">${formatarTempoInbox(c.ultima_mensagem_em)}</span>
-        </div>
-        <div class="chat-bottom">
-          <div class="chat-status">${statusHTML}</div>
-        </div>
+      <div class="chat-row-top">
+        <span class="chat-name">${c.username || c.nome || t("inbox.chat_client")}${c.spend_level ? ` <span class="spend-level">${c.spend_level}</span>` : ""}${c.resumo_curto ? ` <span class="chat-resumo-curto">${c.resumo_curto}</span>` : ""}</span>
+        <span class="chat-time">${formatarTempoInbox(c.ultima_mensagem_em)}</span>
+      </div>
+      <div class="chat-row-bottom">
+        <div class="chat-status">${statusHTML}</div>
       </div>
     `;
 

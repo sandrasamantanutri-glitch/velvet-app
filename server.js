@@ -4726,12 +4726,11 @@ socket.on("getHistory", async ({ cliente_id, modelo_id, offset = 0, limit = 20 }
       for (const msg of mensagensConteudo) {
         const midias = mapaMidias[msg.id] || [];
         const pago = Number(msg.preco) > 0 ? pagosSet.has(Number(msg.id)) : true;
-        const ehPPVMass = msg.tipo === "conteudo_ppv_mass";
 
         msg.midias = midias.map(midia => {
-          const jaPossuia = ehPPVMass
-            ? conteudosPossuidosSet.has(Number(midia.conteudo_id))
-            : false;
+          // Para qualquer tipo de envio, verifica se o cliente já possui esse conteúdo
+          // (seja por compra direta desta mensagem ou de outra mensagem com a mesma mídia)
+          const jaPossuia = conteudosPossuidosSet.has(Number(midia.conteudo_id));
           const liberado = pago || jaPossuia;
 
           return {
@@ -4749,8 +4748,9 @@ socket.on("getHistory", async ({ cliente_id, modelo_id, offset = 0, limit = 20 }
         msg.quantidade = msg.midias.length;
 
         if (Number(msg.preco) > 0) {
-          msg.liberado = pago;   // status real do cliente
-          msg.bloqueado = !pago;
+          const todasLiberadas = msg.midias.every(m => m.liberado);
+          msg.liberado = pago || todasLiberadas;
+          msg.bloqueado = !msg.liberado;
           msg.tem_parcial_liberado = msg.midias.some(m => m.liberado);
           msg.tem_parcial_bloqueado = msg.midias.some(m => m.bloqueado);
         } else {
@@ -7158,13 +7158,8 @@ app.get("/api/chat/conteudo/:message_id", authCliente, async (req, res) => {
 
     // daqui pra baixo: mensagem paga e ainda não liberada por completo
 
-    const ehMass = mensagem.tipo === "conteudo_ppv_mass";
-    // envio pago normal continua igual
-    if (!ehMass) {
-      return res.status(403).json({ error: "Conteúdo não liberado" });
-    }
-
-    // PPV mass: libera individualmente o que o cliente já possuía
+    // Para qualquer tipo de envio, verifica se o cliente já possui os conteúdos
+    // por outro envio (mesma mídia enviada em mensagem diferente e comprada posteriormente)
     const conteudosPossuidosSet = await buscarConteudosJaPossuidosPorCliente(db, {
       cliente_id: req.cliente_id,
       modelo_id: Number(mensagem.modelo_id)
