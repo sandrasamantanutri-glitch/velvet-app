@@ -490,9 +490,8 @@ function rerenderizarInboxCompleta() {
   chatsMap.clear();
 
   inboxLista.forEach(c => {
-    const statusHTML  = gerarStatus(c);
-    const avatarSrc   = c.avatar_thumb || c.avatar || "assets/avatar.png";
-    const ultimaMsg   = c.ultima_mensagem ? String(c.ultima_mensagem).slice(0, 60) : "";
+    const statusHTML = gerarStatus(c);
+    const ultimaMsg  = c.ultima_mensagem ? String(c.ultima_mensagem).slice(0, 60) : "";
 
     const div = document.createElement("div");
     div.className = "chat-item";
@@ -500,9 +499,6 @@ function rerenderizarInboxCompleta() {
     div.onclick = () => abrirChat(c.cliente_id);
 
     div.innerHTML = `
-      <div class="avatar">
-        <img src="${avatarSrc}" alt="" loading="lazy" onerror="this.src='assets/avatar.png'">
-      </div>
       <div class="chat-body">
         <div class="chat-top">
           <span class="chat-name">
