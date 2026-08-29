@@ -703,7 +703,10 @@ async function abrirConteudo(message_id, index = 0) {
     }
 
     abrirModalMidia(midia.url);
-    marcarConteudoVisto(message_id);
+
+    if (socket) {
+      socket.emit("marcarConteudoVisto", { message_id, cliente_id, modelo_id });
+    }
 
   } catch (err) {
     console.error("Erro ao abrir conteúdo:", err);
@@ -1183,18 +1186,6 @@ async function liberarConteudo(messageId) {
   } catch (err) {
     console.error("Erro liberar conteúdo:", err);
   }
-}
-
-async function marcarConteudoVisto(messageId){
-
-  await fetch("/api/conteudo/visto",{
-    method:"POST",
-    headers:{
-      "Content-Type":"application/json",
-      Authorization:"Bearer "+localStorage.getItem("token")
-    },
-    body:JSON.stringify({message_id:messageId})
-  });
 }
 
 function resetarPixUI() {
