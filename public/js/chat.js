@@ -49,6 +49,8 @@ let fimConteudos = false;
 socket.on("connect", async () => {
   autenticado = true;
   salaPronta = false;
+  offsetMensagens = 0;
+  mensagensRenderizadas.clear();
 
   socket.emit("loginModelo");
 

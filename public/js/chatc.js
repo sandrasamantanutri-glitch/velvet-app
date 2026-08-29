@@ -45,6 +45,8 @@ const PAGARME_PUBLIC_KEY = "pk_oQW43ZaU7HPVnbj8";
 socket.on("connect", async () => {
   autenticado = true;
   salaPronta = false;
+  offsetMensagens = 0;
+  mensagensRenderizadas.clear();
 
   socket.emit("loginCliente");
 
