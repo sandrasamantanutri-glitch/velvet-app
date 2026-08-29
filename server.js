@@ -4925,6 +4925,30 @@ socket.on("sendConteudo", async ({
       created_at: message.created_at
     });
 
+    // 🔔 PUSH NOTIFICATION PARA O CLIENTE
+    try {
+      const clienteDestinoRes = await db.query(
+        `SELECT user_id FROM clientes WHERE id = $1 LIMIT 1`,
+        [clienteIdNum]
+      );
+      const userIdDestino = clienteDestinoRes.rows[0]?.user_id || null;
+
+      if (userIdDestino) {
+        const nomeRes = await db.query(
+          `SELECT nome_exibicao FROM modelos WHERE id = $1 LIMIT 1`,
+          [modeloIdNum]
+        );
+        const remetente = nomeRes.rows[0]?.nome_exibicao || "Mensagem";
+        const textoPreview = precoNum > 0
+          ? `📦 Conteúdo pago (${midias.length} mídia${midias.length !== 1 ? "s" : ""})`
+          : `📦 Conteúdo (${midias.length} mídia${midias.length !== 1 ? "s" : ""})`;
+
+        await notificarNovaMensagem(userIdDestino, textoPreview, "/inboxc.html", remetente);
+      }
+    } catch (pushErr) {
+      console.error("Erro ao disparar push de conteúdo:", pushErr);
+    }
+
   } catch (err) {
     console.error("❌ Erro sendConteudo:", err);
   }
