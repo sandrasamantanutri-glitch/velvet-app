@@ -4736,7 +4736,10 @@ socket.on("getHistory", async ({ cliente_id, modelo_id, offset = 0, limit = 20 }
           return {
             conteudo_id:   midia.conteudo_id,
             tipo_media:    midia.tipo_media,
-            thumbnail_url: midia.thumbnail_url,
+            // Modelo recebe thumb real; cliente bloqueado recebe preview seguro (null se igual à URL)
+            thumbnail_url: (ehModeloLogada || liberado)
+              ? midia.thumbnail_url
+              : getPreviewUrl(midia.url, midia.thumbnail_url),
             // Modelo sempre recebe a URL real; cliente só se liberado
             url:           ehModeloLogada ? midia.url : (liberado ? midia.url : null),
             ja_possuia:    jaPossuia,

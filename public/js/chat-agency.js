@@ -626,7 +626,7 @@ function renderMensagem(msg) {
   if (ehMensagemConteudo(msg)) {
     const quantidade  = getQuantidadeMidias(msg);
     const bloqueado   = mensagemEstaBloqueada(msg);
-    const foiVisto    = !!(msg.visto || msg.liberado);
+    const foiVisto    = !!(msg.visto || msg.liberado || msg.todosAcessiveis);
     const estadoClasse = bloqueado ? "bloqueado" : foiVisto ? "visto" : "livre";
 
     div.innerHTML = `
@@ -711,7 +711,7 @@ function criarMensagemElemento(msg) {
   if (ehMensagemConteudo(msg)) {
     const quantidade  = getQuantidadeMidias(msg);
     const bloqueado   = mensagemEstaBloqueada(msg);
-    const foiVisto    = !!(msg.visto || msg.liberado);
+    const foiVisto    = !!(msg.visto || msg.liberado || msg.todosAcessiveis);
     const estadoClasse = bloqueado ? "bloqueado" : foiVisto ? "visto" : "livre";
 
     div.innerHTML = `
@@ -1277,7 +1277,7 @@ function getQuantidadeMidias(msg) {
 
 function mensagemEstaBloqueada(msg) {
   if (role === "modelo") return false;
-  return Number(msg.preco || 0) > 0 && !msg.liberado && !msg.visto;
+  return Number(msg.preco || 0) > 0 && !msg.liberado && !msg.visto && !msg.todosAcessiveis;
 }
 
 // ===========================
