@@ -658,13 +658,14 @@ function renderMensagem(msg) {
 
   } else {
     div.innerHTML = `
-      <div class="msg-texto">${msg.text || ""}</div>
+      <div class="msg-texto"></div>
       ${msg.sender === "modelo" ? `
         <button class="msg-menu" data-id="${msg.id}"
                 data-text="${encodeURIComponent(msg.text || "")}">⋮</button>
       ` : ""}
       <span class="msg-hora">${formatarTempo(msg.created_at)}</span>
     `;
+    div.querySelector(".msg-texto").textContent = msg.text || "";
 
     const btn = div.querySelector(".msg-menu");
     if (btn) {
@@ -742,13 +743,14 @@ function criarMensagemElemento(msg) {
 
   } else {
     div.innerHTML = `
-      <div class="msg-texto">${msg.text || ""}</div>
+      <div class="msg-texto"></div>
       ${msg.sender === "modelo" ? `
         <button class="msg-menu" data-id="${msg.id}"
                 data-text="${encodeURIComponent(msg.text || "")}">⋮</button>
       ` : ""}
       <span class="msg-hora">${formatarTempo(msg.created_at)}</span>
     `;
+    div.querySelector(".msg-texto").textContent = msg.text || "";
 
     const btn = div.querySelector(".msg-menu");
     if (btn) {
