@@ -200,6 +200,10 @@ socket.on("conteudoVisto", ({ message_id, conteudo_ids }) => {
   }
 });
 
+socket.on("erroChatConteudo", ({ message }) => {
+  alert(message || "Não foi possível enviar o conteúdo.");
+});
+
 // ===========================
 // INBOX — ENTRAR NA SALA
 // ===========================

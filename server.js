@@ -4815,6 +4815,20 @@ socket.on("sendConteudo", async ({
 
     if (idsValidos.length === 0) return;
 
+    // 🔒 4️⃣ FILTRAR CONTEÚDOS JÁ POSSUÍDOS PELO CLIENTE
+    const possuídosSet = await buscarConteudosJaPossuidosPorCliente(db, {
+      cliente_id: clienteIdNum,
+      modelo_id: modeloIdNum
+    });
+
+    const idsParaEnviar = idsValidos.filter(id => !possuídosSet.has(id));
+
+    if (idsParaEnviar.length === 0) {
+      return socket.emit("erroChatConteudo", {
+        message: "O cliente já possui todos os conteúdos selecionados."
+      });
+    }
+
     let precoNum = Number(preco);
 
     if (!Number.isFinite(precoNum) || precoNum < 0) {
@@ -4825,7 +4839,7 @@ socket.on("sendConteudo", async ({
 
     const sala = `chat_${clienteIdNum}_${modeloIdNum}`;
 
-    // 4️⃣ CRIAR MENSAGEM
+    // 5️⃣ CRIAR MENSAGEM
     const msgRes = await db.query(
       `
       INSERT INTO messages
@@ -4839,8 +4853,8 @@ socket.on("sendConteudo", async ({
 
     const message = msgRes.rows[0];
 
-    // 5️⃣ ASSOCIAR MÍDIAS
-    const values = idsValidos
+    // 6️⃣ ASSOCIAR MÍDIAS
+    const values = idsParaEnviar
       .map((_, i) => `($1, $${i + 2})`)
       .join(",");
 
@@ -4849,10 +4863,10 @@ socket.on("sendConteudo", async ({
       INSERT INTO messages_conteudos (message_id, conteudo_id)
       VALUES ${values}
       `,
-      [message.id, ...idsValidos]
+      [message.id, ...idsParaEnviar]
     );
 
-    // 6️⃣ BUSCAR MÍDIAS
+    // 7️⃣ BUSCAR MÍDIAS
     const midiasRes = await db.query(
       `
       SELECT id AS conteudo_id, url, thumbnail_url, tipo AS tipo_media
@@ -4860,7 +4874,7 @@ socket.on("sendConteudo", async ({
       WHERE id = ANY($1)
       ORDER BY array_position($1, id)
       `,
-      [idsValidos]
+      [idsParaEnviar]
     );
 
     const midias = midiasRes.rows;
