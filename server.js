@@ -6201,8 +6201,9 @@ app.get("/api/modelos", auth, async (req, res) => {
         AND ($2::text IS NULL OR md2.genero = $2)
         AND ($3::text IS NULL OR m.nome_exibicao ILIKE '%' || $3 || '%')
         AND NOT EXISTS (
-          SELECT 1 FROM cliente_modelo_restricoes
-          WHERE cliente_id = $1 AND modelo_id = m.id
+          SELECT 1 FROM cliente_modelo_restricoes r2
+          JOIN clientes c2 ON c2.id = r2.cliente_id
+          WHERE c2.user_id = $1 AND r2.modelo_id = m.id
         )
     `,
     [clienteId, genero, busca]
