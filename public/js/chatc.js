@@ -591,23 +591,26 @@ const cardLiberado =
 
   ${
     msg.preco > 0
-      ? `
-      <div class="conteudo-info">
-        <span class="status-bloqueado">
-          ${
-            msg.liberado
-              ? `🟢 ${quantidade} mídia(s)`
-              : msg.tem_parcial_liberado
-                ? `✨ ${quantidade} mídia(s) · parcial`
-                : `✨ ${quantidade} mídia(s)`
-          }
-        </span>
+      ? (() => {
+          const totalMidias = quantidade;
+          const countLiberado = (msg.midias || []).filter(m => m.liberado === true).length;
+          const countNovo = totalMidias - countLiberado;
 
-        <span class="preco-bloqueado">
-          R$ ${Number(msg.preco).toFixed(2)}
-        </span>
-      </div>
-    `
+          let statusTexto;
+          if (msg.liberado) {
+            statusTexto = `🟢 ${totalMidias} mídia${totalMidias !== 1 ? "s" : ""} desbloqueada${totalMidias !== 1 ? "s" : ""}`;
+          } else if (countLiberado > 0) {
+            statusTexto = `✨ Você já tem ${countLiberado} · ${countNovo} nova${countNovo !== 1 ? "s" : ""}`;
+          } else {
+            statusTexto = `✨ ${totalMidias} mídia${totalMidias !== 1 ? "s" : ""}`;
+          }
+
+          return `
+      <div class="conteudo-info">
+        <span class="status-bloqueado">${statusTexto}</span>
+        <span class="preco-bloqueado">R$ ${Number(msg.preco).toFixed(2)}</span>
+      </div>`;
+        })()
       : ""
   }
 
