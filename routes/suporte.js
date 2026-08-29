@@ -272,8 +272,16 @@ router.get("/admin/conversas", auth, authAdmin, async (req, res) => {
       SELECT
         sc.id, sc.status, sc.created_at, sc.updated_at,
         sc.nome_visitante, sc.email_visitante, sc.cliente_id,
-        (SELECT COUNT(*) FROM suporte_mensagens sm WHERE sm.conversa_id = sc.id AND sm.lida = false AND sm.remetente = 'cliente') AS nao_lidas,
-        (SELECT texto FROM suporte_mensagens sm WHERE sm.conversa_id = sc.id ORDER BY sm.criado_em DESC LIMIT 1) AS ultima_mensagem
+        CASE WHEN sc.status = 'fechada' THEN 0
+             ELSE (SELECT COUNT(*) FROM suporte_mensagens sm WHERE sm.conversa_id = sc.id AND sm.lida = false AND sm.remetente = 'cliente')
+        END AS nao_lidas,
+        (SELECT texto FROM suporte_mensagens sm WHERE sm.conversa_id = sc.id ORDER BY sm.criado_em DESC LIMIT 1) AS ultima_mensagem,
+        EXISTS (
+          SELECT 1 FROM suporte_mensagens sm
+          WHERE sm.conversa_id = sc.id
+          AND (LOWER(sm.texto) LIKE '%encontrei minha duvida%' OR LOWER(sm.texto) LIKE '%encontrei minha dúvida%'
+            OR LOWER(sm.texto) LIKE '%nao encontrei%' OR LOWER(sm.texto) LIKE '%não encontrei%')
+        ) AS tem_nao_encontrou
       FROM suporte_conversas sc
       WHERE sc.created_at >= NOW() - INTERVAL '15 days'
       ORDER BY sc.updated_at DESC

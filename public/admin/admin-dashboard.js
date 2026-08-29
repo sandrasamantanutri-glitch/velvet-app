@@ -5796,7 +5796,7 @@ async function rcCarregar(pagina = 1) {
     }
   } catch (e) {
     console.error(e);
-    showToast('Erro ao carregar restrições', 'error');
+    toast('Erro ao carregar restrições', 'error');
   }
 }
 
@@ -5805,10 +5805,10 @@ async function rcRemover(id) {
   try {
     const res = await authFetch(`/api/admin/dashboard/restricoes-cliente/${id}`, { method: 'DELETE' });
     if (!res.ok) throw new Error();
-    showToast('Restrição removida');
+    toast('Restrição removida', 'success');
     rcCarregar(rcPaginaAtual);
   } catch {
-    showToast('Erro ao remover restrição', 'error');
+    toast('Erro ao remover restrição', 'error');
   }
 }
 
@@ -5818,7 +5818,7 @@ async function rcCriarRestricao() {
   const motivo    = document.getElementById('rcMotivo').value.trim();
 
   if (!clienteId || !modeloId) {
-    showToast('Selecione o cliente e a modelo', 'error');
+    toast('Selecione o cliente e a modelo', 'error');
     return;
   }
 
@@ -5830,17 +5830,17 @@ async function rcCriarRestricao() {
     });
     const data = await res.json();
     if (!res.ok) {
-      showToast(data.erro || 'Erro ao criar restrição', 'error');
+      toast(data.erro || 'Erro ao criar restrição', 'error');
       return;
     }
-    showToast('Restrição criada com sucesso');
+    toast('Restrição criada com sucesso', 'success');
     // Limpar formulário
     ['rcBuscaCliente','rcBuscaModelo','rcMotivo'].forEach(id => { document.getElementById(id).value = ''; });
     ['rcClienteId','rcModeloId'].forEach(id => { document.getElementById(id).value = ''; });
     ['rcClienteTag','rcModeloTag'].forEach(id => { document.getElementById(id).style.display = 'none'; });
     rcCarregar(1);
   } catch {
-    showToast('Erro ao criar restrição', 'error');
+    toast('Erro ao criar restrição', 'error');
   }
 }
 

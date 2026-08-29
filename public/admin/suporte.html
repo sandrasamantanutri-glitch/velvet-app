@@ -187,9 +187,16 @@
 
   function renderLista() {
     const lista = document.getElementById("conversas-lista");
-    const filtradas = filtroAtual === "todas"
-      ? todasConversas
-      : todasConversas.filter(c => c.status === filtroAtual);
+    let filtradas;
+    if (filtroAtual === "todas") {
+      filtradas = todasConversas;
+    } else if (filtroAtual === "aberta") {
+      filtradas = todasConversas.filter(c => c.status === "aberta" && c.tem_nao_encontrou);
+    } else if (filtroAtual === "respondida") {
+      filtradas = todasConversas.filter(c => c.status === "respondida" || (c.status === "aberta" && !c.tem_nao_encontrou));
+    } else {
+      filtradas = todasConversas.filter(c => c.status === filtroAtual);
+    }
 
     lista.innerHTML = filtradas.length
       ? filtradas.map(c => `
