@@ -6293,36 +6293,83 @@ router.get("/ppvs-admin", async (req, res) => {
     if (modelo_id) { where += ` AND msg.modelo_id = $${pIdx++}`; params.push(modelo_id); }
     if (tipo)      { where += ` AND msg.tipo = $${pIdx++}`;       params.push(tipo); }
 
-    // Um representante por campanha: MIN(id) dentro do mesmo (modelo, texto, preco, minuto)
+    // Agrupa pelo conjunto de mídias (conteudo_key) + modelo + preco + tipo + dia.
+    // Para PPVs individuais (não-mass), inclui cliente_id para não mesclar envios distintos.
+    // O texto vem de uma mensagem tipo='texto' enviada logo antes, para o mesmo cliente.
     const { rows } = await db.query(
-      `SELECT
-         MIN(msg.id) AS id,
-         msg.modelo_id,
-         msg.text,
-         msg.preco,
-         msg.tipo,
-         MIN(msg.created_at) AS created_at,
-         COUNT(msg.id)::int  AS total_enviados,
+      `WITH msg_keyed AS (
+         SELECT
+           msg.id,
+           msg.modelo_id,
+           msg.preco,
+           msg.tipo,
+           msg.created_at,
+           msg.cliente_id,
+           COALESCE(
+             STRING_AGG(mc.conteudo_id::text, ',' ORDER BY mc.conteudo_id),
+             'no-media'
+           ) AS conteudo_key
+         FROM messages msg
+         LEFT JOIN messages_conteudos mc ON mc.message_id = msg.id
+         WHERE ${where}
+         GROUP BY msg.id, msg.modelo_id, msg.preco, msg.tipo, msg.created_at, msg.cliente_id
+       ),
+       campaigns AS (
+         SELECT
+           MIN(id) AS id,
+           modelo_id,
+           preco,
+           tipo,
+           MIN(created_at)  AS created_at,
+           COUNT(*)::int    AS total_enviados,
+           MIN(cliente_id)  AS ref_cliente_id,
+           conteudo_key
+         FROM msg_keyed
+         GROUP BY
+           modelo_id, preco, tipo, conteudo_key, DATE_TRUNC('day', created_at),
+           CASE WHEN tipo = 'conteudo_ppv_mass' THEN NULL::bigint ELSE cliente_id END
+       )
+       SELECT
+         c.id,
+         c.modelo_id,
+         c.preco,
+         c.tipo,
+         c.created_at,
+         c.total_enviados,
          COALESCE(m.nome_exibicao, m.nome) AS modelo_nome,
-         (SELECT COUNT(*) FROM messages_conteudos mc WHERE mc.message_id = MIN(msg.id))::int AS total_midias,
-         (SELECT COALESCE(c.thumbnail_url, c.thumb_url)
-          FROM messages_conteudos mc
-          JOIN conteudos c ON c.id = mc.conteudo_id
-          WHERE mc.message_id = MIN(msg.id) LIMIT 1) AS thumb
-       FROM messages msg
-       LEFT JOIN modelos m ON m.id = msg.modelo_id
-       WHERE ${where}
-       GROUP BY msg.modelo_id, msg.text, msg.preco, msg.tipo, DATE_TRUNC('minute', msg.created_at), m.nome_exibicao, m.nome
-       ORDER BY MIN(msg.created_at) DESC
+         (SELECT t.text FROM messages t
+          WHERE t.modelo_id = c.modelo_id
+            AND t.cliente_id = c.ref_cliente_id
+            AND t.tipo = 'texto'
+            AND t.created_at BETWEEN c.created_at - INTERVAL '60 seconds'
+                                 AND c.created_at + INTERVAL '60 seconds'
+          ORDER BY t.id LIMIT 1) AS text,
+         (SELECT COALESCE(co.thumbnail_url, co.thumb_url)
+          FROM messages_conteudos mc JOIN conteudos co ON co.id = mc.conteudo_id
+          WHERE mc.message_id = c.id LIMIT 1) AS thumb,
+         (SELECT COUNT(*) FROM messages_conteudos mc
+          WHERE mc.message_id = c.id)::int AS total_midias
+       FROM campaigns c
+       LEFT JOIN modelos m ON m.id = c.modelo_id
+       ORDER BY c.created_at DESC
        LIMIT $${pIdx} OFFSET $${pIdx + 1}`,
       [...params, limit, offset]
     );
 
     const countQ = await db.query(
-      `SELECT COUNT(*) FROM (
-         SELECT 1 FROM messages msg
+      `WITH msg_keyed AS (
+         SELECT
+           msg.id, msg.modelo_id, msg.preco, msg.tipo, msg.created_at, msg.cliente_id,
+           COALESCE(STRING_AGG(mc.conteudo_id::text, ',' ORDER BY mc.conteudo_id), 'no-media') AS conteudo_key
+         FROM messages msg
+         LEFT JOIN messages_conteudos mc ON mc.message_id = msg.id
          WHERE ${where}
-         GROUP BY msg.modelo_id, msg.text, msg.preco, msg.tipo, DATE_TRUNC('minute', msg.created_at)
+         GROUP BY msg.id, msg.modelo_id, msg.preco, msg.tipo, msg.created_at, msg.cliente_id
+       )
+       SELECT COUNT(*) FROM (
+         SELECT 1 FROM msg_keyed
+         GROUP BY modelo_id, preco, tipo, conteudo_key, DATE_TRUNC('day', created_at),
+                  CASE WHEN tipo = 'conteudo_ppv_mass' THEN NULL::bigint ELSE cliente_id END
        ) sub`,
       params
     );
@@ -6340,7 +6387,7 @@ router.get("/ppvs-admin/:id", async (req, res) => {
   if (!id) return res.status(400).json({ erro: "ID inválido" });
   try {
     const msgQ = await db.query(
-      `SELECT msg.id, msg.modelo_id, msg.text, msg.preco, msg.tipo, msg.created_at,
+      `SELECT msg.id, msg.modelo_id, msg.cliente_id, msg.text, msg.preco, msg.tipo, msg.created_at,
               COALESCE(m.nome_exibicao, m.nome) AS modelo_nome
        FROM messages msg
        LEFT JOIN modelos m ON m.id = msg.modelo_id
@@ -6348,6 +6395,21 @@ router.get("/ppvs-admin/:id", async (req, res) => {
       [id]
     );
     if (!msgQ.rows.length) return res.status(404).json({ erro: "Não encontrado" });
+
+    const row = msgQ.rows[0];
+
+    // Busca o texto da mensagem associada (tipo='texto' enviada logo antes)
+    if (!row.text) {
+      const textQ = await db.query(
+        `SELECT text FROM messages
+         WHERE modelo_id = $1 AND cliente_id = $2 AND tipo = 'texto'
+           AND created_at BETWEEN $3::timestamptz - INTERVAL '60 seconds'
+                               AND $3::timestamptz + INTERVAL '60 seconds'
+         ORDER BY id LIMIT 1`,
+        [row.modelo_id, row.cliente_id, row.created_at]
+      );
+      if (textQ.rows.length) row.text = textQ.rows[0].text;
+    }
 
     const midiaQ = await db.query(
       `SELECT c.id, c.url, COALESCE(c.thumbnail_url, c.thumb_url) AS thumbnail_url, c.tipo
@@ -6357,7 +6419,7 @@ router.get("/ppvs-admin/:id", async (req, res) => {
       [id]
     );
 
-    res.json({ ...msgQ.rows[0], midias: midiaQ.rows });
+    res.json({ ...row, midias: midiaQ.rows });
   } catch (err) {
     console.error("Erro ppvs-admin/:id:", err);
     res.status(500).json({ erro: "Erro interno" });
