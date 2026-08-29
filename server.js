@@ -5681,6 +5681,15 @@ app.get("/api/modelo/publico/:id/feed", async (req, res) => {
         );
         const cId = clienteRes.rows[0]?.id;
         if (cId) {
+          // Bloquear se houver restrição admin
+          const restQ = await db.query(
+            `SELECT 1 FROM cliente_modelo_restricoes WHERE cliente_id = $1 AND modelo_id = $2`,
+            [cId, modeloId]
+          );
+          if (restQ.rowCount) {
+            return res.status(403).json({ error: "Acesso não permitido" });
+          }
+
           const vipRes = await db.query(
             `SELECT 1 FROM vip_subscriptions
              WHERE cliente_id = $1 AND modelo_id = $2
@@ -6191,6 +6200,10 @@ app.get("/api/modelos", auth, async (req, res) => {
         AND m.ativo = true
         AND ($2::text IS NULL OR md2.genero = $2)
         AND ($3::text IS NULL OR m.nome_exibicao ILIKE '%' || $3 || '%')
+        AND NOT EXISTS (
+          SELECT 1 FROM cliente_modelo_restricoes
+          WHERE cliente_id = $1 AND modelo_id = m.id
+        )
     `,
     [clienteId, genero, busca]
     );
@@ -6532,9 +6545,20 @@ app.get("/api/modelo/publico/:modelo_id", async (req, res) => {
             [decoded.id]
           );
           if (clienteRes.rowCount) {
+            const clienteId = clienteRes.rows[0].id;
+
+            // Verifica restrição deste cliente a esta modelo
+            const restQ = await db.query(
+              "SELECT 1 FROM cliente_modelo_restricoes WHERE cliente_id = $1 AND modelo_id = $2",
+              [clienteId, modelo_id]
+            );
+            if (restQ.rowCount) {
+              return res.status(403).json({ error: "Perfil indisponível no momento" });
+            }
+
             await db.query(
               `INSERT INTO modelo_visitas (cliente_id, modelo_id, criado_em) VALUES ($1, $2, NOW())`,
-              [clienteRes.rows[0].id, modelo_id]
+              [clienteId, modelo_id]
             );
           }
         }
@@ -7789,6 +7813,16 @@ app.get("/api/modelo/publico/:modelo_id/premium", async (req, res) => {
       );
 
       cliente_id = Number(clienteRes.rows[0]?.id || 0) || null;
+
+      if (cliente_id) {
+        const restQ = await db.query(
+          `SELECT 1 FROM cliente_modelo_restricoes WHERE cliente_id = $1 AND modelo_id = $2`,
+          [cliente_id, modelo_id]
+        );
+        if (restQ.rowCount) {
+          return res.status(403).json({ error: "Acesso não permitido" });
+        }
+      }
     }
 
     const result = await db.query(

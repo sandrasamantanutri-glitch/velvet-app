@@ -6426,4 +6426,165 @@ router.get("/ppvs-admin/:id", async (req, res) => {
   }
 });
 
+// ========================================
+// RESTRIÇÕES CLIENTE ↔ MODELO
+// ========================================
+
+// Buscar cliente para autocomplete (por email ou id)
+router.get("/restricoes-cliente/busca-cliente", authAdmin, async (req, res) => {
+  try {
+    const q = String(req.query.q || "").trim();
+    if (!q) return res.json([]);
+
+    const { rows } = await db.query(`
+      SELECT c.id AS cliente_id, u.email, cd.nome_completo, cd.username
+      FROM clientes c
+      JOIN users u ON u.id = c.user_id
+      LEFT JOIN clientes_dados cd ON cd.cliente_id = c.id
+      WHERE u.email ILIKE $1
+         OR c.id::text = $2
+         OR cd.username ILIKE $1
+      ORDER BY c.id DESC
+      LIMIT 10
+    `, [`%${q}%`, q]);
+
+    res.json(rows);
+  } catch (err) {
+    console.error("Erro busca-cliente restricoes:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+// Buscar modelo para autocomplete (por nome ou id)
+router.get("/restricoes-cliente/busca-modelo", authAdmin, async (req, res) => {
+  try {
+    const q = String(req.query.q || "").trim();
+    if (!q) return res.json([]);
+
+    const { rows } = await db.query(`
+      SELECT m.id AS modelo_id, m.nome_exibicao, m.avatar
+      FROM modelos m
+      WHERE m.nome_exibicao ILIKE $1
+         OR m.id::text = $2
+         OR m.nome ILIKE $1
+      ORDER BY m.id DESC
+      LIMIT 10
+    `, [`%${q}%`, q]);
+
+    res.json(rows);
+  } catch (err) {
+    console.error("Erro busca-modelo restricoes:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+// Listar todas as restrições
+router.get("/restricoes-cliente", authAdmin, async (req, res) => {
+  try {
+    const { limit, offset, page } = paginate(req.query, 1, 20);
+    const q = String(req.query.q || "").trim();
+
+    const where = q
+      ? `WHERE (u.email ILIKE $3 OR m.nome_exibicao ILIKE $3 OR c.id::text = $4 OR m.id::text = $4)`
+      : "";
+
+    const params = q ? [limit, offset, `%${q}%`, q] : [limit, offset];
+
+    const countQ = await db.query(
+      `SELECT COUNT(*)
+       FROM cliente_modelo_restricoes r
+       JOIN clientes c ON c.id = r.cliente_id
+       JOIN modelos  m ON m.id = r.modelo_id
+       JOIN users    u ON u.id = c.user_id
+       ${where}`,
+      q ? [`%${q}%`, q] : []
+    );
+
+    const { rows } = await db.query(`
+      SELECT
+        r.id,
+        r.cliente_id,
+        u.email AS cliente_email,
+        cd.nome_completo AS cliente_nome,
+        r.modelo_id,
+        m.nome_exibicao AS modelo_nome,
+        r.motivo,
+        r.criado_em
+      FROM cliente_modelo_restricoes r
+      JOIN clientes c   ON c.id = r.cliente_id
+      JOIN users    u   ON u.id = c.user_id
+      JOIN modelos  m   ON m.id = r.modelo_id
+      LEFT JOIN clientes_dados cd ON cd.cliente_id = c.id
+      ${where}
+      ORDER BY r.criado_em DESC
+      LIMIT $1 OFFSET $2
+    `, params);
+
+    res.json({
+      rows,
+      totalPages: Math.ceil(Number(countQ.rows[0].count) / limit),
+      page
+    });
+  } catch (err) {
+    console.error("Erro listar restricoes:", err);
+    res.status(500).json({ erro: "Erro interno", details: err.message });
+  }
+});
+
+// Criar restrição
+router.post("/restricoes-cliente", authAdmin, async (req, res) => {
+  try {
+    const { cliente_id, modelo_id, motivo } = req.body;
+
+    if (!cliente_id || !modelo_id) {
+      return res.status(400).json({ erro: "cliente_id e modelo_id são obrigatórios" });
+    }
+
+    // Verifica existência
+    const [cRes, mRes] = await Promise.all([
+      db.query("SELECT id FROM clientes WHERE id = $1", [cliente_id]),
+      db.query("SELECT id FROM modelos  WHERE id = $1", [modelo_id])
+    ]);
+
+    if (!cRes.rows.length) return res.status(404).json({ erro: "Cliente não encontrado" });
+    if (!mRes.rows.length) return res.status(404).json({ erro: "Modelo não encontrada" });
+
+    const adminRes = await db.query("SELECT id FROM admin WHERE user_id = $1", [req.user.id]);
+    const adminId = adminRes.rows[0]?.id || null;
+
+    const { rows } = await db.query(`
+      INSERT INTO cliente_modelo_restricoes (cliente_id, modelo_id, motivo, criado_por)
+      VALUES ($1, $2, $3, $4)
+      ON CONFLICT (cliente_id, modelo_id) DO NOTHING
+      RETURNING id
+    `, [cliente_id, modelo_id, motivo || null, adminId]);
+
+    if (!rows.length) {
+      return res.status(409).json({ erro: "Restrição já existe para este par" });
+    }
+
+    res.json({ ok: true, id: rows[0].id });
+  } catch (err) {
+    console.error("Erro criar restrição:", err);
+    res.status(500).json({ erro: "Erro interno", details: err.message });
+  }
+});
+
+// Remover restrição
+router.delete("/restricoes-cliente/:id", authAdmin, async (req, res) => {
+  try {
+    const { rowCount } = await db.query(
+      "DELETE FROM cliente_modelo_restricoes WHERE id = $1",
+      [req.params.id]
+    );
+
+    if (!rowCount) return res.status(404).json({ erro: "Restrição não encontrada" });
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("Erro remover restrição:", err);
+    res.status(500).json({ erro: "Erro interno", details: err.message });
+  }
+});
+
 module.exports = router;

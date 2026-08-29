@@ -5750,6 +5750,155 @@ function initNotificacoes() {
   }
 }
 
+// ========== RESTRIÇÕES CLIENTE ==========
+
+pageLoaders['restricoes-cliente'] = () => rcCarregar(1);
+
+let rcPaginaAtual = 1;
+
+async function rcCarregar(pagina = 1) {
+  rcPaginaAtual = pagina;
+  const q = document.getElementById('rcFiltro')?.value.trim() || '';
+  try {
+    const data = await fetchJSON(`/api/admin/dashboard/restricoes-cliente?page=${pagina}&q=${encodeURIComponent(q)}`);
+    const tbody = document.getElementById('rcBody');
+    if (!tbody) return;
+
+    tbody.innerHTML = data.rows.map(r => `
+      <tr>
+        <td>${r.id}</td>
+        <td>
+          <div>${r.cliente_email}</div>
+          ${r.cliente_nome ? `<small style="color:var(--text-secondary,#888)">${r.cliente_nome}</small>` : ''}
+          <small style="color:var(--text-secondary,#888)">ID: ${r.cliente_id}</small>
+        </td>
+        <td>
+          <div>${r.modelo_nome}</div>
+          <small style="color:var(--text-secondary,#888)">ID: ${r.modelo_id}</small>
+        </td>
+        <td>${r.motivo || '—'}</td>
+        <td>${new Date(r.criado_em).toLocaleString('pt-BR')}</td>
+        <td>
+          <button class="btn" style="background:#dc2626;color:#fff;font-size:12px;padding:4px 10px;"
+            onclick="rcRemover(${r.id})">Remover</button>
+        </td>
+      </tr>
+    `).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-secondary,#888)">Nenhuma restrição encontrada.</td></tr>';
+
+    const pag = document.getElementById('rcPaginacao');
+    pag.innerHTML = '';
+    for (let i = 1; i <= data.totalPages; i++) {
+      const btn = document.createElement('button');
+      btn.className = 'btn' + (i === pagina ? ' btn-primary' : '');
+      btn.textContent = i;
+      btn.onclick = () => rcCarregar(i);
+      pag.appendChild(btn);
+    }
+  } catch (e) {
+    console.error(e);
+    showToast('Erro ao carregar restrições', 'error');
+  }
+}
+
+async function rcRemover(id) {
+  if (!confirm('Remover esta restrição?')) return;
+  try {
+    const res = await authFetch(`/api/admin/dashboard/restricoes-cliente/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error();
+    showToast('Restrição removida');
+    rcCarregar(rcPaginaAtual);
+  } catch {
+    showToast('Erro ao remover restrição', 'error');
+  }
+}
+
+async function rcCriarRestricao() {
+  const clienteId = document.getElementById('rcClienteId').value;
+  const modeloId  = document.getElementById('rcModeloId').value;
+  const motivo    = document.getElementById('rcMotivo').value.trim();
+
+  if (!clienteId || !modeloId) {
+    showToast('Selecione o cliente e a modelo', 'error');
+    return;
+  }
+
+  try {
+    const res = await authFetch('/api/admin/dashboard/restricoes-cliente', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cliente_id: Number(clienteId), modelo_id: Number(modeloId), motivo })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      showToast(data.erro || 'Erro ao criar restrição', 'error');
+      return;
+    }
+    showToast('Restrição criada com sucesso');
+    // Limpar formulário
+    ['rcBuscaCliente','rcBuscaModelo','rcMotivo'].forEach(id => { document.getElementById(id).value = ''; });
+    ['rcClienteId','rcModeloId'].forEach(id => { document.getElementById(id).value = ''; });
+    ['rcClienteTag','rcModeloTag'].forEach(id => { document.getElementById(id).style.display = 'none'; });
+    rcCarregar(1);
+  } catch {
+    showToast('Erro ao criar restrição', 'error');
+  }
+}
+
+// Autocomplete genérico
+function rcAutocomplete(inputId, sugId, tagId, hiddenId, apiPath, labelFn) {
+  const input  = document.getElementById(inputId);
+  const sug    = document.getElementById(sugId);
+  const tag    = document.getElementById(tagId);
+  const hidden = document.getElementById(hiddenId);
+  if (!input) return;
+
+  let timer;
+  input.addEventListener('input', () => {
+    clearTimeout(timer);
+    const q = input.value.trim();
+    if (!q) { sug.style.display = 'none'; return; }
+    timer = setTimeout(async () => {
+      try {
+        const res = await authFetch(`/api/admin/dashboard/${apiPath}?q=${encodeURIComponent(q)}`);
+        const rows = await res.json();
+        if (!rows.length) { sug.style.display = 'none'; return; }
+        sug.innerHTML = rows.map(r => `
+          <div data-id="${r.cliente_id || r.modelo_id}" data-label="${labelFn(r)}"
+            style="padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--border,#2a2a4a);font-size:13px;">
+            ${labelFn(r)}
+          </div>`).join('');
+        sug.style.display = 'block';
+        sug.querySelectorAll('div').forEach(el => {
+          el.addEventListener('click', () => {
+            hidden.value = el.dataset.id;
+            input.value  = el.dataset.label;
+            tag.textContent = '✓ ID: ' + el.dataset.id;
+            tag.style.display = 'block';
+            sug.style.display = 'none';
+          });
+        });
+      } catch {}
+    }, 300);
+  });
+
+  document.addEventListener('click', e => {
+    if (!sug.contains(e.target) && e.target !== input) sug.style.display = 'none';
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  rcAutocomplete(
+    'rcBuscaCliente', 'rcSugCliente', 'rcClienteTag', 'rcClienteId',
+    'restricoes-cliente/busca-cliente',
+    r => `${r.email}${r.cliente_nome ? ' — ' + r.cliente_nome : ''} (ID ${r.cliente_id})`
+  );
+  rcAutocomplete(
+    'rcBuscaModelo', 'rcSugModelo', 'rcModeloTag', 'rcModeloId',
+    'restricoes-cliente/busca-modelo',
+    r => `${r.nome_exibicao} (ID ${r.modelo_id})`
+  );
+});
+
 // ========== INIT ==========
 
 document.addEventListener('DOMContentLoaded', () => {

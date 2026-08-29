@@ -137,6 +137,10 @@
   <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
   <span>Contestações</span>
 </a>
+<a class="nav-item" data-page="restricoes-cliente">
+  <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-1 14l-3-3 1.41-1.41L11 12.17l4.59-4.58L17 9l-6 6z"/></svg>
+  <span>Restrições cliente</span>
+</a>
 </nav>
 
   <div class="sidebar-bottom">
@@ -2213,6 +2217,67 @@
   </div>
 
   <div id="contestacaoResultado"></div>
+</section>
+
+<!-- RESTRIÇÕES CLIENTE -->
+<section class="page" id="page-restricoes-cliente">
+  <h3 style="margin-bottom:16px;">Restrições Cliente → Modelo</h3>
+
+  <!-- Formulário nova restrição -->
+  <div style="background:var(--card-bg,#1a1a2e);border:1px solid var(--border,#2a2a4a);border-radius:10px;padding:20px;margin-bottom:24px;">
+    <h4 style="margin:0 0 14px;">Nova Restrição</h4>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+      <!-- Busca cliente -->
+      <div style="position:relative;">
+        <label style="font-size:12px;color:var(--text-secondary,#888);display:block;margin-bottom:4px;">Cliente (email, username ou ID)</label>
+        <input type="text" id="rcBuscaCliente" class="input-search" placeholder="Pesquisar cliente..." autocomplete="off" style="width:100%;">
+        <div id="rcSugCliente" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--card-bg,#1a1a2e);border:1px solid var(--border,#2a2a4a);border-radius:6px;z-index:50;max-height:200px;overflow-y:auto;"></div>
+        <input type="hidden" id="rcClienteId">
+        <div id="rcClienteTag" style="display:none;margin-top:6px;font-size:12px;color:#7c3aed;"></div>
+      </div>
+
+      <!-- Busca modelo -->
+      <div style="position:relative;">
+        <label style="font-size:12px;color:var(--text-secondary,#888);display:block;margin-bottom:4px;">Modelo (nome ou ID)</label>
+        <input type="text" id="rcBuscaModelo" class="input-search" placeholder="Pesquisar modelo..." autocomplete="off" style="width:100%;">
+        <div id="rcSugModelo" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--card-bg,#1a1a2e);border:1px solid var(--border,#2a2a4a);border-radius:6px;z-index:50;max-height:200px;overflow-y:auto;"></div>
+        <input type="hidden" id="rcModeloId">
+        <div id="rcModeloTag" style="display:none;margin-top:6px;font-size:12px;color:#7c3aed;"></div>
+      </div>
+    </div>
+
+    <div style="margin-bottom:14px;">
+      <label style="font-size:12px;color:var(--text-secondary,#888);display:block;margin-bottom:4px;">Motivo (opcional)</label>
+      <input type="text" id="rcMotivo" class="input-search" placeholder="Motivo da restrição..." style="width:100%;">
+    </div>
+
+    <button class="btn btn-primary" onclick="rcCriarRestricao()">Adicionar Restrição</button>
+  </div>
+
+  <!-- Filtro lista -->
+  <div class="page-actions" style="margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+    <input type="text" id="rcFiltro" class="input-search" placeholder="Filtrar por email ou nome da modelo..." style="width:300px;">
+    <button class="btn btn-primary" onclick="rcCarregar(1)">Filtrar</button>
+  </div>
+
+  <!-- Tabela -->
+  <div style="overflow-x:auto;">
+    <table class="table" id="rcTabela">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Cliente (email)</th>
+          <th>Modelo</th>
+          <th>Motivo</th>
+          <th>Criado em</th>
+          <th>Ação</th>
+        </tr>
+      </thead>
+      <tbody id="rcBody"></tbody>
+    </table>
+  </div>
+  <div id="rcPaginacao" style="display:flex;gap:6px;justify-content:center;margin-top:16px;flex-wrap:wrap;"></div>
 </section>
 
 <!-- Toast -->
