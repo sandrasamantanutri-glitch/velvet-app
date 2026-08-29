@@ -207,6 +207,18 @@ socket.on("erroChatConteudo", ({ message }) => {
 });
 
 // ===========================
+// SOCKET — MENSAGEM LIDA PELO CLIENTE
+// ===========================
+socket.on("mensagemLida", ({ cliente_id: cidStr }) => {
+  const cid = Number(cidStr);
+  const idx = inboxLista.findIndex(c => c.cliente_id === cid);
+  if (idx === -1) return;
+  inboxLista[idx] = normalizarChat({ ...inboxLista[idx], lida: true });
+  inboxLista.sort(compararChats);
+  rerenderizarInboxCompleta();
+});
+
+// ===========================
 // INBOX — ENTRAR NA SALA
 // ===========================
 function entrarInbox() {
@@ -369,7 +381,11 @@ function atualizarChatLocalInbox(dados) {
   const idx    = inboxLista.findIndex(c => c.cliente_id === chatId);
   if (idx === -1) return;
 
-  inboxLista[idx] = normalizarChat({ ...inboxLista[idx], ...dados });
+  inboxLista[idx] = normalizarChat({
+    ...inboxLista[idx],
+    ...dados,
+    ultimo_sender: dados.sender ?? inboxLista[idx].ultimo_sender
+  });
   inboxLista.sort(compararChats);
   rerenderizarInboxCompleta();
 }
@@ -502,7 +518,7 @@ function rerenderizarInboxCompleta() {
 setInterval(async () => {
   if (document.visibilityState !== "visible") return;
   await recarregarInboxDoZero();
-}, 60000);
+}, 300000);
 
 // ===========================
 // CHAT — ENTRAR NA SALA
