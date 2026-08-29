@@ -4998,11 +4998,19 @@ socket.on("marcarConteudoVisto", async ({
       [messageIdNum, clienteIdNum, modeloIdNum]
     );
 
+    // buscar conteudo_ids da mensagem para atualizar o Set do popup da modelo
+    const conteudosRes = await db.query(
+      `SELECT conteudo_id FROM messages_conteudos WHERE message_id = $1`,
+      [messageIdNum]
+    );
+    const conteudo_ids = conteudosRes.rows.map(r => r.conteudo_id);
+
     // 🔥 avisar sala
     const sala = `chat_${clienteIdNum}_${modeloIdNum}`;
 
     io.to(sala).emit("conteudoVisto", {
-      message_id: messageIdNum
+      message_id: messageIdNum,
+      conteudo_ids
     });
 
   } catch (err) {
