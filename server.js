@@ -15604,26 +15604,32 @@ app.post("/api/conteudo/visto", auth, async (req, res) => {
 
   const { message_id } = req.body;
 
-  const clienteRes = await db.query(
-    "SELECT id FROM clientes WHERE user_id = $1",
-    [req.user.id]
-  );
+  try {
+    const clienteRes = await db.query(
+      "SELECT id FROM clientes WHERE user_id = $1",
+      [req.user.id]
+    );
 
-  if (!clienteRes.rowCount) {
-    return res.status(404).json({ error: "Cliente não encontrado" });
+    if (!clienteRes.rowCount) {
+      return res.status(404).json({ error: "Cliente não encontrado" });
+    }
+
+    const cliente_id = clienteRes.rows[0].id;
+
+    await db.query(`
+      UPDATE messages
+      SET visto = true,
+          updated_at = NOW()
+      WHERE id = $1
+      AND cliente_id = $2
+    `, [message_id, cliente_id]);
+
+    res.json({ ok: true });
+
+  } catch (err) {
+    console.error("Erro ao marcar conteúdo como visto:", err);
+    res.status(500).json({ error: "Erro interno" });
   }
-
-  const cliente_id = clienteRes.rows[0].id;
-
-  await db.query(`
-    UPDATE messages
-    SET visto = true,
-        updated_at = NOW()
-    WHERE id = $1
-    AND cliente_id = $2
-  `,[message_id, cliente_id]);
-
-  res.json({ ok: true });
 
 });
 
