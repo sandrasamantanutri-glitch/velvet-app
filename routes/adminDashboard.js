@@ -6254,4 +6254,117 @@ router.patch("/ocorrencias/:id", authAdmin, async (req, res) => {
   }
 });
 
+// ========== PPVs ADMIN ==========
+
+router.get("/ppvs-admin/modelos", async (req, res) => {
+  try {
+    const { rows } = await db.query(
+      `SELECT m.id, COALESCE(m.nome_exibicao, m.nome) AS nome, COUNT(msg.id)::int AS total_ppvs
+       FROM modelos m
+       INNER JOIN messages msg ON msg.modelo_id = m.id
+         AND msg.sender = 'modelo'
+         AND msg.tipo IN ('conteudo_ppv_mass', 'conteudo_ppv', 'ppv')
+         AND msg.preco > 0
+       GROUP BY m.id, m.nome_exibicao, m.nome
+       ORDER BY total_ppvs DESC`
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error("Erro ppvs-admin modelos:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+router.get("/ppvs-admin", async (req, res) => {
+  try {
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 20;
+    const offset = (page - 1) * limit;
+    const modelo_id = req.query.modelo_id || null;
+    const status = req.query.status || null;
+    const tipo = req.query.tipo || null;
+
+    const params = [];
+    let pIdx = 1;
+    let where = `msg.sender = 'modelo' AND msg.tipo IN ('conteudo_ppv_mass','conteudo_ppv','ppv') AND msg.preco > 0`;
+
+    if (modelo_id) { where += ` AND msg.modelo_id = $${pIdx++}`; params.push(modelo_id); }
+    if (status) { where += ` AND cp.status = $${pIdx++}`; params.push(status); }
+    if (tipo) { where += ` AND msg.tipo = $${pIdx++}`; params.push(tipo); }
+
+    const countQ = await db.query(
+      `SELECT COUNT(DISTINCT msg.id) FROM messages msg
+       LEFT JOIN conteudo_pacotes cp ON cp.message_id = msg.id
+       WHERE ${where}`,
+      params
+    );
+    const total = Number(countQ.rows[0].count);
+
+    const { rows } = await db.query(
+      `SELECT
+         msg.id,
+         msg.modelo_id,
+         msg.cliente_id,
+         msg.text,
+         msg.preco,
+         msg.tipo,
+         msg.created_at,
+         COALESCE(m.nome_exibicao, m.nome) AS modelo_nome,
+         cl.nome AS cliente_nome,
+         cp.status AS pagamento_status,
+         (SELECT COUNT(*) FROM messages_conteudos mc WHERE mc.message_id = msg.id)::int AS total_midias,
+         (SELECT c.thumbnail_url FROM messages_conteudos mc
+          JOIN conteudos c ON c.id = mc.conteudo_id
+          WHERE mc.message_id = msg.id LIMIT 1) AS thumb
+       FROM messages msg
+       LEFT JOIN modelos m ON m.id = msg.modelo_id
+       LEFT JOIN clientes cl ON cl.id = msg.cliente_id
+       LEFT JOIN conteudo_pacotes cp ON cp.message_id = msg.id
+       WHERE ${where}
+       ORDER BY msg.created_at DESC
+       LIMIT $${pIdx} OFFSET $${pIdx + 1}`,
+      [...params, limit, offset]
+    );
+
+    res.json({ rows, total, totalPages: Math.ceil(total / limit), page });
+  } catch (err) {
+    console.error("Erro ppvs-admin:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+router.get("/ppvs-admin/:id", async (req, res) => {
+  const id = Number(req.params.id);
+  if (!id) return res.status(400).json({ erro: "ID inválido" });
+  try {
+    const msgQ = await db.query(
+      `SELECT
+         msg.id, msg.modelo_id, msg.cliente_id, msg.text, msg.preco, msg.tipo, msg.created_at,
+         COALESCE(m.nome_exibicao, m.nome) AS modelo_nome,
+         cl.nome AS cliente_nome,
+         cp.status AS pagamento_status
+       FROM messages msg
+       LEFT JOIN modelos m ON m.id = msg.modelo_id
+       LEFT JOIN clientes cl ON cl.id = msg.cliente_id
+       LEFT JOIN conteudo_pacotes cp ON cp.message_id = msg.id
+       WHERE msg.id = $1`,
+      [id]
+    );
+    if (!msgQ.rows.length) return res.status(404).json({ erro: "Não encontrado" });
+
+    const midiaQ = await db.query(
+      `SELECT c.id, c.url, COALESCE(c.thumbnail_url, c.thumb_url) AS thumbnail_url, c.tipo
+       FROM messages_conteudos mc
+       JOIN conteudos c ON c.id = mc.conteudo_id
+       WHERE mc.message_id = $1`,
+      [id]
+    );
+
+    res.json({ ...msgQ.rows[0], midias: midiaQ.rows });
+  } catch (err) {
+    console.error("Erro ppvs-admin/:id:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
 module.exports = router;

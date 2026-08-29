@@ -193,6 +193,7 @@ const pageTitles = {
   despesas: 'Despesas Operacionais',
   suporte: 'Suporte ao Cliente',
   midias: 'Gestão de Mídias',
+  ppvs: 'PPVs Enviados',
   'usuarios-confiaveis': 'Usuários Confiáveis',
   'pix-modelos': 'PIX por Modelo',
   contestacoes: 'Contestações',
@@ -512,6 +513,13 @@ pageLoaders.midias = function () {
   const iframe = document.getElementById('midias-iframe');
   if (!iframe.src || iframe.src === window.location.href) {
     iframe.src = '/admin/midias.html';
+  }
+};
+
+pageLoaders.ppvs = function () {
+  const iframe = document.getElementById('ppvs-iframe');
+  if (!iframe.src || iframe.src === window.location.href) {
+    iframe.src = '/admin/ppvs.html';
   }
 };
 
