@@ -2596,22 +2596,54 @@ router.post("/fechamento/:id/recalcular", async (req, res) => {
     const fq = await db.query("SELECT ano, mes FROM fechamento_mensal WHERE id=$1", [req.params.id]);
     if (!fq.rows.length) return res.status(404).json({ erro: "Não encontrado" });
     const { ano, mes } = fq.rows[0];
-    const brtYear   = `EXTRACT(YEAR  FROM created_at AT TIME ZONE 'America/Sao_Paulo') = $1`;
-    const brtMonth  = `EXTRACT(MONTH FROM created_at AT TIME ZONE 'America/Sao_Paulo') = $2`;
-    const stripeOk  = `(gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW()))`;
+
+    const firstDay = `${ano}-${String(mes).padStart(2,'0')}-01`;
+    const lastDay  = `${ano}-${String(mes).padStart(2,'0')}-${new Date(ano, mes, 0).getDate()}`;
+
+    // Lógica caixa: PIX por data de compra SP + Stripe por data de liberação SP no mês
+    const result = await db.query(`
+      SELECT
+        COALESCE(SUM(valor_bruto), 0) AS total_bruto,
+        COALESCE(SUM(taxa_gateway), 0) AS total_taxas,
+        COALESCE(SUM(agency_fee), 0) AS total_agency,
+        COALESCE(SUM(velvet_fee), 0) AS total_velvet,
+        COALESCE(SUM(valor_modelo), 0) AS total_modelos,
+        COALESCE(SUM(CASE WHEN tipo = 'assinatura' THEN valor_bruto ELSE 0 END), 0) AS total_assinaturas,
+        COALESCE(SUM(CASE WHEN tipo != 'assinatura' THEN valor_bruto ELSE 0 END), 0) AS total_midias
+      FROM (
+        SELECT valor_bruto, taxa_gateway, agency_fee, velvet_fee, valor_modelo, tipo
+        FROM transacoes_agency
+        WHERE status = 'pago'
+          AND gateway IS DISTINCT FROM 'stripe'
+          AND EXTRACT(YEAR  FROM created_at AT TIME ZONE 'America/Sao_Paulo') = $1
+          AND EXTRACT(MONTH FROM created_at AT TIME ZONE 'America/Sao_Paulo') = $2
+
+        UNION ALL
+
+        SELECT valor_bruto, taxa_gateway, agency_fee, velvet_fee, valor_modelo, tipo
+        FROM transacoes_agency
+        WHERE status = 'pago'
+          AND gateway = 'stripe'
+          AND disponivel_em IS NOT NULL
+          AND disponivel_em <= NOW()
+          AND DATE(disponivel_em AT TIME ZONE 'America/Sao_Paulo') >= $3::date
+          AND DATE(disponivel_em AT TIME ZONE 'America/Sao_Paulo') <= $4::date
+      ) t
+    `, [ano, mes, firstDay, lastDay]);
+
+    const r = result.rows[0];
     const { rows } = await db.query(`
       UPDATE fechamento_mensal SET
-        total_bruto        = (SELECT COALESCE(SUM(valor_bruto),0)  FROM transacoes_agency WHERE status='pago' AND ${brtYear} AND ${brtMonth} AND ${stripeOk}),
-        total_taxas        = (SELECT COALESCE(SUM(taxa_gateway),0) FROM transacoes_agency WHERE status='pago' AND ${brtYear} AND ${brtMonth} AND ${stripeOk}),
-        total_agency       = (SELECT COALESCE(SUM(agency_fee),0)   FROM transacoes_agency WHERE status='pago' AND ${brtYear} AND ${brtMonth} AND ${stripeOk}),
-        total_velvet       = (SELECT COALESCE(SUM(velvet_fee),0)   FROM transacoes_agency WHERE status='pago' AND ${brtYear} AND ${brtMonth} AND ${stripeOk}),
-        total_modelos      = (SELECT COALESCE(SUM(valor_modelo),0) FROM transacoes_agency WHERE status='pago' AND ${brtYear} AND ${brtMonth} AND ${stripeOk}),
-        total_assinaturas  = (SELECT COALESCE(SUM(CASE WHEN tipo='assinatura'  THEN valor_bruto ELSE 0 END),0) FROM transacoes_agency WHERE status='pago' AND ${brtYear} AND ${brtMonth} AND ${stripeOk}),
-        total_midias       = (SELECT COALESCE(SUM(CASE WHEN tipo!='assinatura' THEN valor_bruto ELSE 0 END),0) FROM transacoes_agency WHERE status='pago' AND ${brtYear} AND ${brtMonth} AND ${stripeOk}),
-        total_chargebacks  = (SELECT COALESCE(SUM(valor),0) FROM chargebacks WHERE EXTRACT(YEAR FROM criado_em AT TIME ZONE 'America/Sao_Paulo')=$1 AND EXTRACT(MONTH FROM criado_em AT TIME ZONE 'America/Sao_Paulo')=$2),
-        total_despesas     = (SELECT COALESCE(SUM(valor),0) FROM despesas WHERE EXTRACT(YEAR FROM data)=$1 AND EXTRACT(MONTH FROM data)=$2)
-      WHERE id=$3 RETURNING *
-    `, [ano, mes, req.params.id]);
+        total_bruto       = $1,
+        total_taxas       = $2,
+        total_agency      = $3,
+        total_velvet      = $4,
+        total_modelos     = $5,
+        total_assinaturas = $6,
+        total_midias      = $7
+      WHERE id = $8 RETURNING *
+    `, [r.total_bruto, r.total_taxas, r.total_agency, r.total_velvet, r.total_modelos, r.total_assinaturas, r.total_midias, req.params.id]);
+
     res.json(rows[0]);
   } catch (err) {
     console.error("Erro recalcular:", err);
