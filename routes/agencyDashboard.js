@@ -192,7 +192,7 @@ router.get("/overview", authAgencia, async (req, res) => {
           WHERE agencia_id = $1 AND status = 'pago' AND gateway IS DISTINCT FROM 'stripe'
           UNION ALL
           SELECT agency_fee,
-            DATE_TRUNC('month', disponivel_em::date::timestamp) AS mes_ref
+            DATE_TRUNC('month', disponivel_em AT TIME ZONE 'America/Sao_Paulo') AS mes_ref
           FROM vw_transacoes_agencia
           WHERE agencia_id = $1 AND status = 'pago' AND gateway = 'stripe'
             AND disponivel_em IS NOT NULL AND disponivel_em <= NOW()
@@ -2336,7 +2336,7 @@ router.get("/transacoes", authAgencia, async (req, res) => {
           COALESCE(SUM(CASE WHEN t.status='pago' AND NOT ${DISP} THEN t.valor_modelo ELSE 0 END), 0) AS pendente_modelo,
           COALESCE(SUM(CASE WHEN t.status='pago' AND NOT ${DISP} THEN t.agency_fee   ELSE 0 END), 0) AS pendente_agencia,
           TO_CHAR(MIN(CASE WHEN t.status='pago' AND NOT ${DISP} AND t.disponivel_em IS NOT NULL
-            THEN DATE(t.disponivel_em AT TIME ZONE 'UTC') END), 'YYYY-MM-DD') AS proxima_liberacao
+            THEN DATE(t.disponivel_em AT TIME ZONE 'America/Sao_Paulo') END), 'YYYY-MM-DD') AS proxima_liberacao
         FROM transacoes_agency t
         JOIN modelos m ON m.id = t.modelo_id
         WHERE ${whereRows}
@@ -2349,7 +2349,7 @@ router.get("/transacoes", authAgencia, async (req, res) => {
       db.query(`
         SELECT
           TO_CHAR(DATE(t.created_at AT TIME ZONE 'America/Sao_Paulo'), 'YYYY-MM-DD') AS dia,
-          TO_CHAR(DATE(t.disponivel_em AT TIME ZONE 'UTC'), 'YYYY-MM-DD') AS dia_lib,
+          TO_CHAR(DATE(t.disponivel_em AT TIME ZONE 'America/Sao_Paulo'), 'YYYY-MM-DD') AS dia_lib,
           COALESCE(SUM(t.valor_modelo), 0) AS lib_modelo,
           COALESCE(SUM(t.agency_fee),   0) AS lib_agencia
         FROM transacoes_agency t
@@ -2364,11 +2364,11 @@ router.get("/transacoes", authAgencia, async (req, res) => {
         ORDER BY 1 DESC, 2
       `, [agenciaId, ...(hasModelo ? [Number(modelo_id)] : []), ...(m ? [m.ano, m.mes] : [])]),
 
-      // extraLibRowsQ: Stripe com disponivel_em neste mês, de compras de MESES ANTERIORES
+      // extraLibRowsQ: Stripe com disponivel_em neste mês (SP), de compras de MESES ANTERIORES
       m ? db.query(`
         SELECT
           TO_CHAR(DATE(t.created_at AT TIME ZONE 'America/Sao_Paulo'), 'YYYY-MM-DD') AS dia,
-          TO_CHAR(DATE(t.disponivel_em AT TIME ZONE 'UTC'), 'YYYY-MM-DD') AS dia_lib,
+          TO_CHAR(DATE(t.disponivel_em AT TIME ZONE 'America/Sao_Paulo'), 'YYYY-MM-DD') AS dia_lib,
           COALESCE(SUM(t.valor_modelo), 0) AS lib_modelo,
           COALESCE(SUM(t.agency_fee),   0) AS lib_agencia
         FROM transacoes_agency t
@@ -2377,8 +2377,8 @@ router.get("/transacoes", authAgencia, async (req, res) => {
           ${hasModelo ? `AND t.modelo_id = $2` : ''}
           AND t.gateway = 'stripe' AND t.status = 'pago'
           AND t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()
-          AND DATE(t.disponivel_em AT TIME ZONE 'UTC') >= $${hasModelo ? 3 : 2}::date
-          AND DATE(t.disponivel_em AT TIME ZONE 'UTC') <= $${hasModelo ? 4 : 3}::date
+          AND DATE(t.disponivel_em AT TIME ZONE 'America/Sao_Paulo') >= $${hasModelo ? 3 : 2}::date
+          AND DATE(t.disponivel_em AT TIME ZONE 'America/Sao_Paulo') <= $${hasModelo ? 4 : 3}::date
           AND NOT (
             EXTRACT(YEAR  FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $${hasModelo ? 5 : 4}
             AND EXTRACT(MONTH FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $${hasModelo ? 6 : 5}
