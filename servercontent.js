@@ -1092,14 +1092,14 @@ router.get("/transacoes", authModelo, async (req, res) => {
       SELECT
         COALESCE(SUM(CASE
           WHEN gateway = 'stripe' AND disponivel_em IS NOT NULL AND disponivel_em > NOW()
-           AND DATE_TRUNC('month', disponivel_em AT TIME ZONE 'UTC')
+           AND DATE_TRUNC('month', disponivel_em AT TIME ZONE 'America/Sao_Paulo')
                = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
           THEN valor_modelo ELSE 0 END), 0) AS total_pendente,
         COALESCE(SUM(CASE
           WHEN (gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW()))
            AND DATE_TRUNC('month', CASE
                  WHEN created_at AT TIME ZONE 'America/Sao_Paulo' >= '2026-06-24'
-                 THEN disponivel_em AT TIME ZONE 'UTC'
+                 THEN disponivel_em AT TIME ZONE 'America/Sao_Paulo'
                  ELSE created_at AT TIME ZONE 'America/Sao_Paulo'
                END)
                = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
@@ -1367,12 +1367,12 @@ router.get("/modelo/financeiro", authModelo, async (req, res) => {
              AND (gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW()))
              AND EXTRACT(YEAR  FROM CASE
                    WHEN created_at AT TIME ZONE 'America/Sao_Paulo' >= '2026-06-24'
-                   THEN disponivel_em AT TIME ZONE 'UTC'
+                   THEN disponivel_em AT TIME ZONE 'America/Sao_Paulo'
                    ELSE created_at AT TIME ZONE 'America/Sao_Paulo'
                  END) = $2
              AND EXTRACT(MONTH FROM CASE
                    WHEN created_at AT TIME ZONE 'America/Sao_Paulo' >= '2026-06-24'
-                   THEN disponivel_em AT TIME ZONE 'UTC'
+                   THEN disponivel_em AT TIME ZONE 'America/Sao_Paulo'
                    ELSE created_at AT TIME ZONE 'America/Sao_Paulo'
                  END) = $3
             THEN valor_modelo END), 0) AS mes_midias,
@@ -1381,19 +1381,19 @@ router.get("/modelo/financeiro", authModelo, async (req, res) => {
              AND (gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW()))
              AND EXTRACT(YEAR  FROM CASE
                    WHEN created_at AT TIME ZONE 'America/Sao_Paulo' >= '2026-06-24'
-                   THEN disponivel_em AT TIME ZONE 'UTC'
+                   THEN disponivel_em AT TIME ZONE 'America/Sao_Paulo'
                    ELSE created_at AT TIME ZONE 'America/Sao_Paulo'
                  END) = $2
              AND EXTRACT(MONTH FROM CASE
                    WHEN created_at AT TIME ZONE 'America/Sao_Paulo' >= '2026-06-24'
-                   THEN disponivel_em AT TIME ZONE 'UTC'
+                   THEN disponivel_em AT TIME ZONE 'America/Sao_Paulo'
                    ELSE created_at AT TIME ZONE 'America/Sao_Paulo'
                  END) = $3
             THEN valor_modelo END), 0) AS mes_assinaturas,
           COALESCE(SUM(CASE
             WHEN gateway = 'stripe' AND disponivel_em IS NOT NULL AND disponivel_em > NOW()
-             AND EXTRACT(YEAR  FROM disponivel_em AT TIME ZONE 'UTC') = $2
-             AND EXTRACT(MONTH FROM disponivel_em AT TIME ZONE 'UTC') = $3
+             AND EXTRACT(YEAR  FROM disponivel_em AT TIME ZONE 'America/Sao_Paulo') = $2
+             AND EXTRACT(MONTH FROM disponivel_em AT TIME ZONE 'America/Sao_Paulo') = $3
             THEN valor_modelo END), 0) AS bloqueado_mes
         FROM transacoes_agency
         WHERE modelo_id = $1
@@ -1422,7 +1422,7 @@ router.get("/modelo/financeiro", authModelo, async (req, res) => {
            AND (gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW()))
            AND DATE(CASE
                  WHEN created_at AT TIME ZONE 'America/Sao_Paulo' >= '2026-06-24'
-                 THEN disponivel_em AT TIME ZONE 'UTC'
+                 THEN disponivel_em AT TIME ZONE 'America/Sao_Paulo'
                  ELSE created_at AT TIME ZONE 'America/Sao_Paulo'
                END)
                = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
@@ -1434,7 +1434,7 @@ router.get("/modelo/financeiro", authModelo, async (req, res) => {
            AND (gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW()))
            AND DATE(CASE
                  WHEN created_at AT TIME ZONE 'America/Sao_Paulo' >= '2026-06-24'
-                 THEN disponivel_em AT TIME ZONE 'UTC'
+                 THEN disponivel_em AT TIME ZONE 'America/Sao_Paulo'
                  ELSE created_at AT TIME ZONE 'America/Sao_Paulo'
                END)
                = DATE(NOW() AT TIME ZONE 'America/Sao_Paulo')
@@ -1446,7 +1446,7 @@ router.get("/modelo/financeiro", authModelo, async (req, res) => {
            AND (gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW()))
            AND DATE_TRUNC('month', CASE
                  WHEN created_at AT TIME ZONE 'America/Sao_Paulo' >= '2026-06-24'
-                 THEN disponivel_em AT TIME ZONE 'UTC'
+                 THEN disponivel_em AT TIME ZONE 'America/Sao_Paulo'
                  ELSE created_at AT TIME ZONE 'America/Sao_Paulo'
                END)
                = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
@@ -1458,7 +1458,7 @@ router.get("/modelo/financeiro", authModelo, async (req, res) => {
            AND (gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW()))
            AND DATE_TRUNC('month', CASE
                  WHEN created_at AT TIME ZONE 'America/Sao_Paulo' >= '2026-06-24'
-                 THEN disponivel_em AT TIME ZONE 'UTC'
+                 THEN disponivel_em AT TIME ZONE 'America/Sao_Paulo'
                  ELSE created_at AT TIME ZONE 'America/Sao_Paulo'
                END)
                = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
@@ -1470,7 +1470,7 @@ router.get("/modelo/financeiro", authModelo, async (req, res) => {
            AND (gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW()))
            AND DATE_TRUNC('month', CASE
                  WHEN created_at AT TIME ZONE 'America/Sao_Paulo' >= '2026-06-24'
-                 THEN disponivel_em AT TIME ZONE 'UTC'
+                 THEN disponivel_em AT TIME ZONE 'America/Sao_Paulo'
                  ELSE created_at AT TIME ZONE 'America/Sao_Paulo'
                END)
                = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo') - INTERVAL '1 month'
@@ -1482,7 +1482,7 @@ router.get("/modelo/financeiro", authModelo, async (req, res) => {
            AND (gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW()))
            AND DATE_TRUNC('month', CASE
                  WHEN created_at AT TIME ZONE 'America/Sao_Paulo' >= '2026-06-24'
-                 THEN disponivel_em AT TIME ZONE 'UTC'
+                 THEN disponivel_em AT TIME ZONE 'America/Sao_Paulo'
                  ELSE created_at AT TIME ZONE 'America/Sao_Paulo'
                END)
                = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo') - INTERVAL '1 month'
@@ -1493,7 +1493,7 @@ router.get("/modelo/financeiro", authModelo, async (req, res) => {
           WHEN (gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW()))
            AND EXTRACT(YEAR FROM CASE
                  WHEN created_at AT TIME ZONE 'America/Sao_Paulo' >= '2026-06-24'
-                 THEN disponivel_em AT TIME ZONE 'UTC'
+                 THEN disponivel_em AT TIME ZONE 'America/Sao_Paulo'
                  ELSE created_at AT TIME ZONE 'America/Sao_Paulo'
                END)
                = EXTRACT(YEAR FROM NOW() AT TIME ZONE 'America/Sao_Paulo')
@@ -1510,14 +1510,14 @@ router.get("/modelo/financeiro", authModelo, async (req, res) => {
 
         COALESCE(SUM(CASE
           WHEN gateway = 'stripe' AND disponivel_em IS NOT NULL AND disponivel_em > NOW()
-           AND DATE_TRUNC('month', disponivel_em AT TIME ZONE 'UTC')
+           AND DATE_TRUNC('month', disponivel_em AT TIME ZONE 'America/Sao_Paulo')
                = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
           THEN valor_modelo
         END), 0) AS bloqueado_mes,
 
         COALESCE(SUM(CASE
           WHEN gateway = 'stripe' AND disponivel_em IS NOT NULL AND disponivel_em > NOW()
-           AND DATE_TRUNC('month', disponivel_em AT TIME ZONE 'UTC')
+           AND DATE_TRUNC('month', disponivel_em AT TIME ZONE 'America/Sao_Paulo')
                = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo') - INTERVAL '1 month'
           THEN valor_modelo
         END), 0) AS bloqueado_mes_anterior
