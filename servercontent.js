@@ -1793,8 +1793,6 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f0f0;padding:20px;col
     <hr class="divider">
     <div class="row"><span class="lbl">Saldo líquido</span><span class="val">${fmtBRL(saldoLiquido)}</span></div>
     ${bonusVal > 0 ? `<div class="row bon"><span class="lbl">Bônus</span><span class="val">+ ${fmtBRL(bonusVal)}</span></div>` : ''}
-    <hr class="divider">
-    <div class="row total"><span class="lbl">VALOR LÍQUIDO A RECEBER</span><span class="val">${fmtBRL(totalPagar)}</span></div>
   </div>
   <div class="pi">
     <h4>Dados do Pagamento</h4>
