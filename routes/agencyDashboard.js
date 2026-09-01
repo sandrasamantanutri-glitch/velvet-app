@@ -2263,8 +2263,8 @@ router.get("/transacoes", authAgencia, async (req, res) => {
       const mesParams = [agenciaId];
       if (hasModelo) { mesBaseFilter.push(`t.modelo_id = $2`); mesParams.push(Number(modelo_id)); }
       const pi = mesParams.length + 1;
-      mesBaseFilter.push(`DATE(t.disponivel_em AT TIME ZONE 'UTC') >= $${pi}::date`);
-      mesBaseFilter.push(`DATE(t.disponivel_em AT TIME ZONE 'UTC') <= $${pi+1}::date`);
+      mesBaseFilter.push(`DATE(t.disponivel_em AT TIME ZONE 'America/Sao_Paulo') >= $${pi}::date`);
+      mesBaseFilter.push(`DATE(t.disponivel_em AT TIME ZONE 'America/Sao_Paulo') <= $${pi+1}::date`);
       mesParams.push(firstDayStr, lastDayStr);
 
       // Stripe JÁ liberado neste mês (qualquer mês de compra)

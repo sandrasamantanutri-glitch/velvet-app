@@ -3643,7 +3643,7 @@ router.get("/ganhos-conciliacao", async (req, res) => {
       cbP.push(m.ano, m.mes);
     }
     const cbR = await db.query(
-      `SELECT COALESCE(SUM(valor), 0) AS total FROM chargebacks WHERE ${cbCond}${cbF}`,
+      `SELECT COALESCE(SUM(valor), 0) AS total FROM chargebacks WHERE ${cbCond} AND gateway != 'cartao'${cbF}`,
       cbP
     );
 
@@ -3682,8 +3682,8 @@ router.get("/ganhos-conciliacao", async (req, res) => {
           AND t.gateway = 'stripe'
           AND t.status = 'pago'
           AND t.disponivel_em IS NOT NULL
-          AND DATE(t.disponivel_em AT TIME ZONE 'UTC') >= $${paPi}::date
-          AND DATE(t.disponivel_em AT TIME ZONE 'UTC') <= $${paPi + 1}::date
+          AND DATE(t.disponivel_em AT TIME ZONE 'America/Sao_Paulo') >= $${paPi}::date
+          AND DATE(t.disponivel_em AT TIME ZONE 'America/Sao_Paulo') <= $${paPi + 1}::date
           AND EXTRACT(YEAR  FROM ${DIA_SP}) = $${paPi + 2}
           AND EXTRACT(MONTH FROM ${DIA_SP}) = $${paPi + 3}
       `, [...modP, firstDayStr, lastDayStr, prevAno, prevMes]);
@@ -3705,8 +3705,8 @@ router.get("/ganhos-conciliacao", async (req, res) => {
           AND t.status = 'pago'
           AND t.disponivel_em IS NOT NULL
           AND t.disponivel_em <= NOW()
-          AND DATE(t.disponivel_em AT TIME ZONE 'UTC') >= $${jaPi}::date
-          AND DATE(t.disponivel_em AT TIME ZONE 'UTC') <= $${jaPi + 1}::date
+          AND DATE(t.disponivel_em AT TIME ZONE 'America/Sao_Paulo') >= $${jaPi}::date
+          AND DATE(t.disponivel_em AT TIME ZONE 'America/Sao_Paulo') <= $${jaPi + 1}::date
           AND EXTRACT(YEAR  FROM ${DIA_SP}) = $${jaPi + 2}
           AND EXTRACT(MONTH FROM ${DIA_SP}) = $${jaPi + 3}
       `, [...modP, firstDayStr, lastDayStr, prevAno, prevMes]);
@@ -3728,7 +3728,7 @@ router.get("/ganhos-conciliacao", async (req, res) => {
           AND t.status = 'pago'
           AND t.disponivel_em IS NOT NULL
           AND t.disponivel_em > NOW()
-          AND DATE(t.disponivel_em AT TIME ZONE 'UTC') <= $${pbPi}::date
+          AND DATE(t.disponivel_em AT TIME ZONE 'America/Sao_Paulo') <= $${pbPi}::date
           AND EXTRACT(YEAR  FROM ${DIA_SP}) = $${pbPi + 1}
           AND EXTRACT(MONTH FROM ${DIA_SP}) = $${pbPi + 2}
       `, [...modP, lastDayStr, m.ano, m.mes]);
@@ -3750,8 +3750,8 @@ router.get("/ganhos-conciliacao", async (req, res) => {
           AND t.status = 'pago'
           AND t.disponivel_em IS NOT NULL
           AND t.disponivel_em > NOW()
-          AND DATE(t.disponivel_em AT TIME ZONE 'UTC') >= $${lcPi}::date
-          AND DATE(t.disponivel_em AT TIME ZONE 'UTC') <= $${lcPi + 1}::date
+          AND DATE(t.disponivel_em AT TIME ZONE 'America/Sao_Paulo') >= $${lcPi}::date
+          AND DATE(t.disponivel_em AT TIME ZONE 'America/Sao_Paulo') <= $${lcPi + 1}::date
       `, [...modP, firstDayStr, lastDayStr]);
       liberarBruto  = Number(lcR.rows[0].bruto);
       liberarModelo = Number(lcR.rows[0].modelo);
@@ -3764,8 +3764,8 @@ router.get("/ganhos-conciliacao", async (req, res) => {
       let jlParams = [...modP];
       if (m) {
         const jlPi = modP.length + 1;
-        jlCond = ` AND DATE(t.disponivel_em AT TIME ZONE 'UTC') >= $${jlPi}::date
-                   AND DATE(t.disponivel_em AT TIME ZONE 'UTC') <= $${jlPi + 1}::date`;
+        jlCond = ` AND DATE(t.disponivel_em AT TIME ZONE 'America/Sao_Paulo') >= $${jlPi}::date
+                   AND DATE(t.disponivel_em AT TIME ZONE 'America/Sao_Paulo') <= $${jlPi + 1}::date`;
         jlParams.push(firstDayStr, lastDayStr);
       }
       const jlR = await db.query(`
@@ -5155,18 +5155,31 @@ router.get("/ganhos-agencias", async (req, res) => {
   try {
     const mes = parseInt(req.query.mes) || new Date().getMonth() + 1;
     const ano = parseInt(req.query.ano) || new Date().getFullYear();
+    const firstDay = `${ano}-${String(mes).padStart(2,'0')}-01`;
+    const lastDay  = `${ano}-${String(mes).padStart(2,'0')}-${new Date(ano, mes, 0).getDate()}`;
 
     const { rows } = await db.query(`
       SELECT
         a.id AS agencia_id,
         a.nome AS agencia_nome,
-        COALESCE(SUM(
-          CASE
-            WHEN t.gateway IS DISTINCT FROM 'stripe'
-              OR (t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW())
-            THEN t.agency_fee
-            ELSE 0
-          END
+        COALESCE((
+          SELECT SUM(t.agency_fee)
+          FROM transacoes_agency t
+          JOIN modelos m ON m.id = t.modelo_id
+          WHERE m.agencia_id = a.id AND t.status = 'pago'
+            AND t.gateway IS DISTINCT FROM 'stripe'
+            AND EXTRACT(YEAR  FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $2
+            AND EXTRACT(MONTH FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $1
+        ), 0) +
+        COALESCE((
+          SELECT SUM(t.agency_fee)
+          FROM transacoes_agency t
+          JOIN modelos m ON m.id = t.modelo_id
+          WHERE m.agencia_id = a.id AND t.status = 'pago'
+            AND t.gateway = 'stripe'
+            AND t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()
+            AND DATE(t.disponivel_em AT TIME ZONE 'America/Sao_Paulo') >= $3::date
+            AND DATE(t.disponivel_em AT TIME ZONE 'America/Sao_Paulo') <= $4::date
         ), 0) AS ganho_mes,
         COALESCE((
           SELECT SUM(p.valor)
@@ -5174,15 +5187,9 @@ router.get("/ganhos-agencias", async (req, res) => {
           WHERE p.agencia_id = a.id AND p.mes = $1 AND p.ano = $2
         ), 0) AS pago_mes
       FROM agencias a
-      LEFT JOIN modelos m ON m.agencia_id = a.id
-      LEFT JOIN transacoes_agency t
-        ON t.modelo_id = m.id
-        AND t.status = 'pago'
-        AND EXTRACT(MONTH FROM t.created_at) = $1
-        AND EXTRACT(YEAR FROM t.created_at) = $2
       GROUP BY a.id, a.nome
       ORDER BY ganho_mes DESC
-    `, [mes, ano]);
+    `, [mes, ano, firstDay, lastDay]);
 
     res.json(rows.map(r => ({
       agencia_id: r.agencia_id,
