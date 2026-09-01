@@ -2389,6 +2389,10 @@ router.post("/fechamento", async (req, res) => {
     );
     if (existing.rows.length) return res.status(400).json({ erro: "Fechamento já existe para este mês" });
 
+    const firstDay = `${ano}-${String(mes).padStart(2,'0')}-01`;
+    const lastDay  = `${ano}-${String(mes).padStart(2,'0')}-${new Date(ano, mes, 0).getDate()}`;
+
+    // Lógica caixa: PIX por data de compra SP + Stripe por data de liberação SP no mês
     const result = await db.query(`
       SELECT
         COALESCE(SUM(valor_bruto), 0) AS total_bruto,
@@ -2398,12 +2402,28 @@ router.post("/fechamento", async (req, res) => {
         COALESCE(SUM(valor_modelo), 0) AS total_modelos,
         COALESCE(SUM(CASE WHEN tipo = 'assinatura' THEN valor_bruto ELSE 0 END), 0) AS total_assinaturas,
         COALESCE(SUM(CASE WHEN tipo != 'assinatura' THEN valor_bruto ELSE 0 END), 0) AS total_midias
-      FROM transacoes_agency
-      WHERE status = 'pago'
-      AND EXTRACT(YEAR  FROM created_at AT TIME ZONE 'America/Sao_Paulo') = $1
-      AND EXTRACT(MONTH FROM created_at AT TIME ZONE 'America/Sao_Paulo') = $2
-      AND (gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW()))
-    `, [ano, mes]);
+      FROM (
+        -- PIX: compras do mês (liberadas na hora)
+        SELECT valor_bruto, taxa_gateway, agency_fee, velvet_fee, valor_modelo, tipo
+        FROM transacoes_agency
+        WHERE status = 'pago'
+          AND gateway IS DISTINCT FROM 'stripe'
+          AND EXTRACT(YEAR  FROM created_at AT TIME ZONE 'America/Sao_Paulo') = $1
+          AND EXTRACT(MONTH FROM created_at AT TIME ZONE 'America/Sao_Paulo') = $2
+
+        UNION ALL
+
+        -- Stripe: liberações que caíram neste mês (qualquer mês de compra)
+        SELECT valor_bruto, taxa_gateway, agency_fee, velvet_fee, valor_modelo, tipo
+        FROM transacoes_agency
+        WHERE status = 'pago'
+          AND gateway = 'stripe'
+          AND disponivel_em IS NOT NULL
+          AND disponivel_em <= NOW()
+          AND DATE(disponivel_em AT TIME ZONE 'America/Sao_Paulo') >= $3::date
+          AND DATE(disponivel_em AT TIME ZONE 'America/Sao_Paulo') <= $4::date
+      ) t
+    `, [ano, mes, firstDay, lastDay]);
 
     const r = result.rows[0];
     const { rows } = await db.query(`
