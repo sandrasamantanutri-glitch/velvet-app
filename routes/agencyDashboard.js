@@ -2278,7 +2278,32 @@ router.get("/transacoes", authAgencia, async (req, res) => {
     const limitIdx  = rowsParams.length + 1;
     const offsetIdx = rowsParams.length + 2;
 
-    const [totaisQ, countQ, rowsQ, libRowsQ, extraLibRowsQ] = await Promise.all([
+    // Stripe liberado/pendente com disponivel_em UTC no mês selecionado (qualquer mês de compra)
+    // Mesma referência de data que a tabela usa para exibir dia_lib
+    let stripeDisponiveisMesQ = null;
+    if (m) {
+      const mesBaseFilter = ["m.agencia_id = $1", "t.status = 'pago'", "t.gateway = 'stripe'",
+        "t.disponivel_em IS NOT NULL"];
+      const mesParams = [agenciaId];
+      if (hasModelo) { mesBaseFilter.push(`t.modelo_id = $2`); mesParams.push(Number(modelo_id)); }
+      const pi = mesParams.length + 1;
+      mesBaseFilter.push(`DATE(t.disponivel_em AT TIME ZONE 'UTC') >= $${pi}::date`);
+      mesBaseFilter.push(`DATE(t.disponivel_em AT TIME ZONE 'UTC') <= $${pi+1}::date`);
+      mesParams.push(firstDayStr, lastDayStr);
+
+      stripeDisponiveisMesQ = db.query(`
+        SELECT
+          COALESCE(SUM(CASE WHEN t.disponivel_em <= NOW() THEN t.valor_modelo ELSE 0 END), 0) AS lib_modelo,
+          COALESCE(SUM(CASE WHEN t.disponivel_em <= NOW() THEN t.agency_fee   ELSE 0 END), 0) AS lib_agencia,
+          COALESCE(SUM(CASE WHEN t.disponivel_em >  NOW() THEN t.valor_modelo ELSE 0 END), 0) AS pend_modelo,
+          COALESCE(SUM(CASE WHEN t.disponivel_em >  NOW() THEN t.agency_fee   ELSE 0 END), 0) AS pend_agencia
+        FROM transacoes_agency t
+        JOIN modelos m ON m.id = t.modelo_id
+        WHERE ${mesBaseFilter.join(' AND ')}
+      `, mesParams);
+    }
+
+    const [totaisQ, countQ, rowsQ, libRowsQ, extraLibRowsQ, stripeDisponiveisResult] = await Promise.all([
 
       // Totais por mês de compra (para PIX e Stripe do próprio mês — usado como base do liberado)
       db.query(`
@@ -2361,6 +2386,7 @@ router.get("/transacoes", authAgencia, async (req, res) => {
       `, [agenciaId, ...(hasModelo ? [Number(modelo_id)] : []), firstDayStr, lastDayStr, m.ano, m.mes])
       : Promise.resolve({ rows: [] }),
 
+      stripeDisponiveisMesQ || Promise.resolve(null),
     ]);
 
     // libMap: liberações das compras do mês atual, keyed por dia_compra
@@ -2395,13 +2421,15 @@ router.get("/transacoes", authAgencia, async (req, res) => {
     ].sort((a, b) => String(b.dia).localeCompare(String(a.dia)));
 
     const t0 = totaisQ.rows[0];
+    const sd = stripeDisponiveisResult?.rows?.[0];
 
-    // Cards: mesma lógica do admin — PIX + Stripe filtrados por created_at SP do mês
-    // liberado = disponivel_em <= NOW(), pendente = disponivel_em > NOW()
-    const liberado_modelo  = Number(t0.liberado_modelo_base);
-    const liberado_agencia = Number(t0.liberado_agencia_base);
-    const pendente_modelo  = Number(t0.pendente_modelo_all);
-    const pendente_agencia = Number(t0.pendente_agencia_all);
+    // Cards: PIX do mês (created_at SP) + Stripe com disponivel_em UTC no mês
+    // Quando mês selecionado: usa sd para incluir Stripe de qualquer mês de compra liberado neste mês
+    // Sem filtro de mês: usa base acumulado
+    const liberado_modelo  = sd ? (Number(t0.pix_modelo)  + Number(sd.lib_modelo))  : Number(t0.liberado_modelo_base);
+    const liberado_agencia = sd ? (Number(t0.pix_agencia) + Number(sd.lib_agencia)) : Number(t0.liberado_agencia_base);
+    const pendente_modelo  = sd ? Number(sd.pend_modelo)  : Number(t0.pendente_modelo_all);
+    const pendente_agencia = sd ? Number(sd.pend_agencia) : Number(t0.pendente_agencia_all);
 
     res.json({
       totais: { liberado_modelo, liberado_agencia, pendente_modelo, pendente_agencia },
