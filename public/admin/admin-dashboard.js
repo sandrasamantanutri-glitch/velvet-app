@@ -3118,7 +3118,7 @@ function renderFechamento(d) {
     // Bloco 4: Diferença e explicação pelos retidos
     blk('4. Diferença e conciliação') +
     row('Saldo banco', b.saldo) +
-    row('(-) Velvet líquido estimado', d.velvet_liquido, '#6366f1') +
+    row('(-) Velvet líquido estimado (s/ taxas gateway)', d.velvet_liquido_banco ?? d.velvet_liquido, '#6366f1') +
     `<div style="display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid var(--border);">
       <span style="font-weight:600;font-size:13px;color:var(--text-muted);">Diferença bruta</span>
       <span style="font-weight:600;color:${diff < 0 ? '#ef4444' : '#22c55e'};">${money(diff)}</span>

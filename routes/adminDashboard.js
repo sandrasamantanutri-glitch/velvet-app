@@ -2487,7 +2487,7 @@ router.get("/fechamento/detalhe/:ano/:mes", async (req, res) => {
     const total_taxas_reais = ajustes.filter(a => a.tipo === 'taxa_gateway').reduce((s,a) => s + Number(a.valor), 0);
     const total_retencoes   = ajustes.filter(a => a.tipo === 'retencao').reduce((s,a) => s + Number(a.valor), 0);
 
-    // Velvet líquido: fee velvet + taxa coletada dos clientes - taxas reais pagas - chargebacks - despesas banco
+    // Velvet líquido P&L: inclui taxas reais como custo real da plataforma
     const velvet_liquido =
       Number(f.total_velvet) +
       Number(f.total_taxas) -
@@ -2495,10 +2495,18 @@ router.get("/fechamento/detalhe/:ano/:mes", async (req, res) => {
       Number(cbQ.rows[0].total) -
       banco.despesas;
 
-    // Disponível real = saldo banco (retidos nunca chegaram ao banco, explicam a diferença)
+    // Velvet líquido banco: sem taxas reais (gateway deduziu antes do depósito — banco já reflete isso)
+    const velvet_liquido_banco =
+      Number(f.total_velvet) +
+      Number(f.total_taxas) -
+      Number(cbQ.rows[0].total) -
+      banco.despesas;
+
+    // Disponível real = saldo banco
     banco.disponivel = banco.saldo;
 
-    const diferenca = banco.disponivel - velvet_liquido;
+    // Diferença baseada no velvet_liquido_banco (taxas reais não entram na comparação com banco)
+    const diferenca = banco.disponivel - velvet_liquido_banco;
 
     // Análise inteligente
     const bruto = Number(f.total_bruto);
@@ -2544,7 +2552,7 @@ router.get("/fechamento/detalhe/:ano/:mes", async (req, res) => {
       investimento:   Math.round(velvet_liquido * 0.15 * 100) / 100,
     } : null;
 
-    res.json({ fechamento: f, chargebacks: { qtd: cbQ.rows[0].qtd, total: cbQ.rows[0].total }, banco, ajustes, total_taxas_reais, total_retencoes, velvet_liquido, diferenca, difInexplicada, analise, distrib });
+    res.json({ fechamento: f, chargebacks: { qtd: cbQ.rows[0].qtd, total: cbQ.rows[0].total }, banco, ajustes, total_taxas_reais, total_retencoes, velvet_liquido, velvet_liquido_banco, diferenca, difInexplicada, analise, distrib });
   } catch (err) {
     console.error("Erro detalhe fechamento:", err);
     res.status(500).json({ erro: "Erro interno" });
