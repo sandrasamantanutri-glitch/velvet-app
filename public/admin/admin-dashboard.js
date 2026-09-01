@@ -4420,13 +4420,6 @@ async function salvarPagModelo(e) {
     form.reset();
     $('saldoDisponivelPgModelo').textContent = '—';
     carregarPgtoModelo(1);
-
-    // Abrir PDF gerado — ou HTML como fallback
-    if (data.recibo_pdf_signed_url) {
-      window.open(data.recibo_pdf_signed_url, '_blank');
-    } else if (data.id) {
-      abrirRecibo(data.id);
-    }
   } catch (err) {
     toast('Erro: ' + err.message, 'error');
   }
@@ -4477,30 +4470,13 @@ async function confirmarPagamentoComEmail() {
   const btn = document.getElementById('btnConfirmarPagamento');
   if (btn) { btn.disabled = true; btn.textContent = 'A processar...'; }
 
-  // Abrir janela ANTES da chamada async — evita bloqueio de popup
-  const win = window.open('', '_blank');
-  if (win) {
-    win.document.write(`
-      <html><body style="font-family:sans-serif;padding:60px 40px;color:#555;text-align:center;">
-        <div style="font-size:32px;margin-bottom:16px;">💜</div>
-        <p style="font-size:16px;">A processar pagamento e gerar recibo PDF...</p>
-      </body></html>
-    `);
-  }
-
   try {
-    const data = await postJSON(`/admin/dashboard/modelo-pagamentos/${id}/pagar`, {});
+    await postJSON(`/admin/dashboard/modelo-pagamentos/${id}/pagar`, {});
 
     fecharPreviewRecibo();
     toast('Pagamento confirmado! Recibo enviado por email à modelo.', 'success');
     carregarPgtoModelo(1);
-
-    // Abrir recibo HTML (único formato visível)
-    if (win && !win.closed) {
-      win.location.href = `/admin/dashboard/modelo-pagamentos/${id}/recibo`;
-    }
   } catch (err) {
-    if (win && !win.closed) win.close();
     if (btn) { btn.disabled = false; btn.textContent = '✅ Confirmar e enviar email à modelo'; }
     toast('Erro: ' + err.message, 'error');
   }
