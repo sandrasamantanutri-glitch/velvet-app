@@ -566,14 +566,10 @@ async function obterDespesaChatterPadrao(agenciaId) {
 // Mês/ano sempre determinado por created_at (quando a transação ocorreu).
 // Stripe só conta se disponivel_em <= NOW() (dinheiro liberado).
 async function calcularFechamentoAgencia(agenciaId, ano, mes) {
-  const baseWhere = `
-    t.agencia_id = $1
-    AND t.status = 'pago'
-    AND (t.gateway IS DISTINCT FROM 'stripe' OR (t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW()))
-    AND EXTRACT(YEAR  FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $2
-    AND EXTRACT(MONTH FROM t.created_at AT TIME ZONE 'America/Sao_Paulo') = $3
-  `;
+  const firstDay = `${ano}-${String(mes).padStart(2,'0')}-01`;
+  const lastDay  = `${ano}-${String(mes).padStart(2,'0')}-${new Date(ano, mes, 0).getDate()}`;
 
+  // Lógica caixa: PIX por created_at SP + Stripe por disponivel_em SP no mês
   const totaisQ = await db.query(`
     SELECT
       COALESCE(SUM(t.valor_bruto), 0) AS total_bruto,
@@ -581,9 +577,23 @@ async function calcularFechamentoAgencia(agenciaId, ano, mes) {
       COALESCE(SUM(t.valor_modelo), 0) AS total_modelo,
       COALESCE(SUM(CASE WHEN t.tipo != 'assinatura' THEN t.valor_bruto ELSE 0 END), 0) AS total_bruto_midia,
       COALESCE(SUM(CASE WHEN t.tipo = 'assinatura' THEN t.valor_bruto ELSE 0 END), 0) AS total_bruto_assinatura
-    FROM vw_transacoes_agencia t
-    WHERE ${baseWhere}
-  `, [agenciaId, ano, mes]);
+    FROM (
+      SELECT valor_bruto, agency_fee, valor_modelo, tipo
+      FROM vw_transacoes_agencia
+      WHERE agencia_id = $1 AND status = 'pago'
+        AND gateway IS DISTINCT FROM 'stripe'
+        AND EXTRACT(YEAR  FROM created_at AT TIME ZONE 'America/Sao_Paulo') = $2
+        AND EXTRACT(MONTH FROM created_at AT TIME ZONE 'America/Sao_Paulo') = $3
+      UNION ALL
+      SELECT valor_bruto, agency_fee, valor_modelo, tipo
+      FROM vw_transacoes_agencia
+      WHERE agencia_id = $1 AND status = 'pago'
+        AND gateway = 'stripe'
+        AND disponivel_em IS NOT NULL AND disponivel_em <= NOW()
+        AND DATE(disponivel_em AT TIME ZONE 'America/Sao_Paulo') >= $4::date
+        AND DATE(disponivel_em AT TIME ZONE 'America/Sao_Paulo') <= $5::date
+    ) t
+  `, [agenciaId, ano, mes, firstDay, lastDay]);
 
   const porModeloQ = await db.query(`
     SELECT
@@ -591,10 +601,24 @@ async function calcularFechamentoAgencia(agenciaId, ano, mes) {
       COALESCE(SUM(CASE WHEN t.tipo != 'assinatura' THEN t.valor_modelo ELSE 0 END), 0) AS total_midias,
       COALESCE(SUM(CASE WHEN t.tipo = 'assinatura' THEN t.valor_modelo ELSE 0 END), 0) AS total_assinaturas,
       COALESCE(SUM(t.valor_modelo), 0) AS total_geral
-    FROM vw_transacoes_agencia t
-    WHERE ${baseWhere}
+    FROM (
+      SELECT modelo_id, valor_modelo, tipo
+      FROM vw_transacoes_agencia
+      WHERE agencia_id = $1 AND status = 'pago'
+        AND gateway IS DISTINCT FROM 'stripe'
+        AND EXTRACT(YEAR  FROM created_at AT TIME ZONE 'America/Sao_Paulo') = $2
+        AND EXTRACT(MONTH FROM created_at AT TIME ZONE 'America/Sao_Paulo') = $3
+      UNION ALL
+      SELECT modelo_id, valor_modelo, tipo
+      FROM vw_transacoes_agencia
+      WHERE agencia_id = $1 AND status = 'pago'
+        AND gateway = 'stripe'
+        AND disponivel_em IS NOT NULL AND disponivel_em <= NOW()
+        AND DATE(disponivel_em AT TIME ZONE 'America/Sao_Paulo') >= $4::date
+        AND DATE(disponivel_em AT TIME ZONE 'America/Sao_Paulo') <= $5::date
+    ) t
     GROUP BY t.modelo_id
-  `, [agenciaId, ano, mes]);
+  `, [agenciaId, ano, mes, firstDay, lastDay]);
 
   return { totais: totaisQ.rows[0], porModelo: porModeloQ.rows };
 }
