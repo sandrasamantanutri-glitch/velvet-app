@@ -3364,6 +3364,8 @@ if (valorEsperado > 0 && Math.abs(Number(valorPago) - Number(valorEsperado)) > 0
 
           const expirationUnix = Math.floor(new Date(nExp).getTime() / 1000);
 
+          const product = await stripe.products.create({ name: `VIP Velvet #${mId}` });
+
           const sub = await stripe.subscriptions.create({
             customer: stripeCustomerId,
             default_payment_method: pmId,
@@ -3372,7 +3374,7 @@ if (valorEsperado > 0 && Math.abs(Number(valorPago) - Number(valorEsperado)) > 0
                 currency: currencySub,
                 unit_amount: stripeAmountFromValue(valorComCambio, currencySub),
                 recurring: { interval: 'month' },
-                product_data: { name: `VIP Velvet #${mId}` }
+                product: product.id
               }
             }],
             trial_end: expirationUnix,
