@@ -1306,6 +1306,9 @@ whenSocketReady((socket) => {
   });
 
 socket.on("conteudoVisto", async ({ message_id }) => {
+  const popup = document.getElementById("popupPagamentoVelvet");
+  if (!popup || popup.classList.contains("hidden")) return;
+
   const confirmId = `midia_${message_id}`;
   if (!marcarPagamentoConfirmado(confirmId)) return;
 
