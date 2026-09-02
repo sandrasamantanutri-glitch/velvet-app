@@ -2369,7 +2369,9 @@ app.post("/api/webhook/stripe", express.raw({ type: "application/json" }), async
       }
 
       const invoice = obj;
-      const subscriptionId = invoice.subscription;
+      const subscriptionId = invoice.subscription
+        || invoice.parent?.subscription_details?.subscription
+        || null;
       const billingReason = invoice.billing_reason;
 
       if (!subscriptionId) {
