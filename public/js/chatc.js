@@ -1192,11 +1192,6 @@ async function liberarConteudo(messageId) {
       }
     `;
 
-    if (todasLiberadas && midias.length > 0) {
-      setTimeout(() => {
-        abrirConteudo(messageId, 0);
-      }, 250);
-    }
   } catch (err) {
     console.error("Erro liberar conteúdo:", err);
   }
