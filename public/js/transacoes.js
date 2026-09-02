@@ -582,7 +582,7 @@ function renderSubscricoes(subscricoes) {
     }
 
     const recorrenteTag = ativa && v.recorrente
-      ? `<span class="sub-tag-recorrente">- Renovação automática</span>`
+      ? `<span class="sub-tag-recorrente">Renovação automática</span>`
       : ativa
         ? `<span class="sub-tag-manual">Manual</span>`
         : "";

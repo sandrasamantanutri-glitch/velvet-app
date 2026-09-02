@@ -2372,11 +2372,12 @@ app.post("/api/webhook/stripe", express.raw({ type: "application/json" }), async
       const subscriptionId = invoice.subscription;
       const billingReason = invoice.billing_reason;
 
-      // Apenas renovações automáticas (não o pagamento inicial)
-      if (!subscriptionId || billingReason !== 'subscription_cycle') {
+      if (!subscriptionId) {
         await client.query('ROLLBACK');
         return res.status(200).send('ok');
       }
+
+      console.log('billing_reason:', billingReason, '| subscription:', subscriptionId);
 
       const vipRes = await client.query(
         `SELECT vs.*, u.email, c.nome AS cliente_nome
