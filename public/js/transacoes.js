@@ -350,14 +350,21 @@ function modalArrependimento(aceiteTimestamp, aceiteIp) {
 // ================================================
 // MODAIS — REEMBOLSO VIP
 // ================================================
-window.modalCancelar = function(id, validaAte) {
+window.modalCancelar = function(id, validaAte, recorrente) {
   const dtLabel = validaAte ? formatarData(validaAte) : t("transacoes.fim_periodo_atual");
+  const titulo  = recorrente ? "⚠️ ⚠️ Cancelar assinatura" : `⚠️ ${t("transacoes.cancelar_titulo")}`;
+  const descricao = recorrente
+    ? `${t("transacoes.cancelamento_sem_reembolso")}`
+    : t("transacoes.cancelamento_sem_reembolso");
+  const detalhe = recorrente
+    ? `Seu acesso permanece ativo até <strong>${dtLabel}</strong> e não será renovado após essa data.`
+    : t("transacoes.cancelamento_acesso_ate").replace("{data}", `<strong>${dtLabel}</strong>`);
   abrirModal(`
-    <h3 style="color:#c0392b;margin:0 0 14px;">⚠️ ${t("transacoes.cancelar_titulo")}</h3>
+    <h3 style="color:#c0392b;margin:0 0 14px;">${titulo}</h3>
     <div style="background:#fff5f5;border-left:4px solid #e74c3c;border-radius:8px;padding:12px 16px;margin-bottom:16px;">
-      <p style="margin:0 0 6px;font-weight:700;color:#c0392b;">${t("transacoes.cancelamento_sem_reembolso")}</p>
+      <p style="margin:0 0 6px;font-weight:700;color:#c0392b;">${descricao}</p>
       <p style="margin:0;color:#5e5873;font-size:13px;line-height:1.6;">
-        ${t("transacoes.cancelamento_acesso_ate").replace("{data}", `<strong>${dtLabel}</strong>`)}
+        ${detalhe}
       </p>
     </div>
     <div style="display:flex;gap:12px;">
@@ -574,6 +581,12 @@ function renderSubscricoes(subscricoes) {
       acoesHtml = `<button class="btn-renovar" onclick="renovarSubscricao(${v.modelo_id})">${t("transacoes.btn_renovar")}</button>`;
     }
 
+    const recorrenteTag = ativa && v.recorrente
+      ? `<span class="sub-tag-recorrente">- Renovação automática</span>`
+      : ativa
+        ? `<span class="sub-tag-manual">Manual</span>`
+        : "";
+
     const row = document.createElement("div");
     row.className = "sub-row";
     row.innerHTML = `
@@ -581,6 +594,7 @@ function renderSubscricoes(subscricoes) {
         <span class="sub-modelo">${v.modelo || "—"}</span>
         ${badgeHtml}
         <span class="sub-expira">${expiraLabel}</span>
+        ${recorrenteTag}
         ${cancelada ? `<span class="sub-aviso">${t("transacoes.acesso_mantido_ate").replace("{data}", formatarData(v.expiration_at))}</span>` : ""}
       </div>
       <div class="sub-row-acao">${acoesHtml}</div>
@@ -592,8 +606,8 @@ function renderSubscricoes(subscricoes) {
       btn.addEventListener("click", e => {
         abrirDropdown(e, [
           {
-            label: t("transacoes.cancelar_assinatura"), icon: "🚫", danger: true,
-            action: () => window.modalCancelar(v.id, v.expiration_at)
+            label: v.recorrente ? "Cancelar renovação automática" : t("transacoes.cancelar_assinatura"), icon: "🚫", danger: true,
+            action: () => window.modalCancelar(v.id, v.expiration_at, v.recorrente)
           },
           { separator: true },
           {
@@ -887,6 +901,14 @@ function injectCSS() {
     .sub-ativa    { background:#e6f9ee;color:#1a7a40; }
     .sub-cancelada{ background:#fff0e8;color:#e67e22; }
     .sub-expirada { background:#ffeee8;color:#c0392b; }
+    .sub-tag-recorrente {
+      display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600;
+      background:#ede9ff;color:#6f3cff;
+    }
+    .sub-tag-manual {
+      display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600;
+      background:#f3f3f3;color:#888;
+    }
 
     /* ---- linha transação ---- */
     .tr-row {
