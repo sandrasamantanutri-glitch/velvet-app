@@ -3332,12 +3332,19 @@ if (valorEsperado > 0 && Math.abs(Number(valorPago) - Number(valorEsperado)) > 0
       (async () => {
         try {
           const vipCheck = await db.query(
-            'SELECT stripe_subscription_id FROM vip_subscriptions WHERE cliente_id = $1 AND modelo_id = $2',
+            'SELECT stripe_subscription_id, recorrente FROM vip_subscriptions WHERE cliente_id = $1 AND modelo_id = $2',
             [cId, mId]
           );
-          if (vipCheck.rows[0]?.stripe_subscription_id) {
-            console.log('ℹ️ Stripe Subscription já existe:', vipCheck.rows[0].stripe_subscription_id);
+          if (vipCheck.rows[0]?.stripe_subscription_id && vipCheck.rows[0]?.recorrente === true) {
+            console.log('ℹ️ Stripe Subscription ativa já existe:', vipCheck.rows[0].stripe_subscription_id);
             return;
+          }
+          // Se havia sub antiga cancelada, cancela imediatamente antes de criar nova
+          if (vipCheck.rows[0]?.stripe_subscription_id && vipCheck.rows[0]?.recorrente !== true) {
+            try {
+              await stripe.subscriptions.cancel(vipCheck.rows[0].stripe_subscription_id);
+              console.log('🗑️ Sub antiga cancelada para criar nova:', vipCheck.rows[0].stripe_subscription_id);
+            } catch (_) {}
           }
 
           const custRes = await db.query('SELECT stripe_customer_id FROM clientes WHERE id = $1', [cId]);
