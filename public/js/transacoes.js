@@ -352,13 +352,9 @@ function modalArrependimento(aceiteTimestamp, aceiteIp) {
 // ================================================
 window.modalCancelar = function(id, validaAte, recorrente) {
   const dtLabel = validaAte ? formatarData(validaAte) : t("transacoes.fim_periodo_atual");
-  const titulo  = recorrente ? "⚠️ ⚠️ Cancelar assinatura" : `⚠️ ${t("transacoes.cancelar_titulo")}`;
-  const descricao = recorrente
-    ? `${t("transacoes.cancelamento_sem_reembolso")}`
-    : t("transacoes.cancelamento_sem_reembolso");
-  const detalhe = recorrente
-    ? `Seu acesso permanece ativo até <strong>${dtLabel}</strong> e não será renovado após essa data.`
-    : t("transacoes.cancelamento_acesso_ate").replace("{data}", `<strong>${dtLabel}</strong>`);
+  const titulo  = recorrente ? t("transacoes.cancelar_renovacao_titulo") : `⚠️ ${t("transacoes.cancelar_titulo")}`;
+  const descricao = t("transacoes.cancelamento_sem_reembolso");
+  const detalhe = t("transacoes.cancelamento_acesso_ate").replace("{data}", `<strong>${dtLabel}</strong>`);
   abrirModal(`
     <h3 style="color:#c0392b;margin:0 0 14px;">${titulo}</h3>
     <div style="background:#fff5f5;border-left:4px solid #e74c3c;border-radius:8px;padding:12px 16px;margin-bottom:16px;">
@@ -582,9 +578,9 @@ function renderSubscricoes(subscricoes) {
     }
 
     const recorrenteTag = ativa && v.recorrente
-      ? `<span class="sub-tag-recorrente">Renovação automática: Sim</span>`
+      ? `<span class="sub-tag-recorrente">${t("transacoes.renovacao_automatica_sim")}</span>`
       : ativa
-        ? `<span class="sub-tag-manual">Renovação automática: Não</span>`
+        ? `<span class="sub-tag-manual">${t("transacoes.renovacao_automatica_nao")}</span>`
         : "";
 
     const row = document.createElement("div");
@@ -606,7 +602,7 @@ function renderSubscricoes(subscricoes) {
       btn.addEventListener("click", e => {
         abrirDropdown(e, [
           {
-            label: v.recorrente ? "Cancelar renovação automática" : t("transacoes.cancelar_assinatura"), icon: "🚫", danger: true,
+            label: v.recorrente ? t("transacoes.cancelar_renovacao_automatica") : t("transacoes.cancelar_assinatura"), icon: "🚫", danger: true,
             action: () => window.modalCancelar(v.id, v.expiration_at, v.recorrente)
           },
           { separator: true },
