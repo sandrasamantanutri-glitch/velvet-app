@@ -199,7 +199,8 @@ function bloquearPaginaValidacaoCliente() {
     const aviso = document.createElement("p");
     aviso.className = "form-info";
     aviso.style.marginTop = "16px";
-    aviso.textContent = "🔒 Estes dados são preenchidos automaticamente ao criar conta e ao realizar pagamentos. Não é possível alterá-los manualmente, apenas criadores podem preencher os dados para solicitar verificação de conta.";
+    aviso.setAttribute("data-i18n", "conta.aviso_cliente");
+    aviso.textContent = typeof t === "function" ? t("conta.aviso_cliente") : "";
     form.appendChild(aviso);
   }
 }

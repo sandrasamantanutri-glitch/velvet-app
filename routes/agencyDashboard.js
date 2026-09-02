@@ -1661,7 +1661,7 @@ router.post("/ofertas", authAgencia, async (req, res) => {
     }
 
     const VALOR_BASE = Number(planoRes.rows[0].valor_mensal);
-    const VALOR_MINIMO = Math.max(18.00, Number((VALOR_BASE * 0.5).toFixed(2)));
+    const VALOR_MINIMO = Math.max(6.00, Number((VALOR_BASE * 0.5).toFixed(2)));
 
     const { nome, limite, dias, desconto } = req.body;
     const limiteNum = Number(limite);

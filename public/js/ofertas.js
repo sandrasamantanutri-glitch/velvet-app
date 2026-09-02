@@ -181,7 +181,7 @@ async function abrirModalCriarOferta() {
   }
 
   const VALOR_BASE = Number(plano.valor_mensal);
-  const VALOR_MINIMO = VALOR_BASE * 0.5;
+  const VALOR_MINIMO = Math.max(6, VALOR_BASE * 0.5);
 
   let etapa = 1;
 
@@ -285,7 +285,7 @@ async function abrirModalCriarOferta() {
 
         <p class="info">
           ${t("ofertas.info_desconto_mes")}<br>
-          ${t("ofertas.info_valor_minimo")} <strong>R$ 15,00</strong>
+          ${t("ofertas.info_valor_minimo")} <strong>R$ ${VALOR_MINIMO.toFixed(2).replace(".", ",")}</strong>
         </p>
 
         <div class="precos">
@@ -419,7 +419,7 @@ function validarAssinatura() {
   const input = document.getElementById("assinaturaMensal");
   const valor = parseFloat(input.value);
 
-  if (isNaN(valor) || valor < 20) {
+  if (isNaN(valor) || valor < 6) {
     alert(t("ofertas.erro_valor_minimo"));
     input.focus();
     return false;
@@ -448,7 +448,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       descontoTriInput.value = 30;
     }
 
-    if (isNaN(mensal) || mensal < 20) {
+    if (isNaN(mensal) || mensal < 6) {
       trimestralInput.value = "0.00";
       return;
     }
@@ -464,8 +464,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   mensalInput.addEventListener("blur", () => {
     const valor = parseFloat(mensalInput.value);
-    if (isNaN(valor) || valor < 20) {
-      mensalInput.value = 20;
+    if (isNaN(valor) || valor < 6) {
+      mensalInput.value = 6;
       calcularTrimestral();
     }
   });
@@ -476,7 +476,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const mensal = parseFloat(mensalInput.value);
     const desconto = parseFloat(descontoTriInput.value) || 0;
 
-    if (isNaN(mensal) || mensal < 20) {
+    if (isNaN(mensal) || mensal < 6) {
       alert(t("ofertas.erro_valor_minimo"));
       return;
     }

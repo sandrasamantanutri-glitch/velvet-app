@@ -8343,8 +8343,8 @@ app.put("/api/modelo/planos", authModelo, async (req, res) => {
     const mensal = Number(valor_mensal);
     const desconto = Number(desconto_trimestral) || 0;
 
-    if (!mensal || mensal < 20) {
-      return res.status(400).json({ erro: "Valor mínimo R$ 20" });
+    if (!mensal || mensal < 6) {
+      return res.status(400).json({ erro: "Valor mínimo R$ 6" });
     }
 
     if (desconto < 0 || desconto > 30) {
@@ -9538,7 +9538,7 @@ app.post("/api/ofertas", authModelo, async (req, res) => {
     }
 
     const VALOR_BASE = Number(planoRes.rows[0].valor_mensal);
-    const VALOR_MINIMO = Math.max(18.00, Number((VALOR_BASE * 0.5).toFixed(2)));
+    const VALOR_MINIMO = Math.max(6.00, Number((VALOR_BASE * 0.5).toFixed(2)));
 
     const { nome, limite, dias, desconto } = req.body;
 

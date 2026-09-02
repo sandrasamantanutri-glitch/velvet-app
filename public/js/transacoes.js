@@ -15,6 +15,26 @@ function getLocaleAtual() {
     : (localStorage.getItem("idioma") || "pt");
 }
 
+function statusLabel(status) {
+  const map = {
+    pago:      "transacoes.status_pago",
+    paid:      "transacoes.status_pago",
+    ativo:     "transacoes.status_ativo",
+    active:    "transacoes.status_ativo",
+    inativa:   "transacoes.status_inativa",
+    inativo:   "transacoes.status_inativo",
+    inactive:  "transacoes.status_inativa",
+    pendente:  "transacoes.status_pendente",
+    pending:   "transacoes.status_pendente",
+    cancelado: "transacoes.status_cancelado",
+    canceled:  "transacoes.status_cancelado",
+    falhou:    "transacoes.status_falhou",
+    failed:    "transacoes.status_falhou",
+  };
+  const key = (status || "").toLowerCase();
+  return map[key] ? t(map[key]) : (status || "—");
+}
+
 function formatarData(data) {
   if (!data) return "—";
   const d = new Date(data);
@@ -251,98 +271,51 @@ async function enviarOcorrencia(payload) {
 // ================================================
 function modalArrependimento(aceiteTimestamp, aceiteIp) {
   abrirModal(`
-    <h3 style="color:#6f3cff;margin:0 0 12px;">Direito de Arrependimento</h3>
+    <h3 style="color:#6f3cff;margin:0 0 12px;">${t("transacoes.arr_titulo")}</h3>
 
     <div style="background:#f3eff5;border-radius:12px;padding:16px 18px;margin-bottom:14px;">
       <p style="margin:0 0 8px;font-weight:700;color:#1e1b2e;font-size:14px;">
-        📋 Entenda como funciona
+        ${t("transacoes.arr_subtitulo")}
       </p>
-
-      <p style="margin:0;font-size:13px;color:#5e5873;line-height:1.75;">
-        O <strong>art. 49 do Código de Defesa do Consumidor (CDC)</strong>
-        garante, em regra, o direito de desistir de compras realizadas pela internet
-        no prazo de até <strong>7 dias</strong>.
-      </p>
-
-      <p style="margin:10px 0 0;font-size:13px;color:#5e5873;line-height:1.75;">
-        <strong>Entretanto, conteúdos e serviços digitais possuem regras específicas.</strong>
-        Na Velvet, o acesso à assinatura ou à mídia é liberado
-        <strong>imediatamente após a confirmação do pagamento</strong>.
-      </p>
-
-      <p style="margin:10px 0 0;font-size:13px;color:#5e5873;line-height:1.75;">
-        Antes de concluir a compra, você concordou com nossos
-        <strong>Termos de Uso</strong> e com a
-        <strong>Política de Utilização e Reembolso</strong>, autorizando
-        expressamente o início imediato da prestação do serviço.
-      </p>
-
-      <p style="margin:10px 0 0;font-size:13px;color:#5e5873;line-height:1.75;">
-        <strong>Por esse motivo, após a liberação do acesso ao conteúdo, o direito de arrependimento pode não ser aplicável</strong>,
-        não sendo devido reembolso apenas porque houve mudança de ideia,
-        arrependimento ou desistência após o acesso ao serviço.
-      </p>
-
-      <p style="margin:10px 0 0;font-size:13px;color:#5e5873;line-height:1.75;">
-        <strong>Isso não impede a análise de casos legítimos</strong>, como cobrança em duplicidade,
-        erro comprovado no processamento do pagamento ou impossibilidade técnica de fornecer
-        o serviço, que continuam sendo tratados conforme nossa Política de Reembolso.
-      </p>
-
+      <p style="margin:0;font-size:13px;color:#5e5873;line-height:1.75;">${t("transacoes.arr_p1")}</p>
+      <p style="margin:10px 0 0;font-size:13px;color:#5e5873;line-height:1.75;">${t("transacoes.arr_p2")}</p>
+      <p style="margin:10px 0 0;font-size:13px;color:#5e5873;line-height:1.75;">${t("transacoes.arr_p3")}</p>
+      <p style="margin:10px 0 0;font-size:13px;color:#5e5873;line-height:1.75;">${t("transacoes.arr_p4")}</p>
+      <p style="margin:10px 0 0;font-size:13px;color:#5e5873;line-height:1.75;">${t("transacoes.arr_p5")}</p>
       <a href="/policies.html#secao-2" target="_blank"
         style="display:inline-block;margin-top:12px;font-size:13px;color:#6f3cff;font-weight:700;">
-        Ler as Políticas completas →
+        ${t("transacoes.arr_ler_politicas")}
       </a>
     </div>
 
-    <p style="background:#fff7ec;border-left:4px solid #f39c12;border-radius:8px;padding:12px 16px;margin-bottom:14px;">
-        Você aceitou os <strong>Termos de Uso</strong>, e as <strong>Políticas de Utilização e Reembolso</strong>.<br>
-        Você autorizou o início imediato do acesso ao conteúdo digital.</p>
-
-       <p style="margin:0 0 8px;font-weight:700;color:#d68910;font-size:13px;">
-        ✅Seu aceite foi registrado em sistema, asim como:</p>
-       <ul style="margin:0;padding-left:18px;font-size:13px;color:#5e5873;line-height:1.8;">
-        <strong>Data e horário de aceite e seu </strong><strong>Endereço IP</strong></ul>
-        </p>
-      </div>
+    <div style="background:#fff7ec;border-left:4px solid #f39c12;border-radius:8px;padding:12px 16px;margin-bottom:14px;">
+      <p style="margin:0 0 8px;font-size:13px;color:#5e5873;line-height:1.75;">${t("transacoes.arr_aceite_p1")}</p>
+      <p style="margin:0 0 6px;font-weight:700;color:#d68910;font-size:13px;">${t("transacoes.arr_aceite_p2")}</p>
+      <p style="margin:0;font-size:13px;color:#5e5873;">${t("transacoes.arr_aceite_p3")}</p>
+    </div>
 
     <div style="background:#eef8ff;border-left:4px solid #3498db;border-radius:8px;padding:12px 16px;margin-bottom:14px;">
       <p style="margin:0;font-size:13px;color:#2c3e50;line-height:1.75;">
-        💬 <strong>Teve algum problema com a compra?</strong><br>
-        Antes de solicitar uma contestação (chargeback) junto ao banco ou à operadora do cartão,
-        entre em contato conosco. A maioria dos problemas pode ser resolvida rapidamente pelo suporte.
+        ${t("transacoes.arr_problema_titulo")}<br>
+        ${t("transacoes.arr_problema_texto")}
       </p>
     </div>
 
     <div style="background:#fff5f5;border-left:4px solid #e74c3c;border-radius:8px;padding:12px 16px;margin-bottom:18px;">
-      <p style="margin:0;font-size:13px;color:#c0392b;line-height:1.75;">
-        ⚠️ <strong>Importante:</strong> Contestações (chargebacks) realizadas após a utilização do serviço,
-        ou de forma falsa, abusiva ou fraudulenta, poderão resultar na
-        <strong>suspensão ou encerramento permanente da conta</strong>,
-        cancelamento dos acessos e adoção das medidas administrativas e judiciais cabíveis,
-        nos termos da legislação brasileira.
-      </p>
+      <p style="margin:0;font-size:13px;color:#c0392b;line-height:1.75;">${t("transacoes.arr_chargeback_texto")}</p>
     </div>
 
     <p style="font-size:13px;color:#9b87b8;margin:0 0 16px;">
-      Dúvidas? Entre em contato pelo e-mail
+      ${t("transacoes.arr_duvidas")}
       <a href="mailto:contato@velvet.lat" style="color:#6f3cff;font-weight:700;">
         contato@velvet.lat
       </a>
     </p>
 
     <button onclick="fecharModal()" style="
-      width:100%;
-      background:#6f3cff;
-      color:#fff;
-      border:none;
-      border-radius:12px;
-      padding:12px;
-      font-size:15px;
-      font-weight:700;
-      cursor:pointer;
-      font-family:inherit;">
-      Entendido
+      width:100%;background:#6f3cff;color:#fff;border:none;border-radius:12px;
+      padding:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">
+      ${t("transacoes.entendido")}
     </button>
   `);
 }
@@ -674,7 +647,7 @@ function renderTransacoes(transacoes) {
         ${tr.modelo_nome ? `<span class="tr-modelo">${tr.modelo_nome}</span>` : ""}
         <span class="tr-data">${formatarData(tr.criado_em || tr.created_at)}</span>
         <span class="tr-valor">${formatarValor(tr.valor)}</span>
-        <span class="tr-status status-${(tr.status || "").toLowerCase()}">${tr.status || "—"}</span>
+        <span class="tr-status status-${(tr.status || "").toLowerCase()}">${statusLabel(tr.status)}</span>
       </div>
       ${isVip || isMidia ? `<button class="btn-opcoes" id="btn-tr-${idx}">⁞</button>` : ""}
     `;
@@ -1028,4 +1001,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Carga inicial — a aba ativa por padrão é "subscricoes"
   await carregarSubscricoes();
   await carregarTransacoes();
+
+  // Re-renderiza ao trocar idioma (sem F5)
+  window.addEventListener("languageChanged", async () => {
+    const activeTab = document.querySelector(".tab-btn.ativa")?.dataset.tab;
+    if (activeTab === "subscricoes" || !activeTab) await carregarSubscricoes();
+    if (activeTab === "transacoes") { aplicarFiltros(); }
+    if (activeTab === "ocorrencias") await carregarOcorrencias();
+    // re-renderiza listas não-ativas em background para que estejam prontas ao mudar de aba
+    if (activeTab !== "transacoes") await carregarTransacoes();
+  });
 });
