@@ -817,6 +817,35 @@ async function enviarEmailAviso24h(email, modelo_id) {
 // ─────────────────────────────────────────────────────────────
 const brevo = require('./brevo');
 
+async function enviarEmailFalhaRenovacaoVIP(email, modelo_id, modelo_nome) {
+  const linkPerfil = `https://velvet.lat/perfil.html?modelo_id=${modelo_id}`;
+  await resend.emails.send({
+    from: 'Velvet <contato@velvet.lat>',
+    to: email,
+    subject: '⚠️ Falha na renovação automática do seu VIP',
+    html: wrapEmail(`
+      <h2 style="margin:0 0 6px;color:#e53e3e;text-align:center;font-size:20px;">
+        Não conseguimos renovar seu VIP
+      </h2>
+      <p style="text-align:center;margin:0 0 24px;color:#7a6a9a;font-size:14px;">
+        Houve um problema com o pagamento automático
+      </p>
+
+      <div style="background:#fff5f5;border-left:4px solid #e53e3e;border-radius:0 10px 10px 0;padding:14px 18px;margin:0 0 20px;">
+        <p style="margin:0;font-weight:bold;color:#c53030;font-size:15px;">
+          🚫 Pagamento recusado — ação necessária
+        </p>
+      </div>
+
+      <p style="margin:0 0 20px;line-height:1.7;">
+        Olá! Tentamos cobrar automaticamente a renovação do seu VIP com ${modelo_nome || 'sua criadora'}, mas o pagamento foi recusado. O sistema tentará novamente nos próximos dias, mas você também pode renovar manualmente agora para não perder o acesso.
+      </p>
+
+      ${btnPrimary(linkPerfil, 'Renovar VIP agora')}
+    `)
+  });
+}
+
 async function obterOuCriarAudienceVIP(db, modelo_id, nome_modelo) {
   return brevo.obterOuCriarListaVIP(db, brevo.FOLDER_ID_VELVET, modelo_id, nome_modelo);
 }
@@ -1114,6 +1143,7 @@ module.exports = {
   enviarFaturaPremium,
   enviarEmailAviso7Dias,
   enviarEmailAviso24h,
+  enviarEmailFalhaRenovacaoVIP,
   obterOuCriarAudienceVIP,
   adicionarContatoAudienceVIP,
   removerContatoAudienceVIP,

@@ -72,7 +72,28 @@ setInterval(() => {
 const { Resend } = require("resend");
 const resend = new Resend(process.env.RESEND_API_KEY);
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
-const { enviarEmailValidacao, enviarEmailBoasVindasCliente, enviarEmailBoasVindasModelo, enviarEmailContratoModelos, enviarEmailNotificacaoContratoAssinado, enviarEmailVerificacao, enviarEmailOTP, enviarFaturaVIP, enviarFaturaConteudo, enviarFaturaPremium, obterOuCriarAudienceVIP, adicionarContatoAudienceVIP, enviarCampanhaVIP } = require("./email");
+
+async function getOrCreateStripeCustomer(dbClient, cliente_id, email) {
+  const res = await dbClient.query(
+    'SELECT stripe_customer_id FROM clientes WHERE id = $1',
+    [cliente_id]
+  );
+  if (res.rows[0]?.stripe_customer_id) return res.rows[0].stripe_customer_id;
+
+  const customer = await stripe.customers.create({
+    email,
+    metadata: { cliente_id: String(cliente_id) }
+  });
+
+  await dbClient.query(
+    'UPDATE clientes SET stripe_customer_id = $1 WHERE id = $2',
+    [customer.id, cliente_id]
+  );
+
+  return customer.id;
+}
+
+const { enviarEmailValidacao, enviarEmailBoasVindasCliente, enviarEmailBoasVindasModelo, enviarEmailContratoModelos, enviarEmailNotificacaoContratoAssinado, enviarEmailVerificacao, enviarEmailOTP, enviarFaturaVIP, enviarFaturaConteudo, enviarFaturaPremium, obterOuCriarAudienceVIP, adicionarContatoAudienceVIP, enviarCampanhaVIP, enviarEmailFalhaRenovacaoVIP } = require("./email");
 const brevo = require("./brevo");
 const rateLimit = require("express-rate-limit");
 const compression = require('compression');
@@ -2327,6 +2348,124 @@ app.post("/api/webhook/stripe", express.raw({ type: "application/json" }), async
     console.log("Evento registrado em stripe_events");
 
     /* =====================================================
+       EVENTOS DE SUBSCRIPTION (invoice / customer.subscription)
+    ===================================================== */
+
+    if (
+      eventType === 'invoice.payment_succeeded' ||
+      eventType === 'invoice.payment_failed' ||
+      eventType === 'customer.subscription.deleted'
+    ) {
+      if (eventType === 'customer.subscription.deleted') {
+        await client.query(
+          `UPDATE vip_subscriptions
+           SET recorrente = false, stripe_subscription_id = NULL, updated_at = NOW()
+           WHERE stripe_subscription_id = $1`,
+          [obj.id]
+        );
+        await client.query('COMMIT');
+        console.log('ℹ️ Stripe Subscription cancelada:', obj.id);
+        return res.status(200).send('ok');
+      }
+
+      const invoice = obj;
+      const subscriptionId = invoice.subscription;
+      const billingReason = invoice.billing_reason;
+
+      // Apenas renovações automáticas (não o pagamento inicial)
+      if (!subscriptionId || billingReason !== 'subscription_cycle') {
+        await client.query('ROLLBACK');
+        return res.status(200).send('ok');
+      }
+
+      const vipRes = await client.query(
+        `SELECT vs.*, u.email, c.nome AS cliente_nome
+         FROM vip_subscriptions vs
+         JOIN clientes c ON c.id = vs.cliente_id
+         JOIN users u ON u.id = c.user_id
+         WHERE vs.stripe_subscription_id = $1
+         FOR UPDATE`,
+        [subscriptionId]
+      );
+
+      if (!vipRes.rowCount) {
+        console.log('⚠️ Nenhuma vip_subscription encontrada para subscription:', subscriptionId);
+        await client.query('ROLLBACK');
+        return res.status(200).send('ok');
+      }
+
+      const vip = vipRes.rows[0];
+
+      if (eventType === 'invoice.payment_succeeded') {
+        const novaExpiracao = new Date(vip.expiration_at);
+        novaExpiracao.setMonth(novaExpiracao.getMonth() + 1);
+
+        const invoicePiId = invoice.payment_intent;
+        const amountPaidBrl = Number(invoice.amount_paid || 0) / 100;
+
+        await client.query(
+          `UPDATE vip_subscriptions
+           SET ativo = true, expiration_at = $1, updated_at = NOW(),
+               aviso_7_dias_enviado = false, aviso_24h_enviado = false,
+               gateway_subscription_id = COALESCE($2, gateway_subscription_id)
+           WHERE id = $3`,
+          [novaExpiracao, invoicePiId, vip.id]
+        );
+
+        const taxaGatewayRen = Number((vip.valor_assinatura * 0.15).toFixed(2));
+        const valoresRen = await calcularValores({
+          modelo_id: vip.modelo_id,
+          valor_bruto: vip.valor_assinatura,
+          taxa_gateway: taxaGatewayRen
+        });
+
+        await client.query(
+          `INSERT INTO transacoes_agency
+           (modelo_id, cliente_id, tipo, valor_bruto, valor_modelo,
+            agency_fee, velvet_fee, taxa_gateway, status, created_at,
+            gateway, disponivel_em, stripe_payment_intent_id)
+           VALUES ($1,$2,'assinatura_renovacao',$3,$4,$5,$6,$7,'pago',NOW(),'stripe',NULL,$8)`,
+          [
+            vip.modelo_id, vip.cliente_id,
+            vip.valor_assinatura,
+            Number(valoresRen.valor_modelo || 0),
+            Number(valoresRen.agency_fee || 0),
+            Number(valoresRen.velvet_fee || 0),
+            taxaGatewayRen,
+            invoicePiId
+          ]
+        );
+
+        await client.query('COMMIT');
+
+        console.log('✅ VIP renovado automaticamente via Stripe Subscription:', subscriptionId);
+        return res.status(200).send('ok');
+      }
+
+      if (eventType === 'invoice.payment_failed') {
+        await client.query('COMMIT');
+
+        // Notifica o cliente (fire-and-forget)
+        (async () => {
+          try {
+            const ci = await buscarDadosEmailPagamento(db, { cliente_id: vip.cliente_id, modelo_id: vip.modelo_id });
+            if (ci?.email) {
+              await enviarEmailFalhaRenovacaoVIP(ci.email, vip.modelo_id, ci.modelo_nome);
+            }
+          } catch (e) {
+            console.error('Erro email falha renovação VIP:', e.message);
+          }
+        })();
+
+        console.log('⚠️ Falha na renovação automática VIP:', subscriptionId);
+        return res.status(200).send('ok');
+      }
+
+      await client.query('ROLLBACK');
+      return res.status(200).send('ok');
+    }
+
+    /* =====================================================
        BUSCAR PAGAMENTO LOCAL
     ===================================================== */
 
@@ -3088,7 +3227,10 @@ if (valorEsperado > 0 && Math.abs(Number(valorPago) - Number(valorEsperado)) > 0
         tipo: "vip",
         cliente_id,
         modelo_id,
-        primeiraAssinatura
+        primeiraAssinatura,
+        novaExpiracao,
+        valorBase,
+        taxaCambioVip
       };
 
       fluxoProcessado = true;
@@ -3179,6 +3321,81 @@ if (valorEsperado > 0 && Math.abs(Number(valorPago) - Number(valorEsperado)) > 0
 
     } catch (e) {
       console.error("Erro emitir socket:", e);
+    }
+
+    // ── STRIPE SUBSCRIPTION — AUTO-RENOVAÇÃO VIP ─────────────────
+    if (dadosParaEmitir?.tipo === 'vip' && paymentIntentId) {
+      const { cliente_id: cId, modelo_id: mId, novaExpiracao: nExp, valorBase: vBase, taxaCambioVip: tCambio } = dadosParaEmitir;
+      (async () => {
+        try {
+          const vipCheck = await db.query(
+            'SELECT stripe_subscription_id FROM vip_subscriptions WHERE cliente_id = $1 AND modelo_id = $2',
+            [cId, mId]
+          );
+          if (vipCheck.rows[0]?.stripe_subscription_id) {
+            console.log('ℹ️ Stripe Subscription já existe:', vipCheck.rows[0].stripe_subscription_id);
+            return;
+          }
+
+          const custRes = await db.query('SELECT stripe_customer_id FROM clientes WHERE id = $1', [cId]);
+          const stripeCustomerId = custRes.rows[0]?.stripe_customer_id;
+          if (!stripeCustomerId) {
+            console.log('ℹ️ stripe_customer_id não encontrado para cliente:', cId);
+            return;
+          }
+
+          const pi = await stripe.paymentIntents.retrieve(paymentIntentId);
+          const pmId = pi.payment_method;
+          if (!pmId) {
+            console.log('ℹ️ payment_method não encontrado no PI:', paymentIntentId);
+            return;
+          }
+
+          try { await stripe.paymentMethods.attach(pmId, { customer: stripeCustomerId }); } catch (_) {}
+          await stripe.customers.update(stripeCustomerId, {
+            invoice_settings: { default_payment_method: pmId }
+          });
+
+          const valorTotalSub = Number((vBase * 1.15).toFixed(2));
+          const currencySub = currency || 'brl';
+          const valorComCambio = (tCambio && currencySub !== 'brl')
+            ? Number((valorTotalSub * tCambio).toFixed(2))
+            : valorTotalSub;
+
+          const expirationUnix = Math.floor(new Date(nExp).getTime() / 1000);
+
+          const sub = await stripe.subscriptions.create({
+            customer: stripeCustomerId,
+            default_payment_method: pmId,
+            items: [{
+              price_data: {
+                currency: currencySub,
+                unit_amount: stripeAmountFromValue(valorComCambio, currencySub),
+                recurring: { interval: 'month' },
+                product_data: { name: `VIP Velvet #${mId}` }
+              }
+            }],
+            trial_end: expirationUnix,
+            metadata: {
+              tipo: 'vip',
+              cliente_id: String(cId),
+              modelo_id: String(mId),
+              valor_assinatura: String(vBase)
+            }
+          });
+
+          await db.query(
+            `UPDATE vip_subscriptions
+             SET stripe_subscription_id = $1, recorrente = true, updated_at = NOW()
+             WHERE cliente_id = $2 AND modelo_id = $3`,
+            [sub.id, cId, mId]
+          );
+
+          console.log('✅ Stripe Subscription criada para auto-renovação VIP:', sub.id);
+        } catch (e) {
+          console.error('❌ Erro ao criar Stripe Subscription VIP:', e.message);
+        }
+      })();
     }
 
     // ── EMAIL FATURA STRIPE (fire-and-forget) ────────────────────
@@ -13790,9 +14007,13 @@ app.post("/api/pagamento/vip/criar-intent", authCliente, async (req, res) => {
       ? Number((valorTotal * taxa_cambio).toFixed(2))
       : valorTotal;
 
+    const stripeCustomerId = await getOrCreateStripeCustomer(client, cliente_id, email);
+
     const paymentIntent = await stripe.paymentIntents.create({
       amount: stripeAmountFromValue(valorTotalFinal, currency),
       currency,
+      customer: stripeCustomerId,
+      setup_future_usage: 'off_session',
       automatic_payment_methods: { enabled: true },
       payment_method_options: {
         card: { request_three_d_secure: "any" }
