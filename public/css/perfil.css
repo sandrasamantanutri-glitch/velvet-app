@@ -152,22 +152,22 @@ a{
 
 /* ── VIP BANNER ─────────────────────────────────────────── */
 .vip-card {
-  margin: 12px 16px;
+  margin: 12px auto;
+  max-width: 680px;
   border-radius: 18px;
   background: linear-gradient(135deg, #1a0533 0%, #2d1155 55%, #1a0533 100%);
   display: flex;
   align-items: stretch;
-  overflow: visible;
-  min-height: 160px;
+  overflow: hidden;
+  height: 185px;
   position: relative;
 }
 
 /* foto esquerda */
 .vip-card-foto-wrap {
-  position: relative;
-  flex: 0 0 38%;
-  max-width: 38%;
-  overflow: visible; /* deixa o bubble sair da coluna */
+  position: static; /* bubble fica relativo ao .vip-card */
+  flex: 0 0 36%;
+  max-width: 36%;
 }
 .vip-foto-clip {
   width: 100%;
@@ -182,11 +182,12 @@ a{
   object-position: top center;
   display: block;
 }
+/* bubble posicionado relativo ao .vip-card (position:relative) */
 .vip-bubble {
   position: absolute;
   bottom: 14px;
   left: 8px;
-  z-index: 20;
+  z-index: 10;
   background: #fff;
   color: #1a0533;
   font-size: 0.72rem;
@@ -1381,7 +1382,7 @@ transition:width 0.2s;
     position: absolute;
     z-index: 9999;
     left: calc(100% - 64px);
-    bottom: 48px;
+    bottom: 90px;
     top: auto;
     transform: none;
     width: 135px;
@@ -1449,7 +1450,7 @@ transition:width 0.2s;
     font-size: 22px;
     line-height: 1.2;
     font-weight: 800;
-    margin-left: 50%;
+    margin-left: 45%;
 }
 
 
