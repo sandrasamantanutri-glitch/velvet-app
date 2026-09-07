@@ -1018,10 +1018,69 @@ if (precoOriginalEl) {
   `${t("perfil.btn_assinar_prefix")} ${valorBRL(window.OFERTA_ATUAL.valor_promocional)}`;
 }
 
+    await exibirEquivalenteMoeda(window.OFERTA_ATUAL);
+
   } catch (err) {
     console.error("Erro ao carregar oferta:", err);
     ofertaCard.style.display = "none";
     window.OFERTA_ATUAL = null;
+  }
+}
+
+const PAIS_MOEDA = {
+  BR: null, // moeda da plataforma, sem conversão
+  CO: "COP", US: "USD", PT: "EUR", GB: "GBP", DE: "EUR",
+  AR: "ARS", CL: "CLP", MX: "MXN", PE: "PEN", UY: "UYU",
+  VE: "USD", ES: "EUR", FR: "EUR", IT: "EUR", NL: "EUR",
+  CH: "CHF", SE: "SEK", NO: "NOK", AU: "AUD", CA: "CAD", JP: "JPY"
+};
+
+const _fxCachePerfilLocal = {};
+
+async function exibirEquivalenteMoeda(oferta) {
+  const el        = document.getElementById("oferta-equivalente");
+  const elDesc    = document.getElementById("preco-desconto-moeda");
+  const elOrig    = document.getElementById("preco-original-moeda");
+  const elOrigWrap = document.getElementById("oferta-original-moeda-wrap");
+  if (!el || !elDesc) return;
+
+  let userData = window.__SESSION_DATA__;
+  if (!userData) {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+      const r = await fetch("/api/me", { headers: { Authorization: "Bearer " + token } });
+      if (r.ok) { userData = await r.json(); window.__SESSION_DATA__ = userData; }
+    } catch { return; }
+  }
+  const pais = userData?.pais || "BR";
+  const moeda = PAIS_MOEDA[pais];
+  if (!moeda) { el.style.display = "none"; return; }
+
+  try {
+    let taxa = _fxCachePerfilLocal[moeda];
+    if (!taxa) {
+      const r = await fetch(`/api/cambio?para=${moeda}`);
+      if (!r.ok) throw new Error();
+      const d = await r.json();
+      taxa = d.taxa;
+      _fxCachePerfilLocal[moeda] = taxa;
+    }
+
+    const fmt = (v) => (v * taxa).toLocaleString("en", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    elDesc.textContent = `${moeda} ${fmt(oferta.valor_promocional)}`;
+
+    if (oferta.desconto_percentual > 0 && elOrig && elOrigWrap) {
+      elOrig.textContent = `${moeda} ${fmt(oferta.valor_base)}`;
+      elOrigWrap.style.display = "block";
+    } else if (elOrigWrap) {
+      elOrigWrap.style.display = "none";
+    }
+
+    el.style.display = "block";
+  } catch {
+    el.style.display = "none";
   }
 }
 

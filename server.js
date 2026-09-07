@@ -5928,7 +5928,7 @@ app.get("/api/me", auth, async (req, res) => {
     if (req.user.role === "cliente") {
       const clienteRes = await db.query(
         `
-        SELECT c.id, c.nome, cd.avatar, cd.nome_exibicao
+        SELECT c.id, c.nome, c.pais, cd.avatar, cd.nome_exibicao
         FROM clientes c
         LEFT JOIN clientes_dados cd ON cd.cliente_id = c.id
         WHERE c.user_id = $1
@@ -5947,7 +5947,8 @@ app.get("/api/me", auth, async (req, res) => {
         user_id: req.user.id,
         role: "cliente",
         nome: c.nome_exibicao || c.nome || "Membro",
-        avatar: c.avatar || null
+        avatar: c.avatar || null,
+        pais: c.pais || "BR"
       });
     }
 
@@ -13872,7 +13873,8 @@ app.post("/api/pagamento/premium/cartao", authCliente, async (req, res) => {
 // O webhook /api/webhook/stripe processa payment_intent.succeeded.
 // ============================================================
 
-// ── Taxa de câmbio (proxy Frankfurter p/ evitar CSP no cliente) ──────────────
+// ── Taxa de câmbio (proxy p/ evitar CSP no cliente) ──────────────────────────
+// Tenta Frankfurter (BCE); fallback para exchangerate-api.com (suporta COP etc.)
 app.get("/api/cambio", async (req, res) => {
   const para = String(req.query.para || "").toUpperCase().replace(/[^A-Z]/g, "").slice(0, 3);
   if (para.length !== 3) return res.status(400).json({ error: "Moeda inválida" });
@@ -13880,8 +13882,14 @@ app.get("/api/cambio", async (req, res) => {
     const r = await fetch(`https://api.frankfurter.app/latest?from=BRL&to=${para}`);
     const d = await r.json();
     const taxa = d.rates?.[para];
-    if (!taxa) return res.status(404).json({ error: "Taxa não disponível" });
-    return res.json({ de: "BRL", para, taxa });
+    if (taxa) return res.json({ de: "BRL", para, taxa });
+  } catch { /* segue para fallback */ }
+  try {
+    const r2 = await fetch(`https://api.exchangerate-api.com/v4/latest/BRL`);
+    const d2 = await r2.json();
+    const taxa2 = d2.rates?.[para];
+    if (!taxa2) return res.status(404).json({ error: "Taxa não disponível" });
+    return res.json({ de: "BRL", para, taxa: taxa2 });
   } catch {
     return res.status(502).json({ error: "Serviço de câmbio indisponível" });
   }

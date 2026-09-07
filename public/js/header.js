@@ -70,6 +70,7 @@ async function initUsuario() {
     }
 
     const user = await res.json();
+    window.__SESSION_DATA__ = user;
 
     // 🔑 SEMPRE atualiza
     localStorage.setItem("role", user.role);
