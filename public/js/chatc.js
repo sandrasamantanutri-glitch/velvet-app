@@ -3,6 +3,63 @@
 // ===============================
 
 const token = localStorage.getItem("token");
+
+// ── i18n & câmbio para cards PPV ────────────────────────────────────────────
+const _PAIS_MOEDA_CHATC = {
+  CO:"COP", US:"USD", PT:"EUR", GB:"GBP", DE:"EUR", AR:"ARS", CL:"CLP",
+  MX:"MXN", PE:"PEN", UY:"UYU", VE:"USD", ES:"EUR", FR:"EUR", IT:"EUR",
+  NL:"EUR", CH:"CHF", SE:"SEK", NO:"NOK", AU:"AUD", CA:"CAD", JP:"JPY"
+};
+const _fxCacheChatc = {};
+
+function _chatcLang() {
+  return (typeof getCurrentLanguage === "function" ? getCurrentLanguage() : null)
+    || localStorage.getItem("idioma") || "pt";
+}
+
+function _midiaLabelChatc(n) {
+  const lang = _chatcLang();
+  if (lang === "es") return n === 1 ? "1 medio" : `${n} medios`;
+  if (lang === "en") return n === 1 ? "1 media" : `${n} media`;
+  return n === 1 ? "1 mídia" : `${n} mídias`;
+}
+
+function _midiaLabelDesbloqueadaChatc(n) {
+  const lang = _chatcLang();
+  if (lang === "es") return `🟢 ${n} medio${n !== 1 ? "s" : ""} desbloqueado${n !== 1 ? "s" : ""}`;
+  if (lang === "en") return `🟢 ${n} media unlocked`;
+  return `🟢 ${n} mídia${n !== 1 ? "s" : ""} desbloqueada${n !== 1 ? "s" : ""}`;
+}
+
+function _midiaLabelParcialChatc(countLiberado, countNovo) {
+  const lang = _chatcLang();
+  if (lang === "es") return `✨ Ya tienes ${countLiberado} · ${countNovo} nuevo${countNovo !== 1 ? "s" : ""}`;
+  if (lang === "en") return `✨ You have ${countLiberado} · ${countNovo} new`;
+  return `✨ Você já tem ${countLiberado} · ${countNovo} nova${countNovo !== 1 ? "s" : ""}`;
+}
+
+async function _getEquivalenteChatc(totalBRL) {
+  let userData = window.__SESSION_DATA__;
+  if (!userData) {
+    try {
+      const r = await fetch("/api/me", { headers: { Authorization: "Bearer " + token } });
+      if (r.ok) { userData = await r.json(); window.__SESSION_DATA__ = userData; }
+    } catch { return null; }
+  }
+  const moeda = _PAIS_MOEDA_CHATC[userData?.pais || "BR"];
+  if (!moeda) return null;
+  try {
+    let taxa = _fxCacheChatc[moeda];
+    if (!taxa) {
+      const r = await fetch(`/api/cambio?para=${moeda}`);
+      if (!r.ok) throw new Error();
+      taxa = (await r.json()).taxa;
+      _fxCacheChatc[moeda] = taxa;
+    }
+    const val = (totalBRL * taxa).toLocaleString("en", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return `≈ ${moeda} ${val}`;
+  } catch { return null; }
+}
 const role  = localStorage.getItem("role");
 
 const socket = io({
@@ -608,17 +665,28 @@ const cardLiberado =
 
           let statusTexto;
           if (msg.liberado) {
-            statusTexto = `🟢 ${totalMidias} mídia${totalMidias !== 1 ? "s" : ""} desbloqueada${totalMidias !== 1 ? "s" : ""}`;
+            statusTexto = _midiaLabelDesbloqueadaChatc(totalMidias);
           } else if (countLiberado > 0) {
-            statusTexto = `✨ Você já tem ${countLiberado} · ${countNovo} nova${countNovo !== 1 ? "s" : ""}`;
+            statusTexto = _midiaLabelParcialChatc(countLiberado, countNovo);
           } else {
-            statusTexto = `✨ ${totalMidias} mídia${totalMidias !== 1 ? "s" : ""}`;
+            statusTexto = `✨ ${_midiaLabelChatc(totalMidias)}`;
           }
+
+          const precoId = `preco-ppv-chatc-${msg.id}`;
+
+          // Injetar equivalente de moeda após renderização
+          setTimeout(() => {
+            _getEquivalenteChatc(Number(msg.preco)).then(equiv => {
+              if (!equiv) return;
+              const el = document.getElementById(precoId);
+              if (el) el.insertAdjacentHTML("afterend", `<span style="font-size:0.75rem;color:#6b7280;display:block;margin-top:1px;">${equiv}</span>`);
+            });
+          }, 0);
 
           return `
       <div class="conteudo-info">
         <span class="status-bloqueado">${statusTexto}</span>
-        <span class="preco-bloqueado">R$ ${Number(msg.preco).toFixed(2)}</span>
+        <span class="preco-bloqueado" id="${precoId}">R$ ${Number(msg.preco).toFixed(2)}</span>
       </div>`;
         })()
       : ""

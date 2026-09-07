@@ -18,6 +18,56 @@ let chatAtivo = null;
 const mensagensRenderizadas = new Set();
 const conteudosLiberados = new Set();
 let stripe;
+
+// ── i18n & câmbio para cards de PPV ────────────────────────────────────────
+const _PAIS_MOEDA_CHAT = {
+  CO:"COP", US:"USD", PT:"EUR", GB:"GBP", DE:"EUR", AR:"ARS", CL:"CLP",
+  MX:"MXN", PE:"PEN", UY:"UYU", VE:"USD", ES:"EUR", FR:"EUR", IT:"EUR",
+  NL:"EUR", CH:"CHF", SE:"SEK", NO:"NOK", AU:"AUD", CA:"CAD", JP:"JPY"
+};
+const _fxCacheChat = {};
+
+function _chatLang() {
+  return (typeof getCurrentLanguage === "function" ? getCurrentLanguage() : null)
+    || localStorage.getItem("idioma") || "pt";
+}
+
+function _midiaLabel(n) {
+  const lang = _chatLang();
+  if (lang === "es") return n === 1 ? "1 medio" : `${n} medios`;
+  if (lang === "en") return n === 1 ? "1 media" : `${n} media`;
+  return n === 1 ? "1 mídia" : `${n} mídias`;
+}
+
+function _desbloquearLabel() {
+  const lang = _chatLang();
+  if (lang === "es") return "Desbloquear";
+  if (lang === "en") return "Unlock";
+  return "Desbloquear";
+}
+
+async function _getEquivalenteChat(totalBRL) {
+  let userData = window.__SESSION_DATA__;
+  if (!userData) {
+    try {
+      const r = await fetch("/api/me", { headers: { Authorization: "Bearer " + token } });
+      if (r.ok) { userData = await r.json(); window.__SESSION_DATA__ = userData; }
+    } catch { return null; }
+  }
+  const moeda = _PAIS_MOEDA_CHAT[userData?.pais || "BR"];
+  if (!moeda) return null;
+  try {
+    let taxa = _fxCacheChat[moeda];
+    if (!taxa) {
+      const r = await fetch(`/api/cambio?para=${moeda}`);
+      if (!r.ok) throw new Error();
+      taxa = (await r.json()).taxa;
+      _fxCacheChat[moeda] = taxa;
+    }
+    const val = (totalBRL * taxa).toLocaleString("en", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return `≈ ${moeda} ${val}`;
+  } catch { return null; }
+}
 let elements;
 let pagamentoAtual = {};
 stripe = Stripe("pk_live_51Spb5lRtYLPrY4c3L6pxRlmkDK6E0OSU93T5B75V4pY39rJ3FVyPEa6ZDDgqUiY1XCCEay6uQcItbZY4EcAOkoJn00TtsQ8bbz");
@@ -464,21 +514,28 @@ function renderMensagem(msg) {
 
          <div class="conteudo-info">
   <span class="status-bloqueado">
-    ${msg.quantidade ?? 1} mídia(s)
+    ✨ ${_midiaLabel(msg.quantidade ?? 1)}
   </span>
 
-  <span class="preco-bloqueado">
+  <span class="preco-bloqueado" id="preco-ppv-${msg.id}">
     R$ ${Number(msg.preco).toFixed(2)}
   </span>
 
 <button class="btn-desbloquear"
   data-preco="${msg.preco}"
   data-message-id="${msg.id}">
-  Desbloquear
+  ${_desbloquearLabel()}
 </button>
 </div>
 </div>
       `;
+
+    // Injetar equivalente de moeda de forma assíncrona
+    _getEquivalenteChat(Number(msg.preco)).then(equiv => {
+      if (!equiv) return;
+      const el = document.getElementById(`preco-ppv-${msg.id}`);
+      if (el) el.insertAdjacentHTML("afterend", `<span style="font-size:0.75rem;color:#6b7280;display:block;margin-top:2px;">${equiv}</span>`);
+    });
     }
   }
 
