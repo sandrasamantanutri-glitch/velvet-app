@@ -1008,8 +1008,8 @@ async function carregarOfertaAtiva() {
         valorBRL(window.OFERTA_ATUAL.valor_promocional);
 }
 
-if (precoDestaqueEl) {
-  precoDestaqueEl.textContent =
+if (precoDescontoEl) {
+  precoDescontoEl.textContent =
     valorBRL(window.OFERTA_ATUAL.valor_promocional);
 }
 

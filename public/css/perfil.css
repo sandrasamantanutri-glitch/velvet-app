@@ -2413,7 +2413,7 @@ transition:width 0.2s;
     width: 100%;
     box-sizing: border-box;
 
-    padding: 20px 32px 17px;
+    padding: 20px 32px 0px;
 
     border-radius: 17px;
 
