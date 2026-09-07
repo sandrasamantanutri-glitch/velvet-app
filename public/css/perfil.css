@@ -2602,8 +2602,6 @@ transition:width 0.2s;
 
     font-weight: 800;
 
-    line-height: 1;
-
     box-shadow:
         0 5px 14px rgba(16, 185, 93, 0.22);
 
@@ -2780,14 +2778,14 @@ transition:width 0.2s;
 
 
 #oferta-equivalente strong {
-    color: #6b7280;
+    color: #8b3dff;
 
     font-weight: 600;
 }
 
 
 #oferta-equivalente span {
-    color: #9ca3af;
+    color: #8b3dff;
 }
 
 
