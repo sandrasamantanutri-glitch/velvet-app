@@ -1714,34 +1714,70 @@ transition:width 0.2s;
 
 
 /* =========================================================
-   TABLET
+   TABLET / ECRÃS MÉDIOS
+   1050px ou menos
    ========================================================= */
 
 @media (max-width: 1050px) {
 
     .vip-card {
-        grid-template-columns:
-            30%
-            minmax(0, 50%)
-            minmax(180px, 20%);
+        height: 250px;
+        min-height: 250px;
     }
 
+
+    /* -----------------------------------------
+       FOTO
+       ----------------------------------------- */
+
+    .vip-card-foto {
+        width: 120%;
+        height: 100%;
+    }
+
+
+    /* -----------------------------------------
+       INFORMAÇÕES
+       ----------------------------------------- */
 
     .vip-card-info {
-        padding-left: 15px;
-        padding-right: 8px;
+        padding: 18px 0 18px 25px;
     }
 
 
+    .vip-badge {
+        font-size: 17px;
+    }
+
+
+    .vip-card-titulo {
+        font-size: 25px;
+    }
+
+
+    .vip-card-desc {
+        max-width: 500px;
+        font-size: 13px;
+    }
+
+
+    /* -----------------------------------------
+       FEATURES
+       ----------------------------------------- */
+
     .vip-icons-row {
-        gap: 8px;
+        gap: 12px;
+
+        margin-top: 15px;
 
         font-size: 11px;
+
+        margin-left: 0;
     }
 
 
     .vip-icon {
-        font-size: 18px;
+        font-size: 17px;
     }
 
 
@@ -1750,163 +1786,619 @@ transition:width 0.2s;
     }
 
 
+    /* -----------------------------------------
+       CTA
+       ----------------------------------------- */
+
+    .vip-card-cta {
+        padding: 20px 15px;
+    }
+
+
     .vip-chat-btn {
+        max-width: 180px;
+
+        min-height: 48px;
+
         font-size: 13px;
 
-        padding-left: 12px;
-        padding-right: 12px;
+        padding: 0 12px;
+    }
+
+
+    .vip-btn-icon {
+        font-size: 16px;
+    }
+
+
+    .vip-btn-arrow {
+        font-size: 19px;
+    }
+
+
+    /* -----------------------------------------
+       BALÃO
+       ----------------------------------------- */
+
+    .vip-bubble {
+        left: calc(100% - 55px);
+
+        bottom: 42px;
+
+        width: 150px;
+        max-width: 150px;
+
+        padding: 9px 10px;
+
+        font-size: 12px;
+    }
+
+
+    /* -----------------------------------------
+       CORAÇÕES
+       ----------------------------------------- */
+
+    .vip-deco-heart--top {
+        right: 12px;
+        top: 7px;
+
+        font-size: 48px;
+    }
+
+
+    .vip-deco-heart--bottom {
+        right: 30px;
+        bottom: 12px;
+
+        font-size: 52px;
     }
 }
 
 
 /* =========================================================
    TABLET PEQUENO
+   850px ou menos
    ========================================================= */
 
 @media (max-width: 850px) {
 
     .vip-card {
-        grid-template-columns:
-            35%
-            minmax(0, 65%);
+        height: 235px;
+        min-height: 235px;
     }
 
 
-    .vip-card-cta {
-        position: absolute;
+    /* -----------------------------------------
+       FOTO
+       ----------------------------------------- */
 
-        right: 15px;
-        top: 50%;
-
-        transform: translateY(-50%);
-
-        width: 185px;
-
-        padding: 0;
+    .vip-card-foto {
+        width: 125%;
     }
 
+
+    /* -----------------------------------------
+       INFORMAÇÕES
+       ----------------------------------------- */
 
     .vip-card-info {
-        padding-right: 195px;
+        padding-left: 15px;
     }
 
 
+    .vip-badge {
+        font-size: 15px;
+    }
+
+
+    .vip-card-titulo {
+        font-size: 22px;
+    }
+
+
+    .vip-card-desc {
+        font-size: 12px;
+        max-width: 400px;
+    }
+
+
+    /* -----------------------------------------
+       FEATURES
+       ----------------------------------------- */
+
     .vip-icons-row {
+        gap: 8px;
+
+        margin-top: 13px;
+
+        font-size: 10px;
+    }
+
+
+    .vip-icon {
+        font-size: 15px;
+    }
+
+
+    .vip-icon-sep {
+        height: 16px;
+    }
+
+
+    /* -----------------------------------------
+       CTA
+       ----------------------------------------- */
+
+    .vip-card-cta {
+        padding: 15px 10px;
+    }
+
+
+    .vip-chat-btn {
+        max-width: 165px;
+
+        min-height: 45px;
+
+        font-size: 12px;
+
+        gap: 5px;
+    }
+
+
+    /* -----------------------------------------
+       BALÃO
+       ----------------------------------------- */
+
+    .vip-bubble {
+        left: calc(100% - 50px);
+
+        bottom: 35px;
+
+        width: 135px;
+        max-width: 135px;
+
+        font-size: 11px;
+    }
+
+
+    /* -----------------------------------------
+       CORAÇÕES
+       ----------------------------------------- */
+
+    .vip-deco-heart--top {
+        right: 8px;
+
+        font-size: 42px;
+    }
+
+
+    .vip-deco-heart--bottom {
+        right: 20px;
+
+        font-size: 46px;
+    }
+}
+
+
+/* =========================================================
+   TELEMÓVEL
+   650px ou menos
+   ========================================================= */
+
+@media (max-width: 650px) {
+
+    .vip-card {
+
+        display: flex;
+
+        flex-direction: column;
+
+        width: 100%;
+
+        height: auto;
+        min-height: 0;
+
+        overflow: visible;
+
+        border-radius: 18px;
+    }
+
+
+    /* =====================================================
+       FOTO
+       ===================================================== */
+
+    .vip-card-foto-wrap {
+
+        width: 100%;
+
+        height: 280px;
+        min-height: 280px;
+
+        flex: none;
+
+        border-radius: 18px 18px 0 0;
+
+        overflow: visible;
+    }
+
+
+    .vip-card-foto {
+
+        width: 100%;
+        height: 100%;
+
+        object-fit: cover;
+
+        object-position: center center;
+    }
+
+
+    /* Remove o degradê lateral no mobile */
+    .vip-card-foto-wrap::after {
+
+        width: 100%;
+
+        height: 35%;
+
+        top: auto;
+        right: 0;
+        bottom: 0;
+
+        background: linear-gradient(
+            to top,
+            rgba(23, 7, 47, 0.45),
+            transparent
+        );
+    }
+
+
+    /* =====================================================
+       BALÃO
+       ===================================================== */
+
+    .vip-bubble {
+
+        left: 18px;
+
+        bottom: 15px;
+
+        width: auto;
+        max-width: 150px;
+
+        padding: 10px 13px;
+
+        font-size: 13px;
+
+        border-radius: 13px;
+    }
+
+
+    .vip-bubble::after {
+
+        left: 28px;
+
+        bottom: -9px;
+    }
+
+
+    /* =====================================================
+       INFORMAÇÕES
+       ===================================================== */
+
+    .vip-card-info {
+
+        width: 100%;
+
+        min-width: 0;
+
+        box-sizing: border-box;
+
+        display: flex;
+
+        flex-direction: column;
+
+        align-items: center;
+
+        justify-content: center;
+
+        padding: 25px 20px 10px;
+
+        text-align: center;
+    }
+
+
+    /* =====================================================
+       BADGE
+       ===================================================== */
+
+    .vip-badge {
+
+        justify-content: center;
+
+        margin-bottom: 6px;
+
+        font-size: 17px;
+    }
+
+
+    /* =====================================================
+       TÍTULO
+       ===================================================== */
+
+    .vip-card-titulo {
+
+        justify-content: center;
+
+        width: 100%;
+
+        margin-bottom: 8px;
+
+        font-size: 24px;
+
+        line-height: 1.15;
+
+        white-space: normal;
+
+        text-align: center;
+    }
+
+
+    .vip-online-dot {
+
+        width: 10px;
+        height: 10px;
+
+        flex: 0 0 10px;
+    }
+
+
+    /* =====================================================
+       DESCRIÇÃO
+       ===================================================== */
+
+    .vip-card-desc {
+
+        width: 100%;
+
+        max-width: 500px;
+
+        font-size: 13px;
+
+        line-height: 1.4;
+
+        text-align: center;
+    }
+
+
+    /* =====================================================
+       FEATURES
+       ===================================================== */
+
+    .vip-icons-row {
+
+        width: 100%;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
         flex-wrap: wrap;
+
+        gap: 10px;
+
+        margin: 18px 0 0;
+
+        font-size: 12px;
 
         white-space: normal;
     }
 
 
+    .vip-feature {
+
+        gap: 5px;
+    }
+
+
+    .vip-icon {
+
+        font-size: 18px;
+    }
+
+
+    .vip-icon-sep {
+
+        display: none;
+    }
+
+
+    /* =====================================================
+       CTA
+       ===================================================== */
+
+    .vip-card-cta {
+
+        width: 100%;
+
+        box-sizing: border-box;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        padding: 15px 20px 25px;
+    }
+
+
+    .vip-chat-btn {
+
+        width: 100%;
+
+        max-width: 320px;
+
+        min-height: 52px;
+
+        font-size: 15px;
+
+        border-radius: 28px;
+    }
+
+
+    .vip-btn-icon {
+
+        font-size: 18px;
+    }
+
+
+    .vip-btn-arrow {
+
+        font-size: 21px;
+    }
+
+
+    /* =====================================================
+       CORAÇÕES
+       ===================================================== */
+
     .vip-deco-heart {
+
         display: none;
     }
 }
 
 
 /* =========================================================
-   MOBILE
+   TELEMÓVEL PEQUENO
+   480px ou menos
    ========================================================= */
 
-@media (max-width: 650px) {
-
-    .vip-card {
-        display: block;
-
-        width: 100%;
-
-        height: auto;
-        min-height: auto;
-
-        border-radius: 18px;
-    }
-
-
-    /* FOTO */
+@media (max-width: 480px) {
 
     .vip-card-foto-wrap {
-        width: 100%;
-        height: 280px;
-        min-height: 280px;
+
+        height: 240px;
+        min-height: 240px;
     }
 
-
-    /* INFORMAÇÕES */
 
     .vip-card-info {
-        display: block;
 
-        width: 100%;
-
-        padding: 24px 22px 10px;
+        padding: 22px 16px 8px;
     }
 
 
-    /* TÍTULO */
+    .vip-badge {
+
+        font-size: 15px;
+    }
+
 
     .vip-card-titulo {
-        font-size: 25px;
 
-        white-space: normal;
+        font-size: 21px;
     }
 
 
-    /* DESCRIÇÃO */
-
     .vip-card-desc {
+
+        font-size: 12px;
+    }
+
+
+    .vip-icons-row {
+
+        gap: 8px;
+
+        margin-top: 15px;
+
+        font-size: 11px;
+    }
+
+
+    .vip-icon {
+
+        font-size: 16px;
+    }
+
+
+    .vip-card-cta {
+
+        padding: 13px 16px 22px;
+    }
+
+
+    .vip-chat-btn {
+
+        max-width: 100%;
+
+        min-height: 50px;
+
         font-size: 14px;
     }
 
 
-    /* ÍCONES */
+    .vip-bubble {
+
+        left: 14px;
+
+        bottom: 13px;
+
+        max-width: 135px;
+
+        padding: 9px 11px;
+
+        font-size: 12px;
+    }
+}
+
+
+/* =========================================================
+   TELEMÓVEL MUITO PEQUENO
+   380px ou menos
+   ========================================================= */
+
+@media (max-width: 380px) {
+
+    .vip-card-foto-wrap {
+
+        height: 220px;
+        min-height: 220px;
+    }
+
+
+    .vip-card-titulo {
+
+        font-size: 20px;
+    }
+
+
+    .vip-card-desc {
+
+        font-size: 11px;
+    }
+
 
     .vip-icons-row {
-        display: flex;
 
-        flex-wrap: wrap;
+        font-size: 10px;
 
-        gap: 12px;
-
-        margin-top: 20px;
-
-        white-space: normal;
+        gap: 7px;
     }
 
 
-    /* Esconde divisórias no mobile */
+    .vip-icon {
 
-    .vip-icon-sep {
-        display: none;
+        font-size: 15px;
     }
 
-
-    /* CTA */
-
-    .vip-card-cta {
-        position: relative;
-        top: auto;
-        right: auto;
-        width: 100%;
-        transform: none;
-        padding: 15px 22px 25px;
-        z-index: 4;
-    }
-
-
-    /* Botão ocupa a largura */
 
     .vip-chat-btn {
-        width: 100%;
 
-        max-width: none;
-
-        min-height: 54px;
-    }
-
-
-    /* Corações */
-
-    .vip-deco-heart {
-        display: none;
+        font-size: 13px;
     }
 }
