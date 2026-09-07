@@ -846,8 +846,8 @@ async function aplicarRegrasDeAcesso() {
     if (btnAssinar && window.OFERTA_ATUAL) {
       btnAssinar.disabled = false;
       btnAssinar.style.display = "block";
-      btnAssinar.textContent =
-    `${t("perfil.btn_assinar_prefix")} ${valorBRL(window.OFERTA_ATUAL.valor_promocional)}`;
+      const _precoBotao = document.getElementById("preco-botao");
+      if (_precoBotao) _precoBotao.textContent = valorBRL(window.OFERTA_ATUAL.valor_promocional);
     }
 
     return;
@@ -912,8 +912,8 @@ async function aplicarRegrasDeAcesso() {
       btnAssinar.disabled = false;
       btnAssinar.style.display = "block";
       btnAssinar.style.cursor = "pointer";
-      btnAssinar.textContent =
-        `${t("perfil.btn_assinar_prefix")} ${valorBRL(window.OFERTA_ATUAL.valor_promocional)}`;
+      const _precoBotao = document.getElementById("preco-botao");
+      if (_precoBotao) _precoBotao.textContent = valorBRL(window.OFERTA_ATUAL.valor_promocional);
     }
   } catch (err) {
     console.error("Erro ao aplicar regras de acesso:", err);
@@ -932,6 +932,7 @@ async function carregarOfertaAtiva() {
   const precoOriginalEl = document.getElementById("preco-original");
   const precoDestaqueEl = document.getElementById("preco-destaque");
   const descontoEl = document.getElementById("oferta-desconto");
+  const precoBotaoEl = document.getElementById("preco-botao");
 
  if (!ofertaCard) {
   console.warn("ofertaCard não encontrado");
@@ -970,9 +971,7 @@ async function carregarOfertaAtiva() {
   if (descontoEl)
     descontoEl.style.display = "none";
 
-  if (btnAssinar)
-    btnAssinar.textContent =
-    `${t("perfil.btn_assinar_prefix")} ${valorBRL(valor)}`;
+  if (precoBotaoEl) precoBotaoEl.textContent = valorBRL(valor);
 
   ofertaCard.style.display = "block";
   return;
@@ -1023,8 +1022,7 @@ if (precoOriginalEl) {
 
     if (btnAssinar) {
   btnAssinar.disabled = false;
-  btnAssinar.textContent =
-  `${t("perfil.btn_assinar_prefix")} ${valorBRL(window.OFERTA_ATUAL.valor_promocional)}`;
+  if (precoBotaoEl) precoBotaoEl.textContent = valorBRL(window.OFERTA_ATUAL.valor_promocional);
 }
 
     await exibirEquivalenteMoeda(window.OFERTA_ATUAL);
