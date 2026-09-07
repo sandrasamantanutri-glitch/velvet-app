@@ -165,8 +165,8 @@ a{
 /* foto esquerda */
 .vip-card-foto-wrap {
   position: relative;
-  flex: 0 0 28%;
-  max-width: 28%;
+  flex: 0 0 38%;
+  max-width: 38%;
   overflow: visible;
 }
 .vip-foto-clip {
