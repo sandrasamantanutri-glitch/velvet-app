@@ -205,6 +205,8 @@
     "aceite_execucao": "Declaro que soy consciente de que el acceso al contenido/servicio digital es inmediato tras el pago y que, por ello, puedo perder el derecho de desistimiento.",
     "btn_pix": "⚡ Desbloquear con Pix",
     "btn_cartao": "💳 Desbloquear con tarjeta",
+    "btn_pagar_pix": "⚡ Pagar con Pix",
+    "btn_pagar_cartao": "💳 Pagar con tarjeta",
     "btn_voltar": "← Volver",
     "pix_loading": "⏳ Espera…",
     "pix_aguardando": "⌛ Esperando confirmación del pago...",

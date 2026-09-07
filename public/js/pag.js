@@ -182,6 +182,7 @@ function iniciarCartaoVip() {
 
   preencherResumoVIP({ valorBase, desconto });
 
+  document.getElementById("avisoRenovacaoAuto") && (document.getElementById("avisoRenovacaoAuto").style.display = "block");
   document.getElementById("cartaoLoading")?.classList.add("hidden");
   document.getElementById("cartaoSucesso")?.classList.add("hidden");
 }
@@ -206,6 +207,7 @@ function iniciarCartaoPremium() {
     descricao: premium.descricao || ""
   });
 
+  document.getElementById("avisoRenovacaoAuto") && (document.getElementById("avisoRenovacaoAuto").style.display = "none");
   document.getElementById("cartaoLoading")?.classList.add("hidden");
   document.getElementById("cartaoSucesso")?.classList.add("hidden");
 }
@@ -230,6 +232,7 @@ function iniciarCartaoMidia() {
     descricao: midia.descricao || ""
   });
 
+  document.getElementById("avisoRenovacaoAuto") && (document.getElementById("avisoRenovacaoAuto").style.display = "none");
   document.getElementById("cartaoLoading")?.classList.add("hidden");
   document.getElementById("cartaoSucesso")?.classList.add("hidden");
 }
@@ -390,7 +393,7 @@ async function renderFormCartao() {
         padding:12px 16px;margin-bottom:14px;font-size:0.93rem;
       ">
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
-          <span style="color:#6b7280;font-weight:600;font-size:0.78rem;text-transform:uppercase;letter-spacing:0.05em;">${t("pagamento.card_total_label")}</span>
+          <span style="color:#6b7280;font-weight:600;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.05em;">${t("pagamento.card_total_label")}</span>
           <strong id="stripe-valor-principal" style="color:#8b5cf6;font-size:1.1rem;">
             R$ ${valorBrlDisplay.toFixed(2).replace(".", ",")}
           </strong>
@@ -839,6 +842,42 @@ async function exibirEquivalentePixResumo(totalBRL) {
   }
 }
 
+async function exibirEquivalenteMidiaResumo(totalBRL) {
+  const elWrap = document.getElementById("midia-equivalente-moeda");
+  const elVal  = document.getElementById("midiaTotalMoeda");
+  if (!elWrap || !elVal) return;
+
+  let userData = window.__SESSION_DATA__;
+  if (!userData) {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+      const r = await fetch("/api/me", { headers: { Authorization: "Bearer " + token } });
+      if (r.ok) { userData = await r.json(); window.__SESSION_DATA__ = userData; }
+    } catch { return; }
+  }
+
+  const pais = userData?.pais || "BR";
+  const moeda = _PAIS_MOEDA_VIP[pais];
+  if (!moeda) { elWrap.style.display = "none"; return; }
+
+  try {
+    let taxa = _fxCacheVIP[moeda];
+    if (!taxa) {
+      const r = await fetch(`/api/cambio?para=${moeda}`);
+      if (!r.ok) throw new Error();
+      const d = await r.json();
+      taxa = d.taxa;
+      _fxCacheVIP[moeda] = taxa;
+    }
+    const fmt = (totalBRL * taxa).toLocaleString("en", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    elVal.textContent = `${moeda} ${fmt}`;
+    elWrap.style.display = "block";
+  } catch {
+    elWrap.style.display = "none";
+  }
+}
+
 function preencherResumoMidia({ valor = 0, desconto = 0, descricao = "" }) {
   valor    = Number(valor   || 0);
   desconto = Number(desconto || 0);
@@ -875,6 +914,23 @@ function preencherResumoMidia({ valor = 0, desconto = 0, descricao = "" }) {
         </ul>
       </div>
     `;
+  }
+
+  exibirEquivalenteMidiaResumo(total);
+
+  // Preenche também o resumo do PIX (mesmo bloco reutilizado do modal PIX)
+  const pixResumo = document.getElementById("pixResumoValor");
+  if (pixResumo) {
+    const fmt = v => v.toFixed(2).replace(".", ",");
+    const el = id => document.getElementById(id);
+    if (el("pixValorBase")) el("pixValorBase").textContent = fmt(valor);
+    if (el("pixDesconto")) el("pixDesconto").textContent = fmt(desconto);
+    if (el("pixTaxa")) el("pixTaxa").textContent = fmt(taxa);
+    if (el("pixTotal")) el("pixTotal").textContent = fmt(total);
+    const descontoRow = el("pixDescontoRow");
+    if (descontoRow) descontoRow.style.display = desconto > 0 ? "flex" : "none";
+    pixResumo.classList.remove("hidden");
+    exibirEquivalentePixResumo(total);
   }
 }
 

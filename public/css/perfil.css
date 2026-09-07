@@ -919,6 +919,7 @@ transition:width 0.2s;
   font-size:30px;
   background:rgba(0,0,0,0.18);
   backdrop-filter:blur(6px);
+  cursor: pointer;
 }
 
 .premium-placeholder{

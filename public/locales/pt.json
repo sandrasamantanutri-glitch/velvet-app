@@ -205,6 +205,8 @@
     "aceite_execucao": "Declaro ciência de que o acesso à mídia/serviço digital é imediato após o pagamento e que, com isso, posso perder o direito de arrependimento.",
     "btn_pix": "⚡ Desbloquear com Pix",
     "btn_cartao": "💳 Desbloquear com cartão",
+    "btn_pagar_pix": "⚡ Pagar com Pix",
+    "btn_pagar_cartao": "💳 Pagar com cartão",
     "btn_voltar": "← Voltar",
     "pix_loading": "⏳ Aguarde…",
     "pix_aguardando": "⌛ Aguardando confirmação do pagamento...",

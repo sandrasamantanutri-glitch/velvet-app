@@ -205,6 +205,8 @@
     "aceite_execucao": "I acknowledge that access to the digital media/service is immediate after payment and that I may therefore waive my right of withdrawal.",
     "btn_pix": "⚡ Unlock with Pix",
     "btn_cartao": "💳 Unlock with card",
+    "btn_pagar_pix": "⚡ Pay with Pix",
+    "btn_pagar_cartao": "💳 Pay with card",
     "btn_voltar": "← Back",
     "pix_loading": "⏳ Please wait…",
     "pix_aguardando": "⌛ Awaiting payment confirmation...",

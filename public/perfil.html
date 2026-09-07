@@ -180,6 +180,9 @@
       <span data-i18n="pagamento.linha_total">Total</span>
       <strong><span id="midiaTotal">0,00</span></strong>
     </div>
+    <div id="midia-equivalente-moeda" style="display:none;margin-top:8px;padding-top:6px;border-top:1px solid #e9d5ff;font-size:0.82rem;color:#6b7280;text-align:right;">
+      ≈ <strong id="midiaTotalMoeda"></strong>
+    </div>
   </div>
 </div>
 
@@ -242,11 +245,11 @@
 
 
 <div class="acoes-metodo">
-<button id="btnEscolherPix" type="button" class="btn-principal" onclick="abrirConfirmacaoVIP('pix')">
+<button id="btnEscolherPix" type="button" class="btn-principal" onclick="abrirConfirmacaoVIP('pix')" data-i18n="pagamento.btn_pagar_pix">
   ⚡ Pagar com Pix
 </button>
 
-<button id="btnEscolherCartao" type="button" class="btn-principal" onclick="abrirConfirmacaoVIP('cartao')">
+<button id="btnEscolherCartao" type="button" class="btn-principal" onclick="abrirConfirmacaoVIP('cartao')" data-i18n="pagamento.btn_pagar_cartao">
   💳 Pagar com cartão
 </button>
 </div>
@@ -334,7 +337,7 @@
       </div>
     </div>
 
-    <p style="font-size:0.78rem;color:#6b7280;text-align:center;margin:10px 0 8px;line-height:1.5;">
+    <p id="avisoRenovacaoAuto" style="display:none;font-size:0.78rem;color:#6b7280;text-align:center;margin:10px 0 8px;line-height:1.5;">
       <span data-i18n="pagamento.aviso_renovacao_auto">A assinatura possui renovação automática mensal. A renovação automática pode ser desativada a qualquer momento através de</span>
       <a href="/transacoes.html" style="color:#7b2cff;font-weight:600;text-decoration:underline;" data-i18n="pagamento.aviso_renovacao_link">Assinaturas e Pagamentos</a>.
     </p>
