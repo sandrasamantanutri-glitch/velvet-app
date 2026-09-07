@@ -233,6 +233,8 @@
     "card_expiry_label": "Validade",
     "card_cvv_label": "CVV",
     "card_secure_footer": "Pagamento processado com segurança pela Stripe",
+    "aviso_renovacao_auto": "A assinatura possui renovação automática mensal. A renovação automática pode ser desativada a qualquer momento através de",
+    "aviso_renovacao_link": "Assinaturas e Pagamentos",
     "card_total_label": "Total cobrado",
     "card_taxa_indicativa": "taxa indicativa",
     "card_holder_required": "Informe o nome como está no cartão.",

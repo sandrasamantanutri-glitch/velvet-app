@@ -273,6 +273,31 @@
     <strong data-i18n="pagamento.pix_sucesso">✅ Pagamento confirmado!</strong>
   </div>
 
+  <div id="pixResumoValor" class="hidden" style="
+    background:#f8f5ff;border:1.5px solid #e9d5ff;border-radius:12px;
+    padding:12px 16px;margin:10px 0 14px;font-size:0.88rem;color:#374151;
+  ">
+    <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+      <span data-i18n="pagamento.linha_assinatura">Valor da assinatura: R$</span>
+      <span id="pixValorBase">0,00</span>
+    </div>
+    <div id="pixDescontoRow" style="display:flex;justify-content:space-between;margin-bottom:4px;color:#10b981;">
+      <span data-i18n="pagamento.linha_desconto">Desconto: R$</span>
+      <span id="pixDesconto">0,00</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+      <span data-i18n="pagamento.linha_taxa">Taxa de transação: R$</span>
+      <span id="pixTaxa">0,00</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-weight:700;font-size:1rem;color:#7b2cff;border-top:1px solid #e9d5ff;padding-top:8px;">
+      <span data-i18n="pagamento.linha_total">Total</span>
+      <span>R$ <span id="pixTotal">0,00</span></span>
+    </div>
+    <div id="pix-equivalente-moeda" style="display:none;margin-top:6px;font-size:0.82rem;color:#6b7280;text-align:right;">
+      ≈ <strong id="pixTotalMoeda"></strong>
+    </div>
+  </div>
+
   <img id="pixQr" class="hidden" alt="QR Code Pix">
   <input type="text" id="pixCodigo" readonly class="hidden">
 
@@ -308,6 +333,11 @@
         <div id="stripe-card-form"></div>
       </div>
     </div>
+
+    <p style="font-size:0.78rem;color:#6b7280;text-align:center;margin:10px 0 8px;line-height:1.5;">
+      <span data-i18n="pagamento.aviso_renovacao_auto">A assinatura possui renovação automática mensal. A renovação automática pode ser desativada a qualquer momento através de</span>
+      <a href="/transacoes.html" style="color:#7b2cff;font-weight:600;text-decoration:underline;" data-i18n="pagamento.aviso_renovacao_link">Assinaturas e Pagamentos</a>.
+    </p>
 
     <button type="submit" id="btnConfirmarStripe" class="btn-principal" data-i18n="pagamento.btn_confirmar_stripe">
       Confirmar pagamento

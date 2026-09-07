@@ -741,6 +741,21 @@ function preencherResumoVIP({ valorBase = 0, desconto = 0 }) {
   document.getElementById("vipTotal").textContent =
     total.toFixed(2).replace(".", ",");
 
+  // Preenche também o resumo do PIX
+  const pixResumo = document.getElementById("pixResumoValor");
+  if (pixResumo) {
+    const fmt = v => v.toFixed(2).replace(".", ",");
+    const el = id => document.getElementById(id);
+    if (el("pixValorBase")) el("pixValorBase").textContent = fmt(valorBase);
+    if (el("pixDesconto")) el("pixDesconto").textContent = fmt(desconto);
+    if (el("pixTaxa")) el("pixTaxa").textContent = fmt(taxa);
+    if (el("pixTotal")) el("pixTotal").textContent = fmt(total);
+    const descontoRow = el("pixDescontoRow");
+    if (descontoRow) descontoRow.style.display = desconto > 0 ? "flex" : "none";
+    pixResumo.classList.remove("hidden");
+    exibirEquivalentePixResumo(total);
+  }
+
   exibirEquivalenteVIP(total);
 }
 
@@ -755,6 +770,42 @@ const _fxCacheVIP = {};
 async function exibirEquivalenteVIP(totalBRL) {
   const elWrap = document.getElementById("vip-equivalente-moeda");
   const elVal  = document.getElementById("vipTotalMoeda");
+  if (!elWrap || !elVal) return;
+
+  let userData = window.__SESSION_DATA__;
+  if (!userData) {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+      const r = await fetch("/api/me", { headers: { Authorization: "Bearer " + token } });
+      if (r.ok) { userData = await r.json(); window.__SESSION_DATA__ = userData; }
+    } catch { return; }
+  }
+
+  const pais = userData?.pais || "BR";
+  const moeda = _PAIS_MOEDA_VIP[pais];
+  if (!moeda) { elWrap.style.display = "none"; return; }
+
+  try {
+    let taxa = _fxCacheVIP[moeda];
+    if (!taxa) {
+      const r = await fetch(`/api/cambio?para=${moeda}`);
+      if (!r.ok) throw new Error();
+      const d = await r.json();
+      taxa = d.taxa;
+      _fxCacheVIP[moeda] = taxa;
+    }
+    const fmt = (totalBRL * taxa).toLocaleString("en", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    elVal.textContent = `${moeda} ${fmt}`;
+    elWrap.style.display = "block";
+  } catch {
+    elWrap.style.display = "none";
+  }
+}
+
+async function exibirEquivalentePixResumo(totalBRL) {
+  const elWrap = document.getElementById("pix-equivalente-moeda");
+  const elVal  = document.getElementById("pixTotalMoeda");
   if (!elWrap || !elVal) return;
 
   let userData = window.__SESSION_DATA__;

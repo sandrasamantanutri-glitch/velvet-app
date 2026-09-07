@@ -233,6 +233,8 @@
     "card_expiry_label": "Expiry",
     "card_cvv_label": "CVV",
     "card_secure_footer": "Payment securely processed by Stripe",
+    "aviso_renovacao_auto": "The subscription has automatic monthly renewal. Automatic renewal can be disabled at any time through",
+    "aviso_renovacao_link": "Subscriptions & Payments",
     "card_total_label": "Total charged",
     "card_taxa_indicativa": "indicative rate",
     "card_holder_required": "Please enter the name as it appears on the card.",
