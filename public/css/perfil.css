@@ -239,7 +239,7 @@ a{
 }
 .vip-icons-row span {
   color: #e0d0f8;
-  font-size: 0.67rem;
+  font-size: 1rem;
   display: flex;
   align-items: center;
   gap: 3px;
@@ -1274,15 +1274,9 @@ transition:width 0.2s;
    ========================================================= */
 
 .vip-card {
-    display: grid;
-
-    /* FOTO 28% | INFORMAÇÕES 52% | CTA 20% */
-    grid-template-columns: 28% minmax(0, 52%) minmax(180px, 20%);
-
-    width: 100%;
+    display: flex;
     height: 265px;
     min-height: 265px;
-
     position: relative;
     overflow: hidden;
 
@@ -1425,24 +1419,13 @@ transition:width 0.2s;
 
 .vip-card-info {
     grid-column: 2;
-
     min-width: 0;
-
     display: flex;
-
     flex-direction: column;
-
     justify-content: center;
-
     align-items: flex-start;
-
-    /*
-       Pouco espaço entre a foto e o texto.
-    */
-    padding: 20px 10px 20px 18px;
-
+    padding: 20px 8px 20px 8px;
     position: relative;
-
     z-index: 3;
 }
 
@@ -1453,17 +1436,11 @@ transition:width 0.2s;
 
 .vip-badge {
     display: flex;
-
     align-items: center;
-
     margin-bottom: 4px;
-
     color: #ffd66e;
-
-    font-size: 12px;
-
+    font-size: 22px;
     line-height: 1.2;
-
     font-weight: 800;
 }
 
@@ -1520,15 +1497,10 @@ transition:width 0.2s;
 
 .vip-card-desc {
     margin: 0;
-
     max-width: 570px;
-
     color: rgba(255, 255, 255, 0.78);
-
-    font-size: 13px;
-
+    font-size: 16px;
     line-height: 1.35;
-
     font-weight: 400;
 }
 
