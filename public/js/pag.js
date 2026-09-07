@@ -334,7 +334,10 @@ async function renderFormCartao() {
     currentPaymentIntentId = data.payment_id;
     pagamentoAtual.payment_id = data.payment_id;
 
-    const stripeLocale = { pt: "pt-BR", es: "es", en: "en" }[localStorage.getItem("lang") || "pt"] || "auto";
+    const stripeLocale = { pt: "pt-BR", es: "es", en: "en" }[
+      (typeof getCurrentLanguage === "function" ? getCurrentLanguage() : null) ||
+      localStorage.getItem("idioma") || localStorage.getItem("lang") || "pt"
+    ] || "auto";
     stripeElements = stripe.elements({
       clientSecret: data.client_secret,
       locale: stripeLocale,
