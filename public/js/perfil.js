@@ -1180,6 +1180,13 @@ async function carregarFeed() {
       return;
     }
 
+    // Atualiza a foto do banner VIP com a primeira mídia do feed
+    const vipFoto = document.getElementById("vip-feed-foto");
+    if (vipFoto && midias[0]) {
+      const primeiraUrl = midias[0].thumbnail_url || midias[0].url || "";
+      if (primeiraUrl) vipFoto.src = primeiraUrl;
+    }
+
     midias.forEach(item => {
 
       const div = document.createElement("div");

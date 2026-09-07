@@ -2042,9 +2042,20 @@ await client.query(
       console.log("transacoes_agency (vip) inserido");
 
       if (primeiraAssinatura) {
-        const _boasVindas2038 = modelo_id === 859
-          ? "¡Hola!! Bienvenido(a), cuál es tu nombre?🥰"
-          : "Oii!! Bem vindo(a), qual seu nome?🥰";
+        const _PAISES_ES = new Set([
+          "AR","BO","CL","CO","CR","CU","DO","EC","SV","GT",
+          "HN","MX","NI","PA","PY","PE","PR","ES","UY","VE","GQ"
+        ]);
+        const _clientePaisRow = await client.query(
+          "SELECT pais FROM clientes WHERE id = $1", [cliente_id]
+        );
+        const _clientePais = _clientePaisRow.rows[0]?.pais || "BR";
+        const _boasVindas2038 =
+          (_clientePais === "BR" || _clientePais === "PT")
+            ? "Oii!! Bem vindo(a), qual seu nome?🥰"
+            : _PAISES_ES.has(_clientePais)
+              ? "¡Hola!! Bienvenido(a), cuál es tu nombre?🥰"
+              : "Hii!! Welcome! What's your name? 🥰";
         await client.query(
           `
           INSERT INTO messages (

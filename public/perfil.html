@@ -69,12 +69,43 @@
 
 <!-- CARD EXCLUSIVO VIP -->
 <div class="vip-card hidden" id="vip-card">
-  <div class="vip-card-content">
-<div class="vip-badge" data-i18n="perfil.vip_badge">👑 VIP ATIVO</div>
-<button class="vip-chat-btn" id="btn-vip-chat" data-i18n="perfil.btn_vip_chat">
-  💬 Vem falar comigo
-</button>
+
+  <!-- FOTO DO FEED -->
+  <div class="vip-card-foto-wrap">
+    <img id="vip-feed-foto" class="vip-card-foto" src="" alt="">
+    <div class="vip-bubble" data-i18n="perfil.vip_bubble">Vem conversar comigo? 💜</div>
   </div>
+
+  <!-- INFORMAÇÕES -->
+  <div class="vip-card-info">
+    <div class="vip-badge" data-i18n="perfil.vip_badge">👑 VIP ATIVO</div>
+    <h3 class="vip-card-titulo">
+      <span data-i18n="perfil.vip_chat_titulo">Meu chat está aberto</span>
+      <span class="vip-online-dot"></span>
+    </h3>
+    <p class="vip-card-desc" data-i18n="perfil.vip_chat_desc">
+      Mais fotos, vídeos, conteúdos e conversas exclusivas te esperam aqui. 💜
+    </p>
+    <div class="vip-icons-row">
+      <span><span class="vip-icon">🖼</span><span data-i18n="perfil.vip_icon_fotos">Fotos</span></span>
+      <span class="vip-icon-sep">|</span>
+      <span><span class="vip-icon">▶</span><span data-i18n="perfil.vip_icon_videos">Vídeos</span></span>
+      <span class="vip-icon-sep">|</span>
+      <span><span class="vip-icon">💬</span><span data-i18n="perfil.vip_icon_chat">Chat</span></span>
+      <span class="vip-icon-sep">|</span>
+      <span><span class="vip-icon">✦</span><span data-i18n="perfil.vip_icon_especial">Conteúdo especial</span></span>
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <div class="vip-card-cta">
+    <div class="vip-deco-heart vip-deco-heart--top"></div>
+    <button class="vip-chat-btn" id="btn-vip-chat" data-i18n="perfil.vip_btn_ir_chat">
+      💬 Ir para o chat →
+    </button>
+    <div class="vip-deco-heart vip-deco-heart--bottom"></div>
+  </div>
+
 </div>
 
 <div class="midias-section">
