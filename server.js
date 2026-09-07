@@ -13885,21 +13885,31 @@ app.post("/api/pagamento/premium/cartao", authCliente, async (req, res) => {
 // ============================================================
 
 // ── Taxa de câmbio (proxy p/ evitar CSP no cliente) ──────────────────────────
-// Tenta Frankfurter (BCE); fallback para exchangerate-api.com (suporta COP etc.)
+// Cache servidor: 1 busca por moeda por dia (24h)
+const _cambioCacheSrv = {};
 app.get("/api/cambio", async (req, res) => {
   const para = String(req.query.para || "").toUpperCase().replace(/[^A-Z]/g, "").slice(0, 3);
   if (para.length !== 3) return res.status(400).json({ error: "Moeda inválida" });
+
+  const cached = _cambioCacheSrv[para];
+  if (cached && Date.now() - cached.ts < 86_400_000)
+    return res.json({ de: "BRL", para, taxa: cached.taxa });
+
   try {
     const r = await fetch(`https://api.frankfurter.app/latest?from=BRL&to=${para}`);
     const d = await r.json();
     const taxa = d.rates?.[para];
-    if (taxa) return res.json({ de: "BRL", para, taxa });
+    if (taxa) {
+      _cambioCacheSrv[para] = { taxa, ts: Date.now() };
+      return res.json({ de: "BRL", para, taxa });
+    }
   } catch { /* segue para fallback */ }
   try {
     const r2 = await fetch(`https://api.exchangerate-api.com/v4/latest/BRL`);
     const d2 = await r2.json();
     const taxa2 = d2.rates?.[para];
     if (!taxa2) return res.status(404).json({ error: "Taxa não disponível" });
+    _cambioCacheSrv[para] = { taxa: taxa2, ts: Date.now() };
     return res.json({ de: "BRL", para, taxa: taxa2 });
   } catch {
     return res.status(502).json({ error: "Serviço de câmbio indisponível" });
