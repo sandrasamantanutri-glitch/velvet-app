@@ -681,7 +681,7 @@ const cardLiberado =
             _getEquivalenteChatc(Number(msg.preco)).then(equiv => {
               if (!equiv) return;
               const el = document.getElementById(precoId);
-              if (el) el.insertAdjacentHTML("afterend", `<span style="font-size:0.75rem;color:#6b7280;display:block;margin-top:1px;text-align:left;">${equiv}</span>`);
+              if (el) el.insertAdjacentHTML("afterend", `<span style="font-size:0.75rem;color:#6b7280;display:block;margin-top:1px;text-align:center;">${equiv}</span>`);
             });
           }, 0);
 

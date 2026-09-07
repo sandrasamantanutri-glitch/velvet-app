@@ -134,13 +134,7 @@
       </div>
 
       <div class="termos-pagamento">
-        <p class="termos-aviso">
-          <span data-i18n="chatc.terms_intro">Ao efetuar o pagamento, você confirma que está de acordo com os</span>
-          <a href="/terms.html" target="_blank" rel="noopener noreferrer" data-i18n="chatc.terms_link1">Termos de Uso</a>
-          <span data-i18n="chatc.terms_and">e com as</span>
-          <a href="/policies.html" target="_blank" rel="noopener noreferrer" data-i18n="chatc.terms_link2">Políticas de Utilização</a>.
-        </p>
-        <label class="termos-check-linha" for="aceiteTermosPagamento">
+        <label class="termos-aviso" for="aceiteTermosPagamento">
           <input type="checkbox" id="aceiteTermosPagamento" required />
           <span>
             <span data-i18n="chatc.terms_check_intro">Li e aceito os</span>
@@ -180,6 +174,30 @@
 
       <div id="pixSucesso" class="pix-sucesso hidden">
         <strong data-i18n="chatc.pix_success">✅ Pagamento confirmado!</strong>
+      </div>
+
+      <div id="pixResumoValor" class="hidden" style="
+        background:#f8f5ff;border:1.5px solid #e9d5ff;border-radius:12px;
+        padding:12px 16px;margin:10px 0 14px;font-size:0.88rem;color:#374151;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+          <span data-i18n="pagamento.midia_linha_valor">Valor Mídia</span>
+          <span>R$ <span id="pixValorBase">0,00</span></span>
+        </div>
+        <div id="pixDescontoRow" style="display:flex;justify-content:space-between;margin-bottom:4px;color:#10b981;">
+          <span data-i18n="chatc.label_desconto">Desconto</span>
+          <span>− R$ <span id="pixDesconto">0,00</span></span>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+          <span data-i18n="pagamento.midia_linha_taxa">Taxa de transação</span>
+          <span>R$ <span id="pixTaxa">0,00</span></span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-weight:700;font-size:1rem;color:#7b2cff;border-top:1px solid #e9d5ff;padding-top:8px;">
+          <span data-i18n="chatc.label_total_row">Total</span>
+          <span>R$ <span id="pixTotal">0,00</span></span>
+        </div>
+        <div id="pix-equivalente-moeda" style="display:none;margin-top:6px;font-size:0.82rem;color:#6b7280;text-align:right;">
+          ≈ <strong id="pixTotalMoeda"></strong>
+        </div>
       </div>
 
       <img id="pixQr" class="hidden" alt="QR Code Pix">
