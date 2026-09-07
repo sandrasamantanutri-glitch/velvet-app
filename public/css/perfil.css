@@ -152,22 +152,22 @@ a{
 
 /* ── VIP BANNER ─────────────────────────────────────────── */
 .vip-card {
-  margin: 12px auto;
-  max-width: 680px;
+  margin: 12px 16px;
   border-radius: 18px;
   background: linear-gradient(135deg, #1a0533 0%, #2d1155 55%, #1a0533 100%);
   display: flex;
   align-items: stretch;
-  overflow: hidden;
-  height: 185px;
+  overflow: visible;
+  min-height: 160px;
   position: relative;
 }
 
 /* foto esquerda */
 .vip-card-foto-wrap {
-  position: static; /* bubble fica relativo ao .vip-card */
-  flex: 0 0 36%;
-  max-width: 36%;
+  position: relative;
+  flex: 0 0 38%;
+  max-width: 38%;
+  overflow: visible;
 }
 .vip-foto-clip {
   width: 100%;
