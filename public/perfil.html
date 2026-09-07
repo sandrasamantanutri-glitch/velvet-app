@@ -43,35 +43,125 @@
   </a>
   </div>
   
-  <div class="oferta-card" id="oferta-card">
+ <div class="oferta-card" id="oferta-card">
 
-<div class="oferta-card-header">
-  <div class="oferta-titulo" data-i18n="perfil.oferta_titulo">💎 Oferta Assinatura</div>
-  <div class="oferta-badge-desconto" id="oferta-badge-desconto" style="display:none"></div>
+    <!-- CABEÇALHO -->
+    <div class="oferta-card-header">
+
+        <div class="oferta-info">
+
+            <div class="oferta-titulo"
+                 data-i18n="perfil.oferta_titulo">
+                💎 Oferta Assinatura
+            </div>
+
+            <div class="oferta-descricao">
+                Tenha acesso ao meu conteúdo, mais fotos, vídeos e converse comigo. 💜
+            </div>
+
+        </div>
+
+
+        <!-- PREÇO -->
+        <div class="oferta-preco-box">
+
+            <div class="oferta-preco-antigo">
+                <span id="preco-original"></span>
+            </div>
+
+            <div class="oferta-agora">
+                Agora por apenas
+            </div>
+
+            <div class="oferta-preco-destaque">
+                <strong id="preco-desconto"></strong>
+            </div>
+
+        </div>
+
+
+        <!-- DESCONTO -->
+        <div
+            class="oferta-badge-desconto"
+            id="oferta-badge-desconto"
+            style="display:none">
+        </div>
+
+    </div>
+
+
+    <!-- BOTÃO -->
+    <button class="oferta-botao" id="btn-assinar">
+
+        <span class="oferta-btn-icon">👑</span>
+
+        <span data-i18n="perfil.btn_assinar_prefix">
+            Assinar agora por
+        </span>
+
+        <span id="preco-botao"></span>
+
+        <span class="oferta-btn-arrow">→</span>
+
+    </button>
+
+
+    <!-- BENEFÍCIOS -->
+    <div class="oferta-beneficios">
+
+        <div class="oferta-beneficio">
+            <span class="oferta-beneficio-icon">▧</span>
+            <span>Mais fotos</span>
+        </div>
+
+        <div class="oferta-beneficio-sep"></div>
+
+        <div class="oferta-beneficio">
+            <span class="oferta-beneficio-icon">▶</span>
+            <span>Mais vídeos</span>
+        </div>
+
+        <div class="oferta-beneficio-sep"></div>
+
+        <div class="oferta-beneficio">
+            <span class="oferta-beneficio-icon">▢</span>
+            <span>Converse comigo</span>
+        </div>
+
+        <div class="oferta-beneficio-sep"></div>
+
+        <div class="oferta-beneficio oferta-seguranca">
+            <span class="oferta-beneficio-icon">🔒</span>
+            <span>Pagamento seguro e discreto</span>
+        </div>
+
+    </div>
+
+
+    <!-- CONVERSÃO -->
+    <div
+        id="oferta-equivalente"
+        style="display:none;">
+
+        <div>
+            ≈
+            <strong id="preco-desconto-moeda"></strong>
+            <span>/mês</span>
+        </div>
+
+        <div id="oferta-original-moeda-wrap" style="display:none;">
+
+            <span data-i18n="perfil.oferta_preco_original_label">
+                Preço original:
+            </span>
+
+            <span id="preco-original-moeda"></span>
+
+        </div>
+
+    </div>
+
 </div>
-
-<div class="oferta-preco-destaque">
-    <span>Agora por apenas</span>
-    <strong id="preco-destaque"></strong>
-</div>
-
-<button class="oferta-botao" id="btn-assinar">
-  <span data-i18n="perfil.btn_assinar_prefix">Assinar agora por</span> <span id="preco-desconto"></span>
-</button>
-
-<div class="oferta-preco-original">
-  <span data-i18n="perfil.oferta_preco_original_label">Preço original:</span>
-  <span id="preco-original"></span>
-</div>
-
-<div id="oferta-equivalente" style="display:none; margin-top:8px; font-size:0.82rem; color:#6b7280; text-align:right;">
-  <div>≈ <strong id="preco-desconto-moeda"></strong> <span style="opacity:0.6;">/mês</span></div>
-  <div id="oferta-original-moeda-wrap" style="display:none;">
-    <span data-i18n="perfil.oferta_preco_original_label">Preço original:</span> <span id="preco-original-moeda"></span>
-  </div>
-</div>
-  </div>
-
 <!-- CARD EXCLUSIVO VIP -->
 <div class="vip-card hidden" id="vip-card">
 
@@ -122,15 +212,6 @@
       <span class="vip-feature">
         <span class="vip-icon">💬</span>
         <span data-i18n="perfil.vip_icon_chat">Chat</span>
-      </span>
-
-      <span class="vip-icon-sep"></span>
-
-      <span class="vip-feature">
-        <span class="vip-icon">💫</span>
-        <span data-i18n="perfil.vip_icon_especial">
-          Conteúdo especial
-        </span>
       </span>
 
     </div>

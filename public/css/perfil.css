@@ -2404,35 +2404,30 @@ transition:width 0.2s;
 }
 
 /* =========================================================
-   OFERTA DE ASSINATURA — VELVET
+   OFERTA ASSINATURA — VELVET
    ========================================================= */
 
 .oferta-card {
     position: relative;
 
     width: 100%;
-    max-width: 100%;
-
     box-sizing: border-box;
 
-    padding: 22px 24px 20px;
+    padding: 20px 32px 17px;
 
-    border-radius: 18px;
+    border-radius: 17px;
 
     background:
         linear-gradient(
             135deg,
-            #fcfaff 0%,
-            #f8f1ff 55%,
-            #fbf9ff 100%
+            #fdfaff 0%,
+            #f8f0ff 100%
         );
 
     border: 1px solid rgba(124, 58, 237, 0.10);
 
     box-shadow:
         0 8px 25px rgba(124, 58, 237, 0.08);
-
-    overflow: visible;
 }
 
 
@@ -2441,16 +2436,31 @@ transition:width 0.2s;
    ========================================================= */
 
 .oferta-card-header {
+    position: relative;
+
     display: flex;
 
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
 
     width: 100%;
 
-    min-height: 38px;
+    min-height: 60px;
 
-    margin-bottom: 14px;
+    padding-right: 130px;
+
+    box-sizing: border-box;
+}
+
+
+/* =========================================================
+   INFORMAÇÕES ESQUERDA
+   ========================================================= */
+
+.oferta-info {
+    min-width: 0;
+
+    padding-top: 2px;
 }
 
 
@@ -2476,10 +2486,95 @@ transition:width 0.2s;
 
 
 /* =========================================================
-   BADGE DE DESCONTO
+   DESCRIÇÃO
+   ========================================================= */
+
+.oferta-descricao {
+    margin-top: 6px;
+
+    color: #7623d9;
+
+    font-size: 13px;
+
+    line-height: 1.35;
+
+    font-weight: 500;
+}
+
+
+/* =========================================================
+   PREÇO
+   ========================================================= */
+
+.oferta-preco-box {
+    position: absolute;
+
+    top: 0;
+    right: 55px;
+
+    min-width: 145px;
+
+    text-align: left;
+}
+
+
+/* Preço antigo */
+
+.oferta-preco-antigo {
+    color: #7b7285;
+
+    font-size: 13px;
+
+    line-height: 1.1;
+
+    text-decoration: line-through;
+}
+
+
+/* "Agora por apenas" */
+
+.oferta-agora {
+    margin-top: 2px;
+
+    color: #6b21d8;
+
+    font-size: 12px;
+
+    line-height: 1.15;
+
+    font-weight: 500;
+}
+
+
+/* Preço promocional */
+
+.oferta-preco-destaque {
+    margin-top: 1px;
+
+    color: #4c16c7;
+
+    font-size: 27px;
+
+    line-height: 1;
+
+    font-weight: 900;
+}
+
+.oferta-preco-destaque strong {
+    font-weight: 900;
+}
+
+
+/* =========================================================
+   BADGE
    ========================================================= */
 
 .oferta-badge-desconto {
+    position: absolute;
+
+    top: 0;
+    right: 0;
+
     display: flex;
 
     align-items: center;
@@ -2497,55 +2592,48 @@ transition:width 0.2s;
     background:
         linear-gradient(
             135deg,
-            #16c968 0%,
-            #0bb85b 100%
+            #16c968,
+            #0bb85b
         );
 
-    color: #ffffff;
+    color: #fff;
 
-    font-size: 15px;
+    font-size: 14px;
 
     font-weight: 800;
 
     line-height: 1;
 
-    white-space: nowrap;
-
     box-shadow:
         0 5px 14px rgba(16, 185, 93, 0.22);
-}
 
+    white-space: nowrap;
 
-/*
-   Quando o JavaScript colocar display:none,
-   continua escondido normalmente.
-*/
-.oferta-badge-desconto[style*="display:none"] {
-    display: none !important;
+    z-index: 5;
 }
 
 
 /* =========================================================
-   BOTÃO DE ASSINATURA
+   BOTÃO
    ========================================================= */
 
 .oferta-botao {
-    position: relative;
-
     display: flex;
 
     align-items: center;
     justify-content: center;
 
+    gap: 8px;
+
     width: 100%;
 
-    min-height: 54px;
+    height: 55px;
+
+    margin: 10px 0 0;
+
+    padding: 0 20px;
 
     box-sizing: border-box;
-
-    padding: 0 25px;
-
-    margin: 0;
 
     border: none;
 
@@ -2553,9 +2641,9 @@ transition:width 0.2s;
 
     background:
         linear-gradient(
-            135deg,
-            #7623ff 0%,
-            #862cff 50%,
+            110deg,
+            #a34cff 0%,
+            #8128ff 45%,
             #7020ed 100%
         );
 
@@ -2563,107 +2651,142 @@ transition:width 0.2s;
 
     font-family: inherit;
 
-    font-size: 18px;
-
-    line-height: 1.2;
+    font-size: 17px;
 
     font-weight: 800;
-
-    text-align: center;
 
     cursor: pointer;
 
     box-shadow:
-        0 7px 18px rgba(124, 58, 237, 0.22);
+        0 8px 20px rgba(124, 58, 237, 0.25);
 
     transition:
-        transform 0.2s ease,
-        box-shadow 0.2s ease,
-        filter 0.2s ease;
+        transform .2s ease,
+        box-shadow .2s ease;
 }
 
-
-/* Hover */
 
 .oferta-botao:hover {
     transform: translateY(-1px);
 
-    filter: brightness(1.04);
-
     box-shadow:
-        0 10px 24px rgba(124, 58, 237, 0.30);
+        0 11px 25px rgba(124, 58, 237, 0.32);
 }
 
-
-/* Clique */
 
 .oferta-botao:active {
     transform: translateY(0);
+}
 
-    box-shadow:
-        0 5px 14px rgba(124, 58, 237, 0.20);
+
+.oferta-btn-icon {
+    font-size: 20px;
+
+    line-height: 1;
+}
+
+
+.oferta-btn-arrow {
+    margin-left: 3px;
+
+    font-size: 23px;
+
+    line-height: 1;
 }
 
 
 /* =========================================================
-   PREÇO ORIGINAL
+   BENEFÍCIOS
    ========================================================= */
 
-.oferta-preco-original {
+.oferta-beneficios {
     display: flex;
 
     align-items: center;
-    justify-content: flex-end;
 
-    gap: 4px;
+    width: 100%;
 
-    margin-top: 9px;
+    margin-top: 16px;
 
-    color: #4b5563;
+    color: #5422b7;
 
-    font-size: 13px;
+    font-size: 12px;
 
-    line-height: 1.3;
-
-    text-align: right;
+    font-weight: 600;
 }
 
 
-/*
-   O valor original fica ligeiramente mais discreto.
-*/
+.oferta-beneficio {
+    display: flex;
 
-.oferta-preco-original #preco-original {
-    color: #374151;
+    align-items: center;
 
-    font-weight: 500;
+    gap: 8px;
+
+    white-space: nowrap;
+}
+
+
+/* Ícones */
+
+.oferta-beneficio-icon {
+    display: inline-flex;
+
+    align-items: center;
+    justify-content: center;
+
+    width: 24px;
+    height: 24px;
+
+    color: #8b3dff;
+
+    font-size: 20px;
+
+    line-height: 1;
+}
+
+
+/* Separadores */
+
+.oferta-beneficio-sep {
+    width: 1px;
+    height: 25px;
+
+    margin: 0 28px;
+
+    background:
+        rgba(139, 61, 255, 0.18);
+}
+
+
+/* Último item vai para direita */
+
+.oferta-seguranca {
+    margin-left: auto;
 }
 
 
 /* =========================================================
-   PREÇOS EM OUTRA MOEDA
+   EQUIVALÊNCIA DE MOEDA
    ========================================================= */
 
 #oferta-equivalente {
-    display: block;
+    position: absolute;
 
-    width: 100%;
+    right: 32px;
+    bottom: -37px;
 
-    box-sizing: border-box;
-
-    margin-top: 5px !important;
+    width: 150px;
 
     color: #7b7285 !important;
 
-    font-size: 12px !important;
+    font-size: 11px !important;
 
     line-height: 1.45;
 
     text-align: right !important;
 }
 
-
-/* Valor convertido */
 
 #oferta-equivalente strong {
     color: #6b7280;
@@ -2672,49 +2795,13 @@ transition:width 0.2s;
 }
 
 
-/* /mês */
-
 #oferta-equivalente span {
     color: #9ca3af;
-
-    font-weight: 400;
 }
 
-
-/* Preço original convertido */
 
 #oferta-original-moeda-wrap {
     margin-top: 1px;
-
-    color: #9ca3af;
-}
-
-
-/* =========================================================
-   PEQUENO BRILHO NO CARD
-   ========================================================= */
-
-.oferta-card::before {
-    content: "";
-
-    position: absolute;
-
-    top: 0;
-    left: 0;
-
-    width: 120px;
-    height: 120px;
-
-    border-radius: 50%;
-
-    background:
-        radial-gradient(
-            circle,
-            rgba(168, 85, 247, 0.08) 0%,
-            rgba(168, 85, 247, 0) 70%
-        );
-
-    pointer-events: none;
 }
 
 
@@ -2722,53 +2809,63 @@ transition:width 0.2s;
    TABLET
    ========================================================= */
 
-@media (max-width: 800px) {
+@media (max-width: 900px) {
 
     .oferta-card {
-        padding: 20px 20px 18px;
+        padding: 19px 22px 16px;
     }
 
 
-    .oferta-titulo {
-        font-size: 16px;
+    .oferta-card-header {
+        padding-right: 115px;
     }
 
 
-    .oferta-badge-desconto {
-        min-width: 64px;
-        height: 36px;
-
-        font-size: 14px;
+    .oferta-preco-box {
+        right: 48px;
     }
 
 
-    .oferta-botao {
-        min-height: 52px;
+    .oferta-beneficio-sep {
+        margin: 0 15px;
+    }
 
-        font-size: 17px;
+
+    .oferta-beneficios {
+        font-size: 11px;
+    }
+
+
+    .oferta-beneficio-icon {
+        font-size: 18px;
     }
 }
 
 
 /* =========================================================
-   TELEMÓVEL
+   MOBILE
    ========================================================= */
 
-@media (max-width: 600px) {
+@media (max-width: 650px) {
 
     .oferta-card {
-        padding: 18px 16px 17px;
+        padding: 17px 15px 16px;
 
-        border-radius: 16px;
+        border-radius: 15px;
     }
 
 
-    /* Header continua na mesma linha */
-
     .oferta-card-header {
-        min-height: 34px;
+        display: block;
 
-        margin-bottom: 12px;
+        min-height: 105px;
+
+        padding-right: 0;
+    }
+
+
+    .oferta-info {
+        padding-right: 100px;
     }
 
 
@@ -2777,58 +2874,137 @@ transition:width 0.2s;
     }
 
 
+    .oferta-descricao {
+        margin-top: 5px;
+
+        font-size: 11px;
+    }
+
+
+    .oferta-preco-box {
+        top: 52px;
+        right: 0;
+
+        min-width: 130px;
+    }
+
+
+    .oferta-preco-antigo {
+        font-size: 11px;
+    }
+
+
+    .oferta-agora {
+        font-size: 11px;
+    }
+
+
+    .oferta-preco-destaque {
+        font-size: 24px;
+    }
+
+
     .oferta-badge-desconto {
-        min-width: 60px;
-        height: 34px;
+        top: 0;
+        right: 0;
 
-        padding: 0 11px;
+        min-width: 59px;
+        height: 32px;
 
-        font-size: 13px;
+        padding: 0 10px;
 
-        border-radius: 20px;
+        font-size: 12px;
     }
 
 
     /* Botão */
 
     .oferta-botao {
-        min-height: 51px;
+        height: 51px;
 
-        padding: 0 15px;
+        margin-top: 7px;
 
-        border-radius: 13px;
+        border-radius: 12px;
+
+        font-size: 14px;
+    }
+
+
+    .oferta-btn-icon {
+        font-size: 17px;
+    }
+
+
+    .oferta-btn-arrow {
+        font-size: 20px;
+    }
+
+
+    /* Benefícios */
+
+    .oferta-beneficios {
+        justify-content: center;
+
+        flex-wrap: wrap;
+
+        gap: 10px;
+
+        margin-top: 14px;
+
+        font-size: 10px;
+    }
+
+
+    .oferta-beneficio {
+        gap: 4px;
+    }
+
+
+    .oferta-beneficio-icon {
+        width: 19px;
+        height: 19px;
 
         font-size: 16px;
     }
 
 
-    /* Preço original */
+    .oferta-beneficio-sep {
+        display: none;
+    }
 
-    .oferta-preco-original {
-        margin-top: 8px;
 
-        font-size: 12px;
+    .oferta-seguranca {
+        margin-left: 0;
     }
 
 
     /* Conversão */
 
     #oferta-equivalente {
-        margin-top: 4px !important;
+        position: static;
 
-        font-size: 11px !important;
+        width: 100%;
+
+        margin-top: 8px !important;
+
+        text-align: right !important;
     }
 }
 
 
 /* =========================================================
-   TELEMÓVEL PEQUENO
+   MOBILE PEQUENO
    ========================================================= */
 
 @media (max-width: 400px) {
 
     .oferta-card {
-        padding: 16px 13px 15px;
+        padding: 15px 12px;
+    }
+
+
+    .oferta-card-header {
+        min-height: 100px;
     }
 
 
@@ -2837,29 +3013,26 @@ transition:width 0.2s;
     }
 
 
-    .oferta-badge-desconto {
-        min-width: 56px;
-        height: 32px;
+    .oferta-descricao {
+        font-size: 10px;
+    }
 
-        padding: 0 9px;
 
-        font-size: 12px;
+    .oferta-preco-destaque {
+        font-size: 22px;
     }
 
 
     .oferta-botao {
-        min-height: 49px;
+        height: 49px;
 
-        font-size: 15px;
+        font-size: 13px;
     }
 
 
-    .oferta-preco-original {
-        font-size: 11px;
-    }
+    .oferta-beneficios {
+        font-size: 9px;
 
-
-    #oferta-equivalente {
-        font-size: 10px !important;
+        gap: 7px;
     }
 }

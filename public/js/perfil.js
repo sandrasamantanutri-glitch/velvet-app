@@ -1004,9 +1004,9 @@ async function carregarOfertaAtiva() {
       }
     }
 
-    if (precoDescontoEl) {
-  precoDescontoEl.textContent =
-    valorBRL(window.OFERTA_ATUAL.valor_promocional);
+   if (precoBotaoEl) {
+    precoBotaoEl.textContent =
+        valorBRL(window.OFERTA_ATUAL.valor_promocional);
 }
 
 if (precoDestaqueEl) {
