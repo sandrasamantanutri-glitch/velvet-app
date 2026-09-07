@@ -776,6 +776,52 @@ function preencherResumoVIP({ valorBase = 0, desconto = 0 }) {
 
   document.getElementById("vipTotal").textContent =
     total.toFixed(2).replace(".", ",");
+
+  exibirEquivalenteVIP(total);
+}
+
+const _PAIS_MOEDA_VIP = {
+  CO: "COP", US: "USD", PT: "EUR", GB: "GBP", DE: "EUR",
+  AR: "ARS", CL: "CLP", MX: "MXN", PE: "PEN", UY: "UYU",
+  VE: "USD", ES: "EUR", FR: "EUR", IT: "EUR", NL: "EUR",
+  CH: "CHF", SE: "SEK", NO: "NOK", AU: "AUD", CA: "CAD", JP: "JPY"
+};
+const _fxCacheVIP = {};
+
+async function exibirEquivalenteVIP(totalBRL) {
+  const elWrap = document.getElementById("vip-equivalente-moeda");
+  const elVal  = document.getElementById("vipTotalMoeda");
+  if (!elWrap || !elVal) return;
+
+  let userData = window.__SESSION_DATA__;
+  if (!userData) {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+      const r = await fetch("/api/me", { headers: { Authorization: "Bearer " + token } });
+      if (r.ok) { userData = await r.json(); window.__SESSION_DATA__ = userData; }
+    } catch { return; }
+  }
+
+  const pais = userData?.pais || "BR";
+  const moeda = _PAIS_MOEDA_VIP[pais];
+  if (!moeda) { elWrap.style.display = "none"; return; }
+
+  try {
+    let taxa = _fxCacheVIP[moeda];
+    if (!taxa) {
+      const r = await fetch(`/api/cambio?para=${moeda}`);
+      if (!r.ok) throw new Error();
+      const d = await r.json();
+      taxa = d.taxa;
+      _fxCacheVIP[moeda] = taxa;
+    }
+    const fmt = (totalBRL * taxa).toLocaleString("en", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    elVal.textContent = `${moeda} ${fmt}`;
+    elWrap.style.display = "block";
+  } catch {
+    elWrap.style.display = "none";
+  }
 }
 
 function preencherResumoMidia({ valor = 0, desconto = 0, descricao = "" }) {
