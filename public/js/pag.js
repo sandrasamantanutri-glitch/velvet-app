@@ -334,9 +334,10 @@ async function renderFormCartao() {
     currentPaymentIntentId = data.payment_id;
     pagamentoAtual.payment_id = data.payment_id;
 
+    const stripeLocale = { pt: "pt-BR", es: "es", en: "en" }[localStorage.getItem("lang") || "pt"] || "auto";
     stripeElements = stripe.elements({
       clientSecret: data.client_secret,
-      locale: "auto",
+      locale: stripeLocale,
       appearance: {
         theme: "stripe",
         variables: {
@@ -386,7 +387,7 @@ async function renderFormCartao() {
         padding:12px 16px;margin-bottom:14px;font-size:0.93rem;
       ">
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
-          <span style="color:#6b7280;font-weight:600;font-size:0.78rem;text-transform:uppercase;letter-spacing:0.05em;">Total cobrado</span>
+          <span style="color:#6b7280;font-weight:600;font-size:0.78rem;text-transform:uppercase;letter-spacing:0.05em;">${t("pagamento.card_total_label")}</span>
           <strong id="stripe-valor-principal" style="color:#8b5cf6;font-size:1.1rem;">
             R$ ${valorBrlDisplay.toFixed(2).replace(".", ",")}
           </strong>
@@ -432,7 +433,7 @@ async function renderFormCartao() {
           _fxCacheVIP[moeda] = taxa;
         }
         const fmt = (valorBrlDisplay * taxa).toLocaleString("en", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        elConv.innerHTML = `≈ <strong>${moeda} ${fmt}</strong> <span style="opacity:0.5;font-size:0.78rem;">(taxa indicativa)</span>`;
+        elConv.innerHTML = `≈ <strong>${moeda} ${fmt}</strong> <span style="opacity:0.5;font-size:0.78rem;">(${t("pagamento.card_taxa_indicativa")})</span>`;
       } catch {
         elConv.textContent = "";
       }

@@ -130,20 +130,20 @@
 
   <div class = "vip-valores" class= "vip-valores">
     <div class="linha">
-      <span data-i18n="pagamento.linha_assinatura">Valor da assinatura:</span>
-      <span>R$ <span id="vipValorBase">0,00</span></span>
+      <span data-i18n="pagamento.linha_assinatura">Valor da assinatura: R$</span>
+      <span id="vipValorBase">0,00</span>
     </div>
     <div class="linha desconto">
-      <span data-i18n="pagamento.linha_desconto">Desconto:</span>
-      <span>R$ <span id="vipDesconto">0,00</span></span>
+      <span data-i18n="pagamento.linha_desconto">Desconto: R$</span>
+      <span id="vipDesconto">0,00</span>
     </div>
     <div class="linha">
-      <span data-i18n="pagamento.linha_taxa">Taxa de transação:</span>
-      <span>R$ <span id="vipTaxa">0,00</span></span>
+      <span data-i18n="pagamento.linha_taxa">Taxa de transação: R$</span>
+      <span id="vipTaxa">0,00</span>
     </div>
     <div class="linha total">
-      <span data-i18n="pagamento.linha_total">Total:</span>
-      <span>R$ <span id="vipTotal">0,00</span></span>
+      <span data-i18n="pagamento.linha_total">Total R$</span>
+      <span id="vipTotal">0,00</span>
     </div>
     <div id="vip-equivalente-moeda" style="display:none; margin-top:10px; padding-top:8px; border-top:1px solid #e5e7eb; font-size:0.82rem; color:#6b7280; text-align:right;">
       ≈ <strong id="vipTotalMoeda"></strong>
@@ -234,7 +234,7 @@
     </p>
     <label class="termos-check-linha" for="aceiteTermosPagamento">
       <input type="checkbox" id="aceiteTermosPagamento" required />
-      <span>Li e aceito os <a href="/terms.html" target="_blank" rel="noopener noreferrer" style="color:inherit;font-weight:600;">Termos de Uso</a> e as <a href="/policies.html" target="_blank" rel="noopener noreferrer" style="color:inherit;font-weight:600;">Políticas de Utilização</a>, estou ciente de que o serviço digital é disponibilizado imediatamente após o pagamento.</span>
+      <span data-i18n="pagamento.aceite_termos">Li e aceito os <a href="/terms.html" target="_blank" rel="noopener noreferrer" style="color:inherit;font-weight:600;">Termos de Uso</a> e as <a href="/policies.html" target="_blank" rel="noopener noreferrer" style="color:inherit;font-weight:600;">Políticas de Utilização</a>, estou ciente de que o serviço digital é disponibilizado imediatamente após o pagamento.</span>
     </label>
   </div>
 
@@ -316,7 +316,7 @@
 
   <div class="gateway-selo" style="display:flex;align-items:center;justify-content:center;gap:6px;opacity:0.7;font-size:0.72rem;color:#888;">
     <img src="/assets/stripe.png" alt="Stripe" style="height:18px;width:auto;display:inline-block;vertical-align:middle;">
-    Pagamento processado com segurança pela Stripe
+    <span data-i18n="pagamento.card_secure_footer">Pagamento processado com segurança pela Stripe</span>
   </div>
 </div>
 </div>

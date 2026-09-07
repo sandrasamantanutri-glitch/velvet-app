@@ -233,6 +233,8 @@
     "card_expiry_label": "Expiry",
     "card_cvv_label": "CVV",
     "card_secure_footer": "Payment securely processed by Stripe",
+    "card_total_label": "Total charged",
+    "card_taxa_indicativa": "indicative rate",
     "card_holder_required": "Please enter the name as it appears on the card.",
     "card_form_error": "Error loading card form. Please reload the page.",
     "midia_beneficios_titulo": "Benefits",
