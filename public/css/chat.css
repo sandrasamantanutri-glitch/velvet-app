@@ -232,14 +232,13 @@ body.role-cliente .msg-cliente:has(.chat-conteudo) {
 }
 
 .status-bloqueado{
-  font-weight:600;
-  font-size:11px;
-
-  padding:3px 8px;
-  border-radius:12px;
-
-  background:#f3f3f8;
-  color:#555;
+    display: flow;
+    font-weight: 600;
+    font-size: 14px;
+    padding: 5px 10px;
+    border-radius: 12px;
+    background: #f3f3f8;
+    color: #9E6BFF;
 }
 
 .btn-desbloquear {
