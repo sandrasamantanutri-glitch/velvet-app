@@ -9818,6 +9818,7 @@ app.post("/api/register", authLimiter, async (req, res) => {
       role,
       nome_completo,
       data_nascimento,
+      pais,
       genero,
       ageConfirmed,
       preToken,
@@ -9828,7 +9829,13 @@ app.post("/api/register", authLimiter, async (req, res) => {
 
     const emailNormalizado = email?.trim().toLowerCase();
 
-    if (!emailNormalizado || !senha || !role || !nome_completo || !data_nascimento) {
+    const paisesValidos = [
+      "AR","AU","BR","CA","CH","CL","CO","DE","ES","FR","GB","IT","JP",
+      "MX","NL","NO","PE","PT","SE","US","UY","VE","outro"
+    ];
+    const paisISO = paisesValidos.includes(pais) ? pais : null;
+
+    if (!emailNormalizado || !senha || !role || !nome_completo || !data_nascimento || !paisISO) {
       return res.status(400).json({
         erro: "Todos os campos obrigatórios devem ser preenchidos"
       });
@@ -10008,11 +10015,11 @@ app.post("/api/register", authLimiter, async (req, res) => {
       await db.query(
         `
         INSERT INTO public.modelos_dados
-          (modelo_id, nome_completo, data_nascimento, genero, criado_em, atualizado_em)
+          (modelo_id, nome_completo, data_nascimento, genero, pais, criado_em, atualizado_em)
         VALUES
-          ($1, $2, $3, $4, NOW(), NOW())
+          ($1, $2, $3, $4, $5, NOW(), NOW())
         `,
-        [modeloId, nome_completo, data_nascimento, genero || null]
+        [modeloId, nome_completo, data_nascimento, genero || null, paisISO]
       );
 
       console.log("📩 Tentando enviar email para:", emailNormalizado);
@@ -10035,7 +10042,7 @@ app.post("/api/register", authLimiter, async (req, res) => {
           nomePublico,
           src || 'direto',
           ref ? Number(ref) : null,
-          'BR'
+          paisISO
         ]
       );
 
@@ -10053,7 +10060,7 @@ app.post("/api/register", authLimiter, async (req, res) => {
           nomePublico,
           nome_completo,
           data_nascimento,
-          'Brasil',
+          paisISO,
           genero || null
         ]
       );

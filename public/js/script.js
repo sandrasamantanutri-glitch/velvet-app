@@ -235,6 +235,7 @@ function updateModal() {
   const fieldNome       = document.getElementById("fieldNome");
   const fieldNascimento = document.getElementById("fieldNascimento");
   const fieldPerfil     = document.getElementById("fieldPerfil");
+  const fieldPais       = document.getElementById("fieldPais");
   const fieldOtp        = getOrCreateFieldOtp();
   const otpInfoEl       = document.getElementById("otpInfo");
   const otpReenviar     = document.getElementById("otpReenviar");
@@ -254,6 +255,7 @@ function updateModal() {
     fieldNome?.classList.add("hidden");
     fieldNascimento?.classList.add("hidden");
     fieldPerfil?.classList.add("hidden");
+    fieldPais?.classList.add("hidden");
     fieldOtp.classList.add("hidden");
     registerLegal?.classList.add("hidden");
     switchRegister?.classList.remove("hidden");
@@ -276,6 +278,7 @@ function updateModal() {
       fieldNome?.classList.add("hidden");
       fieldNascimento?.classList.add("hidden");
       fieldPerfil?.classList.add("hidden");
+      fieldPais?.classList.add("hidden");
       fieldOtp.classList.add("hidden");
       registerLegal?.classList.add("hidden");
       emailInput?.removeAttribute("readonly");
@@ -291,6 +294,7 @@ function updateModal() {
       fieldNome?.classList.add("hidden");
       fieldNascimento?.classList.add("hidden");
       fieldPerfil?.classList.add("hidden");
+      fieldPais?.classList.add("hidden");
       fieldOtp.classList.remove("hidden");
       registerLegal?.classList.add("hidden");
       emailInput?.setAttribute("readonly", "true");
@@ -312,6 +316,7 @@ function updateModal() {
       fieldNome?.classList.remove("hidden");
       fieldNascimento?.classList.remove("hidden");
       fieldPerfil?.classList.remove("hidden");
+      fieldPais?.classList.remove("hidden");
       fieldOtp.classList.add("hidden");
       registerLegal?.classList.remove("hidden");
       // Resetar checkbox ao chegar à etapa 3
@@ -479,10 +484,11 @@ async function register() {
   const nome            = document.getElementById("registerNome").value.trim();
   const nascimento      = document.getElementById("registerNascimento").value;
   const role            = document.getElementById("registerRole")?.value;
+  const pais            = document.getElementById("registerPais")?.value || "";
   const ref             = localStorage.getItem("ref_modelo");
   const src             = localStorage.getItem("origem_trafego");
 
-  if (!email || !senha || !senhaConfirm || !role || !nome || !nascimento) {
+  if (!email || !senha || !senhaConfirm || !role || !nome || !nascimento || !pais) {
     showModalError(t("index.fillAllFields"));
     return;
   }
@@ -521,6 +527,7 @@ async function register() {
         role,
         nome_completo: nome,
         data_nascimento: nascimento,
+        pais,
         ageConfirmed: true,
         preToken: otpPreToken,
         ref,
