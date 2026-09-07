@@ -245,26 +245,25 @@ document.addEventListener(
     const card = e.target.closest(".chat-conteudo");
     if (!card) return;
 
-    const grid = e.target.closest(".pacote-grid");
-    if (!grid) return;
-
+    const grid = card.querySelector(".pacote-grid");
     const preco = Number(card.dataset.preco || 0);
     const messageId = Number(card.dataset.id || 0);
-    const todasMidias = [...grid.querySelectorAll(".midia-item[data-index]")];
-
-    if (!todasMidias.length) return;
+    const todasMidias = grid
+      ? [...grid.querySelectorAll(".midia-item[data-index]")]
+      : [];
 
     const pacoteTotalmenteLiberado =
       preco === 0 ||
       card.classList.contains("livre") ||
       conteudosLiberados.has(messageId) ||
-      todasMidias.every(
-        (m) =>
-          m.classList.contains("midia-livre") ||
-          m.dataset.liberado === "true"
-      );
+      (todasMidias.length > 0 &&
+        todasMidias.every(
+          (m) =>
+            m.classList.contains("midia-livre") ||
+            m.dataset.liberado === "true"
+        ));
 
-    // se NÃO estiver 100% liberado, qualquer clique no pacote abre pagamento
+    // se NÃO estiver 100% liberado, qualquer clique no card abre pagamento
     if (preco > 0 && !pacoteTotalmenteLiberado) {
       e.preventDefault();
       e.stopPropagation();
@@ -272,7 +271,10 @@ document.addEventListener(
       return;
     }
 
-    // daqui para baixo: pacote 100% liberado
+    // pacote liberado — só processa cliques dentro do grid
+    const clickedGrid = e.target.closest(".pacote-grid");
+    if (!clickedGrid) return;
+
     e.preventDefault();
     e.stopPropagation();
 
@@ -679,7 +681,7 @@ const cardLiberado =
             _getEquivalenteChatc(Number(msg.preco)).then(equiv => {
               if (!equiv) return;
               const el = document.getElementById(precoId);
-              if (el) el.insertAdjacentHTML("afterend", `<span style="font-size:0.75rem;color:#6b7280;display:block;margin-top:1px;">${equiv}</span>`);
+              if (el) el.insertAdjacentHTML("afterend", `<span style="font-size:0.75rem;color:#6b7280;display:block;margin-top:1px;text-align:left;">${equiv}</span>`);
             });
           }, 0);
 

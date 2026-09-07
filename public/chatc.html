@@ -71,20 +71,23 @@
       <div class="midia-detalhes hidden">
         <div class="midia-valores">
           <div class="linha">
-            <span>Valor Mídia</span>
+            <span data-i18n="pagamento.midia_linha_valor">Valor Mídia</span>
             <span>R$ <span id="midiaValorBase">0,00</span></span>
           </div>
           <div class="linha desconto">
-            <span>Desconto</span>
+            <span data-i18n="chatc.label_desconto">Desconto</span>
             <span>− R$ <span id="midiaDesconto">0,00</span></span>
           </div>
           <div class="linha taxa">
-            <span>Taxa de transação</span>
+            <span data-i18n="pagamento.midia_linha_taxa">Taxa de transação</span>
             <span>R$ <span id="midiaTaxa">0,00</span></span>
           </div>
           <div class="linha total">
-            <span>Total</span>
+            <span data-i18n="chatc.label_total_row">Total</span>
             <span>R$ <span id="midiaTotal">0,00</span></span>
+          </div>
+          <div id="chatc-equivalente-moeda" style="display:none;text-align:right;font-size:0.78rem;color:#6b7280;margin-top:2px;">
+            <span id="chatcTotalMoeda"></span>
           </div>
         </div>
 
@@ -139,7 +142,12 @@
         </p>
         <label class="termos-check-linha" for="aceiteTermosPagamento">
           <input type="checkbox" id="aceiteTermosPagamento" required />
-          <span>Li e aceito os <a href="/terms.html" target="_blank" rel="noopener noreferrer" style="color:inherit;font-weight:600;">Termos de Uso</a> e as <a href="/policies.html" target="_blank" rel="noopener noreferrer" style="color:inherit;font-weight:600;">Políticas de Utilização</a>, incluindo a Política de Reembolso. Estou ciente de que o serviço digital é disponibilizado imediatamente após o pagamento.</span>
+          <span>
+            <span data-i18n="chatc.terms_check_intro">Li e aceito os</span>
+            <a href="/terms.html" target="_blank" rel="noopener noreferrer" style="color:inherit;font-weight:600;" data-i18n="chatc.terms_link1">Termos de Uso</a>
+            <span data-i18n="chatc.terms_check_middle">e as</span>
+            <a href="/policies.html" target="_blank" rel="noopener noreferrer" style="color:inherit;font-weight:600;" data-i18n="chatc.terms_link2">Políticas de Utilização</a><span data-i18n="chatc.terms_check_suffix">, incluindo a Política de Reembolso. Estou ciente de que o serviço digital é disponibilizado imediatamente após o pagamento.</span>
+          </span>
         </label>
       </div>
 

@@ -842,6 +842,42 @@ async function exibirEquivalentePixResumo(totalBRL) {
   }
 }
 
+async function exibirEquivalenteChatcModal(totalBRL) {
+  const elWrap = document.getElementById("chatc-equivalente-moeda");
+  const elVal  = document.getElementById("chatcTotalMoeda");
+  if (!elWrap || !elVal) return;
+
+  let userData = window.__SESSION_DATA__;
+  if (!userData) {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+      const r = await fetch("/api/me", { headers: { Authorization: "Bearer " + token } });
+      if (r.ok) { userData = await r.json(); window.__SESSION_DATA__ = userData; }
+    } catch { return; }
+  }
+
+  const pais = userData?.pais || "BR";
+  const moeda = _PAIS_MOEDA_VIP[pais];
+  if (!moeda) { elWrap.style.display = "none"; return; }
+
+  try {
+    let taxa = _fxCacheVIP[moeda];
+    if (!taxa) {
+      const r = await fetch(`/api/cambio?para=${moeda}`);
+      if (!r.ok) throw new Error();
+      const d = await r.json();
+      taxa = d.taxa;
+      _fxCacheVIP[moeda] = taxa;
+    }
+    const fmt = (totalBRL * taxa).toLocaleString("en", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    elVal.textContent = `${moeda} ${fmt}`;
+    elWrap.style.display = "block";
+  } catch {
+    elWrap.style.display = "none";
+  }
+}
+
 async function exibirEquivalenteMidiaResumo(totalBRL) {
   const elWrap = document.getElementById("midia-equivalente-moeda");
   const elVal  = document.getElementById("midiaTotalMoeda");
@@ -917,6 +953,7 @@ function preencherResumoMidia({ valor = 0, desconto = 0, descricao = "" }) {
   }
 
   exibirEquivalenteMidiaResumo(total);
+  exibirEquivalenteChatcModal(total);
 
   // Preenche também o resumo do PIX (mesmo bloco reutilizado do modal PIX)
   const pixResumo = document.getElementById("pixResumoValor");
