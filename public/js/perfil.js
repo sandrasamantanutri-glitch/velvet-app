@@ -930,6 +930,7 @@ async function carregarOfertaAtiva() {
   const ofertaCard = document.getElementById("oferta-card");
   const precoDescontoEl = document.getElementById("preco-desconto");
   const precoOriginalEl = document.getElementById("preco-original");
+  const precoDestaqueEl = document.getElementById("preco-destaque");
   const descontoEl = document.getElementById("oferta-desconto");
 
  if (!ofertaCard) {
@@ -959,6 +960,9 @@ async function carregarOfertaAtiva() {
 
   if (precoDescontoEl)
     precoDescontoEl.textContent = valorBRL(valor);
+
+  if (precoDestaqueEl)
+  precoDestaqueEl.textContent = valorBRL(valor);
 
   if (precoOriginalEl)
     precoOriginalEl.textContent = "";
@@ -1002,6 +1006,11 @@ async function carregarOfertaAtiva() {
 
     if (precoDescontoEl) {
   precoDescontoEl.textContent =
+    valorBRL(window.OFERTA_ATUAL.valor_promocional);
+}
+
+if (precoDestaqueEl) {
+  precoDestaqueEl.textContent =
     valorBRL(window.OFERTA_ATUAL.valor_promocional);
 }
 
