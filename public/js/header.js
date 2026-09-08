@@ -691,7 +691,9 @@ async function desativarNotificacoes() {
     EXCLUIDOS.has(path) ||
     path.startsWith("/admin") ||
     path.startsWith("/agencias") ||
-    document.querySelector('script[src*="suporte-widget"]')
+    document.querySelector('script[src*="suporte-widget"]') ||
+    // modelo vendo o próprio perfil: esconde widget para não sobrepor o footer
+    (path === "/perfil.html" && localStorage.getItem("role") === "modelo")
   ) return;
 
   const s = document.createElement("script");

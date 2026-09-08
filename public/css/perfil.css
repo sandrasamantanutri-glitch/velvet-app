@@ -330,7 +330,7 @@ a{
 .midias-tabs{
   display:flex;
   justify-content:center;
-  gap:300px;
+  gap:30px;
   border-bottom:1px solid #eee;
   margin-bottom:14px;
 }
@@ -1109,7 +1109,7 @@ transition:width 0.2s;
   .midias-tabs{
   display:flex;
   justify-content:center;
-  gap:300px;
+  gap:30px;
   border-bottom:1px solid #eee;
   margin-bottom:14px;
 }
@@ -1126,7 +1126,7 @@ transition:width 0.2s;
   .midias-tabs{
   display:flex;
   justify-content:center;
-  gap:300px;
+  gap:30px;
   border-bottom:1px solid #eee;
   margin-bottom:14px;
 }
@@ -1263,7 +1263,7 @@ transition:width 0.2s;
   .midias-tabs{
   display:flex;
   justify-content:center;
-  gap:300px;
+  gap:30px;
   border-bottom:1px solid #eee;
   margin-bottom:14px;
 }
