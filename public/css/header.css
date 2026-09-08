@@ -31,7 +31,6 @@ body {
   max-width: 1100px;
   height: 100%;
   margin: 0 auto;
-
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -66,119 +65,6 @@ body {
   display: block;
 }
 
-@media (max-width: 480px) {
-  .app-header {
-    height: calc(56px + env(safe-area-inset-top, 0px));
-  }
-
-  .header-inner {
-    max-width: 100%;
-    padding: 0 8px;
-    gap: 8px;
-  }
-
-  .velvet-logo {
-    width: 108px;
-    max-width: 108px;
-  }
-
-  .header-inner a {
-    width: 24px;
-    height: 24px;
-    flex: 0 0 24px;
-  }
-
-  .header-inner a img {
-    width: 20px;
-    height: 20px;
-  }
-}
-
-@media (max-width: 380px) {
-  .header-inner {
-    padding: 0 6px;
-    gap: 6px;
-  }
-
-  .velvet-logo {
-    width: 90px;
-    max-width: 90px;
-  }
-
-  .header-inner a {
-    width: 22px;
-    height: 22px;
-    flex: 0 0 22px;
-  }
-
-  .header-inner a img {
-    width: 18px;
-    height: 18px;
-  }
-}
-
-
-@media (max-width: 480px) {
-  .app-header {
-    height: calc(56px + env(safe-area-inset-top, 0px));
-  }
-
-  .header-inner {
-    width: 100%;
-    max-width: 100%;
-    padding: 0 0 0 0;
-    gap: 8px;
-  }
-
-  .header-inner a {
-    width: 24px;
-    height: 24px;
-    flex: 0 0 24px;
-  }
-
-  .header-inner a img {
-    width: 20px;
-    height: 20px;
-  }
-}
-
-@media (max-width: 380px) {
-  .header-inner {
-    gap: 6px;
-  }
-
-  .velvet-logo img,
-  .live-logo {
-    width: 90px;
-    max-width: 90px;
-  }
-
-  .header-inner a {
-    width: 22px;
-    height: 22px;
-    flex: 0 0 22px;
-  }
-
-  .header-inner a img {
-    width: 18px;
-    height: 18px;
-  }
-}
-
-@media (max-width: 480px) {
-  .header-avatar {
-    width: 20px;
-    height: 20px;
-  }
-}
-
-@media (max-width: 380px) {
-  .header-avatar {
-    width: 18px;
-    height: 18px;
-  }
-}
-
 .language-switcher {
   display: flex;
   align-items: center;
@@ -195,14 +81,6 @@ body {
   padding: 0 10px;
   outline: none;
   cursor: pointer;
-}
-
-@media (max-width: 480px) {
-  #languageSwitcher {
-    height: 24px;
-    font-size: 11px;
-    padding: 0 8px;
-  }
 }
 
 .badge-unread {
@@ -225,4 +103,77 @@ body {
 
 .badge-unread.hidden {
   display: none;
+}
+
+/* ── MOBILE (≤ 480px) — cobre iPhone 16 Pro Max (440pt) e menores ── */
+@media (max-width: 480px) {
+  .app-header {
+    height: calc(56px + env(safe-area-inset-top, 0px));
+  }
+
+  .header-inner {
+    width: 100%;
+    max-width: 100%;
+    /* max() garante mínimo de 10px E respeita cantos arredondados/safe-area */
+    padding-left:  max(10px, env(safe-area-inset-left,  0px));
+    padding-right: max(10px, env(safe-area-inset-right, 0px));
+    gap: 7px;
+  }
+
+  .velvet-logo {
+    width: 96px;
+    max-width: 96px;
+  }
+
+  .header-avatar {
+    width: 22px;
+    height: 22px;
+  }
+
+  .header-inner a {
+    width: 24px;
+    height: 24px;
+    flex: 0 0 24px;
+  }
+
+  .header-inner a img {
+    width: 20px;
+    height: 20px;
+  }
+
+  #languageSwitcher {
+    height: 24px;
+    font-size: 11px;
+    padding: 0 7px;
+  }
+}
+
+/* ── MUITO PEQUENO (≤ 380px) ── */
+@media (max-width: 380px) {
+  .header-inner {
+    padding-left:  max(8px, env(safe-area-inset-left,  0px));
+    padding-right: max(8px, env(safe-area-inset-right, 0px));
+    gap: 6px;
+  }
+
+  .velvet-logo {
+    width: 80px;
+    max-width: 80px;
+  }
+
+  .header-avatar {
+    width: 20px;
+    height: 20px;
+  }
+
+  .header-inner a {
+    width: 22px;
+    height: 22px;
+    flex: 0 0 22px;
+  }
+
+  .header-inner a img {
+    width: 18px;
+    height: 18px;
+  }
 }
