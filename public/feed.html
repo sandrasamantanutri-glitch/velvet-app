@@ -13,7 +13,12 @@
 <div class="container">
   <div class="feed-filtros">
     <div class="feed-filtros-interesses">
-      <span class="feed-filtros-label" data-i18n="feed.filtro_interesses">Interesses</span>
+      <div class="feed-filtros-label-row">
+        <span class="feed-filtros-label" data-i18n="feed.filtro_interesses">Interesses</span>
+        <button type="button" class="feed-tipos-btn" id="btnTiposConteudo" aria-label="Tipos de conteúdo" data-i18n-aria="feed.tipos_btn_aria">
+          <span>ⓘ</span> <span data-i18n="feed.tipos_btn">Tipos de conteúdo</span>
+        </button>
+      </div>
       <div class="feed-chips" id="feedChipsGenero">
         <button type="button" class="feed-chip feed-chip--ativo" data-genero="" data-i18n="feed.filtro_todos">Todos</button>
         <button type="button" class="feed-chip" data-genero="mulher" data-i18n="feed.filtro_mulheres">Mulheres</button>
@@ -25,12 +30,60 @@
       <input type="text" id="feedBuscaNome" data-i18n-placeholder="feed.busca_placeholder" placeholder="Buscar por nome..." autocomplete="off">
     </div>
   </div>
-  <div class="feed-dica">💡 Passe o mouse sobre o perfil para identificar o tipo de conteúdo</div>
+  <!-- modal tipos de conteúdo -->
+  <div id="modalTipos" class="vtmodal-overlay" hidden>
+    <div class="vtmodal-box" role="dialog" aria-modal="true" aria-labelledby="vtmodal-title">
+      <div class="vtmodal-header">
+        <span id="vtmodal-title" class="vtmodal-title" data-i18n="feed.tipos_modal_titulo">Tipos de conteúdo</span>
+        <button type="button" class="vtmodal-close" id="btnFecharModal" aria-label="Fechar">&times;</button>
+      </div>
+      <div class="vtmodal-body">
+        <div class="vtmodal-item">
+          <span class="vtmodal-emoji">🌍</span>
+          <div>
+            <div class="vtmodal-item-titulo" data-i18n="feed.tipos_social_titulo">Social</div>
+            <div class="vtmodal-item-desc" data-i18n="feed.tipos_social_desc">Conteúdos do dia a dia, como fotos, vídeos, viagens, lifestyle, gaming, fitness, moda e muito mais.</div>
+          </div>
+        </div>
+        <div class="vtmodal-item">
+          <span class="vtmodal-emoji">🔥</span>
+          <div>
+            <div class="vtmodal-item-titulo" data-i18n="feed.tipos_premium_titulo">Premium</div>
+            <div class="vtmodal-item-desc" data-i18n="feed.tipos_premium_desc">Conteúdo mais sensual, como ensaios de biquíni, lingerie, cosplay e outras publicações com maior apelo visual, sem nudez ou conteúdo explícito.</div>
+          </div>
+        </div>
+        <div class="vtmodal-item">
+          <span class="vtmodal-emoji">🔒</span>
+          <div>
+            <div class="vtmodal-item-titulo" data-i18n="feed.tipos_privado_titulo">Privado</div>
+            <div class="vtmodal-item-desc" data-i18n="feed.tipos_privado_desc">Conteúdo reservado para adultos, disponível mediante validação da identidade do utilizador.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
   <div id="listaModelos"></div>
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script src="/js/header.js"></script>
 <script src="/js/feed2.js"></script>
+<script>
+(function () {
+  var modal = document.getElementById('modalTipos');
+  document.getElementById('btnTiposConteudo').addEventListener('click', function () {
+    modal.hidden = false;
+  });
+  document.getElementById('btnFecharModal').addEventListener('click', function () {
+    modal.hidden = true;
+  });
+  modal.addEventListener('click', function (e) {
+    if (e.target === modal) modal.hidden = true;
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') modal.hidden = true;
+  });
+})();
+</script>
 </body>
 </html>

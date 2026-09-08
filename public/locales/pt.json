@@ -94,7 +94,16 @@
     "filtro_homens": "Homens",
     "filtro_nao_binarios": "Não binários",
     "busca_placeholder": "Buscar por nome...",
-    "sem_resultados": "Nenhum resultado encontrado para essa busca."
+    "sem_resultados": "Nenhum resultado encontrado para essa busca.",
+    "tipos_btn": "Tipos de conteúdo",
+    "tipos_btn_aria": "Tipos de conteúdo",
+    "tipos_modal_titulo": "Tipos de conteúdo",
+    "tipos_social_titulo": "Social",
+    "tipos_social_desc": "Conteúdos do dia a dia, como fotos, vídeos, viagens, lifestyle, gaming, fitness, moda e muito mais.",
+    "tipos_premium_titulo": "Premium",
+    "tipos_premium_desc": "Conteúdo mais sensual, como ensaios de biquíni, lingerie, cosplay e outras publicações com maior apelo visual, sem nudez ou conteúdo explícito.",
+    "tipos_privado_titulo": "Privado",
+    "tipos_privado_desc": "Conteúdo reservado para adultos, disponível mediante validação da identidade do utilizador."
   },
   "updates": {
     "titulo": "Novidades desde sua última visita",

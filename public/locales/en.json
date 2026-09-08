@@ -94,7 +94,16 @@
     "filtro_homens": "Men",
     "filtro_nao_binarios": "Non-binary",
     "busca_placeholder": "Search by name...",
-    "sem_resultados": "No results found for this search."
+    "sem_resultados": "No results found for this search.",
+    "tipos_btn": "Content types",
+    "tipos_btn_aria": "Content types",
+    "tipos_modal_titulo": "Content types",
+    "tipos_social_titulo": "Social",
+    "tipos_social_desc": "Everyday content like photos, videos, travel, lifestyle, gaming, fitness, fashion and much more.",
+    "tipos_premium_titulo": "Premium",
+    "tipos_premium_desc": "More sensual content such as bikini shoots, lingerie, cosplay and other visually appealing posts, without nudity or explicit content.",
+    "tipos_privado_titulo": "Private",
+    "tipos_privado_desc": "Content reserved for adults, available upon identity verification."
   },
   "updates": {
     "titulo": "Updates since your last visit",

@@ -24,7 +24,9 @@ body {
   gap: 16px;
 }
 
-.feed-filtros-interesses { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.feed-filtros-interesses { display: flex; flex-direction: column; gap: 8px; }
+
+.feed-filtros-label-row { display: flex; align-items: center; gap: 10px; }
 
 .feed-filtros-label {
   font-size: 13px; font-weight: 700; color: #777;
@@ -50,16 +52,63 @@ body {
 }
 .feed-busca input:focus { border-color: #6a00ff; }
 
-/* ── DICA ── */
-.feed-dica {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 12px 16px 0;
-  font-size: 12px;
-  color: #999;
-  display: flex;
-  align-items: center;
-  gap: 5px;
+/* ── BOTÃO TIPOS DE CONTEÚDO ── */
+.feed-tipos-btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: none; border: none; padding: 0;
+  font-size: 12px; font-weight: 600; color: #6a00ff;
+  cursor: pointer; text-decoration: underline;
+  text-underline-offset: 2px; letter-spacing: 0.1px;
+}
+.feed-tipos-btn:hover { color: #5200cc; }
+
+/* ── MODAL TIPOS DE CONTEÚDO ── */
+.vtmodal-overlay {
+  position: fixed; inset: 0; z-index: 9000;
+  background: rgba(0,0,0,0.55);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.vtmodal-overlay[hidden] { display: none !important; }
+
+.vtmodal-box {
+  background: #1c0f42;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 20px;
+  width: 100%; max-width: 420px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  overflow: hidden;
+  animation: vtmodal-in 0.2s ease;
+}
+@keyframes vtmodal-in {
+  from { opacity: 0; transform: scale(0.95) translateY(8px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0);   }
+}
+
+.vtmodal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.vtmodal-title {
+  font-size: 15px; font-weight: 800; color: #fff; letter-spacing: -0.2px;
+}
+.vtmodal-close {
+  background: none; border: none; cursor: pointer;
+  color: rgba(255,255,255,0.55); font-size: 22px; line-height: 1;
+  padding: 0 2px; transition: color 0.15s;
+}
+.vtmodal-close:hover { color: #fff; }
+
+.vtmodal-body { padding: 18px 20px 22px; display: flex; flex-direction: column; gap: 18px; }
+
+.vtmodal-item { display: flex; align-items: flex-start; gap: 14px; }
+.vtmodal-emoji { font-size: 22px; flex-shrink: 0; margin-top: 1px; }
+.vtmodal-item-titulo {
+  font-size: 13px; font-weight: 800; color: #fff; margin-bottom: 4px;
+}
+.vtmodal-item-desc {
+  font-size: 12px; color: rgba(255,255,255,0.72); line-height: 1.5;
 }
 
 /* ── SEÇÕES ── */
