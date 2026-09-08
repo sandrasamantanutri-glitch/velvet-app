@@ -330,7 +330,7 @@ a{
 .midias-tabs{
   display:flex;
   justify-content:center;
-  gap:30px;
+  gap:300px;
   border-bottom:1px solid #eee;
   margin-bottom:14px;
 }
