@@ -1518,6 +1518,7 @@ async function carregarPremium() {
 
           <div class="premium-footer">
             <span class="premium-preco">${valorBRL(item.preco)}</span>
+            <span class="premium-preco-moeda" data-brl="${item.preco}"></span>
           </div>
         </div>
       `;
@@ -1649,10 +1650,49 @@ async function carregarPremium() {
       container.appendChild(card);
     });
 
+    // Preenche preços convertidos para a moeda do país do utilizador
+    preencherPrecosEmMoedaLocal(container);
+
   } catch (err) {
     console.error("Erro carregar premium:", err);
     container.innerHTML =
       `<p style='text-align:center;'>${t("perfil.erro_carregar_premium")}</p>`;
+  }
+}
+
+async function preencherPrecosEmMoedaLocal(container) {
+  try {
+    let userData = window.__SESSION_DATA__;
+    if (!userData) {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+      const r = await fetch("/api/me", { headers: { Authorization: "Bearer " + token } });
+      if (r.ok) { userData = await r.json(); window.__SESSION_DATA__ = userData; }
+    }
+
+    const pais = userData?.pais || "BR";
+    const moeda = PAIS_MOEDA[pais];
+    if (!moeda) return; // BR: moeda da plataforma já exibida
+
+    let taxa = _fxCachePerfilLocal[moeda];
+    if (!taxa) {
+      const r = await fetch(`/api/cambio?para=${moeda}`);
+      if (!r.ok) return;
+      taxa = (await r.json()).taxa;
+      _fxCachePerfilLocal[moeda] = taxa;
+    }
+
+    const fmt = (v) =>
+      (Number(v) * taxa).toLocaleString("en", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    container.querySelectorAll(".premium-preco-moeda[data-brl]").forEach(el => {
+      const brl = parseFloat(el.dataset.brl);
+      if (!isNaN(brl) && brl > 0) {
+        el.textContent = `≈ ${moeda} ${fmt(brl)}`;
+      }
+    });
+  } catch {
+    // silencioso — conversão é apenas indicativa
   }
 }
 
