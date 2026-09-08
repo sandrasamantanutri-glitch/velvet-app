@@ -2307,87 +2307,124 @@ transition:width 0.2s;
 
 
 /* =========================================================
-   TELEMÓVEL PEQUENO
-   480px ou menos
+   TELEMÓVEL PEQUENO — LAYOUT HORIZONTAL COMPACTO
+   480px ou menos — reverte para linha horizontal (igual a tablet)
    ========================================================= */
 
 @media (max-width: 480px) {
 
+    /* Reverte o flex-direction: column do breakpoint 650px */
+    .vip-card {
+        flex-direction: row;
+        height: 130px;
+        min-height: 130px;
+        overflow: hidden;
+        border-radius: 16px;
+    }
+
+    /* Foto: coluna esquerda de largura fixa */
     .vip-card-foto-wrap {
-
-        height: 240px;
-        min-height: 240px;
+        flex: 0 0 105px;
+        width: 105px;
+        height: 100%;
+        min-height: unset;
+        border-radius: 16px 0 0 16px;
+        overflow: hidden;
     }
 
+    .vip-card-foto {
+        width: 100%;
+        height: 100%;
+        object-position: center top;
+    }
 
+    /* Restaura degradê lateral */
+    .vip-card-foto-wrap::after {
+        width: 35%;
+        height: 100%;
+        top: 0;
+        right: -1px;
+        bottom: 0;
+        background: linear-gradient(
+            to right,
+            rgba(23, 7, 47, 0) 0%,
+            rgba(23, 7, 47, 0.55) 55%,
+            rgba(23, 7, 47, 0.95) 85%,
+            #17072f 100%
+        );
+    }
+
+    .vip-bubble { display: none; }
+
+    /* Info: ocupa o espaço restante */
     .vip-card-info {
-
-        padding: 22px 16px 8px;
+        flex: 1;
+        min-width: 0;
+        width: auto;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: flex-start;
+        padding: 10px 6px 10px 12px;
+        text-align: left;
+        box-sizing: border-box;
     }
-
 
     .vip-badge {
-
-        font-size: 15px;
+        font-size: 11px;
+        margin-bottom: 2px;
+        justify-content: flex-start;
     }
-
 
     .vip-card-titulo {
-
-        font-size: 21px;
-    }
-
-
-    .vip-card-desc {
-
         font-size: 12px;
+        justify-content: flex-start;
+        width: 100%;
+        white-space: normal;
+        text-align: left;
+        margin-bottom: 0;
+        line-height: 1.25;
     }
 
+    .vip-online-dot {
+        width: 7px;
+        height: 7px;
+        flex: 0 0 7px;
+    }
 
+    /* Esconder desc e ícones para caberem na altura compacta */
+    .vip-card-desc,
     .vip-icons-row {
-
-        gap: 8px;
-
-        margin-top: 15px;
-
-        font-size: 11px;
+        display: none;
     }
 
-
-    .vip-icon {
-
-        font-size: 16px;
-    }
-
-
+    /* CTA: coluna direita compacta */
     .vip-card-cta {
-
-        padding: 13px 16px 22px;
+        flex: 0 0 auto;
+        width: auto;
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 10px 8px;
     }
-
 
     .vip-chat-btn {
-
-        max-width: 100%;
-
-        min-height: 50px;
-
-        font-size: 14px;
+        min-width: 0;
+        width: auto;
+        max-width: 82px;
+        min-height: 44px;
+        font-size: 10px;
+        padding: 6px 8px;
+        gap: 3px;
+        border-radius: 14px;
+        flex-wrap: wrap;
+        text-align: center;
+        justify-content: center;
     }
 
-
-    .vip-bubble {
-
-        left: 14px;
-
-        bottom: 13px;
-
-        max-width: 135px;
-
-        padding: 9px 11px;
-
-        font-size: 12px;
-    }
+    .vip-btn-icon { font-size: 14px; }
+    .vip-btn-arrow { font-size: 14px; }
 }
 
 
@@ -2398,42 +2435,18 @@ transition:width 0.2s;
 
 @media (max-width: 380px) {
 
-    .vip-card-foto-wrap {
-
-        height: 220px;
-        min-height: 220px;
+    .vip-card {
+        height: 115px;
+        min-height: 115px;
     }
 
+    .vip-card-foto-wrap {
+        flex: 0 0 90px;
+        width: 90px;
+    }
 
     .vip-card-titulo {
-
-        font-size: 20px;
-    }
-
-
-    .vip-card-desc {
-
         font-size: 11px;
-    }
-
-
-    .vip-icons-row {
-
-        font-size: 10px;
-
-        gap: 7px;
-    }
-
-
-    .vip-icon {
-
-        font-size: 15px;
-    }
-
-
-    .vip-chat-btn {
-
-        font-size: 13px;
     }
 }
 
