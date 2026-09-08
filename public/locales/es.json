@@ -181,6 +181,8 @@
     "erro_publicar_premium": "Error al publicar contenido premium",
     "sem_posts_feed": "Sin publicaciones aún",
     "sem_premium": "Sin contenido premium aún",
+    "contador_midias": "medios",
+    "contador_postagens": "publicaciones",
     "erro_carregar_premium": "Error al cargar el contenido premium",
     "confirm_excluir_midia": "¿Eliminar este archivo?",
     "erro_excluir_midia": "Error al eliminar el archivo",

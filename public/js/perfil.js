@@ -1181,6 +1181,13 @@ async function carregarFeed() {
 
     const midias = await res.json();
 
+    // Atualiza contador de mídias do feed
+    const elTotalMidias = document.getElementById("total-midias");
+    if (elTotalMidias) {
+      const label = (typeof t === "function") ? t("perfil.contador_midias") : "mídias";
+      elTotalMidias.textContent = midias.length + " " + label;
+    }
+
     if (!midias.length) {
       grid.innerHTML =
         `<p style='grid-column:1/-1;text-align:center;'>${t("perfil.sem_posts_feed")}</p>`;
@@ -1384,6 +1391,13 @@ async function carregarPremium() {
     }
 
     const midias = await res.json();
+
+    // Atualiza contador de postagens premium
+    const elTotalPremium = document.getElementById("total-postagens-premium");
+    if (elTotalPremium) {
+      const label = (typeof t === "function") ? t("perfil.contador_postagens") : "postagens";
+      elTotalPremium.textContent = midias.length + " " + label;
+    }
 
     if (!midias.length) {
   container.innerHTML =

@@ -181,6 +181,8 @@
     "erro_publicar_premium": "Error publishing premium content",
     "sem_posts_feed": "No posts yet",
     "sem_premium": "No premium content yet",
+    "contador_midias": "media",
+    "contador_postagens": "posts",
     "erro_carregar_premium": "Error loading premium content",
     "confirm_excluir_midia": "Delete this media?",
     "erro_excluir_midia": "Error deleting media",

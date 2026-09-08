@@ -615,6 +615,7 @@ img.feed-preview-borrado{
 .midia-thumb.locked{
   position:relative;
   overflow:hidden;
+  border-radius: 10px;
 }
 
 .midia-thumb.locked::after{
@@ -1047,6 +1048,7 @@ transition:width 0.2s;
   background:rgba(0,0,0,0.18);
   backdrop-filter:blur(6px);
   cursor: pointer;
+  border-radius: 10px;
 }
 
 .premium-placeholder{
