@@ -57,7 +57,7 @@ body {
   display: inline-flex; align-items: center; gap: 4px;
   background: none; border: none; padding: 0;
   font-size: 12px; font-weight: 600; color: #6a00ff;
-  cursor: pointer; text-decoration: underline;
+  cursor: pointer; text-decoration: none;
   text-underline-offset: 2px; letter-spacing: 0.1px;
 }
 .feed-tipos-btn:hover { color: #5200cc; }
@@ -89,6 +89,7 @@ body {
   display: flex; align-items: center; justify-content: space-between;
   padding: 18px 20px 14px;
   border-bottom: 1px solid rgba(255,255,255,0.08);
+  background: #7B2CFF;
 }
 .vtmodal-title {
   font-size: 15px; font-weight: 800; color: #fff; letter-spacing: -0.2px;
@@ -100,15 +101,15 @@ body {
 }
 .vtmodal-close:hover { color: #fff; }
 
-.vtmodal-body { padding: 18px 20px 22px; display: flex; flex-direction: column; gap: 18px; }
+.vtmodal-body { padding: 18px 20px 22px; display: flex; flex-direction: column; gap: 18px; background: #f1f1f1 ; }
 
 .vtmodal-item { display: flex; align-items: flex-start; gap: 14px; }
 .vtmodal-emoji { font-size: 22px; flex-shrink: 0; margin-top: 1px; }
 .vtmodal-item-titulo {
-  font-size: 13px; font-weight: 800; color: #fff; margin-bottom: 4px;
+  font-size: 13px; font-weight: 800; color: #5200cc; margin-bottom: 4px;
 }
 .vtmodal-item-desc {
-  font-size: 12px; color: rgba(255,255,255,0.72); line-height: 1.5;
+  font-size: 12px; color: #5200cc; line-height: 1.5;
 }
 
 /* ── SEÇÕES ── */
