@@ -11,20 +11,14 @@ async function logout() {
 }
 
 // ── Classificação de conteúdo ──
-const CLASSIF = {
-  social:  {
-    emoji: "🌍", label: "Social",
-    desc: "Conteúdos do dia a dia, como fotos, vídeos, viagens, lifestyle, gaming, fitness, moda e muito mais."
-  },
-  premium: {
-    emoji: "🔥", label: "Premium",
-    desc: "Conteúdo mais sensual, como ensaios de biquíni, lingerie, cosplay e outras publicações com maior apelo visual, sem nudez ou conteúdo explícito."
-  },
-  adulto: {
-    emoji: "🔒", label: "Privado",
-    desc: "Conteúdo reservado para adultos, disponível mediante validação da identidade do utilizador."
-  }
-};
+function getClassifData() {
+  const _t = (typeof t === "function") ? t : (k) => k;
+  return {
+    social:  { emoji: "🌍", label: _t("feed.tipos_social_titulo"),  desc: _t("feed.tipos_social_desc")  },
+    premium: { emoji: "🔥", label: _t("feed.tipos_premium_titulo"), desc: _t("feed.tipos_premium_desc") },
+    adulto:  { emoji: "🔒", label: _t("feed.tipos_privado_titulo"), desc: _t("feed.tipos_privado_desc") }
+  };
+}
 
 function getClassificacao(modelo) {
   if (modelo.classificacao_conteudo === "adulto")  return "adulto";
@@ -65,7 +59,7 @@ function criarCard(modelo) {
   const foto = modelo.avatar || modelo.capa || "/assets/avatar.png";
 
   const classif = getClassificacao(modelo);
-  const cl      = CLASSIF[classif];
+  const cl      = getClassifData()[classif];
   const badge   = getBadge(modelo);
 
   // Determina qual rede usar: prefere a que tem dados reais (seguidores > 0)
