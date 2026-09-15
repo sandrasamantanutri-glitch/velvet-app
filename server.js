@@ -788,6 +788,31 @@ app.post("/api/webhook/zapsign", express.json(), async (req, res) => {
 //   }
 // });
 
+// ── HELPER: mensagem de boas-vindas por país do cliente ──────────────────────
+const _PAISES_ES = new Set([
+  "AR","BO","CL","CO","CR","CU","DO","EC","SV","GT",
+  "HN","MX","NI","PA","PY","PE","PR","ES","UY","VE","GQ"
+]);
+
+async function getMensagemBoasVindas(dbConn, clienteId) {
+  try {
+    const r = await dbConn.query(
+      `SELECT COALESCE(c.pais, cd.pais) AS pais
+       FROM clientes c
+       LEFT JOIN clientes_dados cd ON cd.cliente_id = c.id
+       WHERE c.id = $1`,
+      [clienteId]
+    );
+    const pais = r.rows[0]?.pais || "BR";
+    if (pais === "BR" || pais === "PT") return "Oii!! Bem vindo(a), qual seu nome?🥰";
+    if (_PAISES_ES.has(pais))            return "¡Hola!! Bienvenido(a), cuál es tu nombre?🥰";
+    return "Hii!! Welcome! What's your name? 🥰";
+  } catch (_) {
+    return "Oii!! Bem vindo(a), qual seu nome?🥰";
+  }
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 // ── WEBHOOK IPAG ─────────────────────────────────────────────────────────────
 app.post("/api/webhook/ipag", express.raw({ type: "*/*" }), async (req, res) => {
   console.log("======================================");
@@ -1123,9 +1148,7 @@ app.post("/api/webhook/ipag", express.raw({ type: "*/*" }), async (req, res) => 
         );
 
         if (primeiraAssinatura) {
-          const _boasVindas1109 = modelo_id === 859
-            ? "¡Hola!! Bienvenido(a), cuál es tu nombre?🥰🔥"
-            : "Oii!! Bem vindo(a), qual seu nome?🥰🔥";
+          const _boasVindas1109 = await getMensagemBoasVindas(client, cliente_id);
           await client.query(
             `INSERT INTO messages
                (cliente_id, modelo_id, text, sender, tipo,
@@ -2042,20 +2065,7 @@ await client.query(
       console.log("transacoes_agency (vip) inserido");
 
       if (primeiraAssinatura) {
-        const _PAISES_ES = new Set([
-          "AR","BO","CL","CO","CR","CU","DO","EC","SV","GT",
-          "HN","MX","NI","PA","PY","PE","PR","ES","UY","VE","GQ"
-        ]);
-        const _clientePaisRow = await client.query(
-          "SELECT pais FROM clientes WHERE id = $1", [cliente_id]
-        );
-        const _clientePais = _clientePaisRow.rows[0]?.pais || "BR";
-        const _boasVindas2038 =
-          (_clientePais === "BR" || _clientePais === "PT")
-            ? "Oii!! Bem vindo(a), qual seu nome?🥰"
-            : _PAISES_ES.has(_clientePais)
-              ? "¡Hola!! Bienvenido(a), cuál es tu nombre?🥰"
-              : "Hii!! Welcome! What's your name? 🥰";
+        const _boasVindas2038 = await getMensagemBoasVindas(client, cliente_id);
         await client.query(
           `
           INSERT INTO messages (
@@ -3204,6 +3214,7 @@ if (valorEsperado > 0 && Math.abs(Number(valorPago) - Number(valorEsperado)) > 0
       );
 
       if (primeiraAssinatura) {
+        const _boasVindas3212 = await getMensagemBoasVindas(client, cliente_id);
         await client.query(
           `
           INSERT INTO messages (
@@ -3222,9 +3233,7 @@ if (valorEsperado > 0 && Math.abs(Number(valorPago) - Number(valorEsperado)) > 0
           [
             cliente_id,
             modelo_id,
-            modelo_id === 859
-              ? "¡Hola!! Bienvenido(a), cuál es tu nombre?🥰"
-              : "Oii!! Bem vindo(a), qual seu nome?🥰"
+            _boasVindas3212
           ]
         );
       }
@@ -12772,9 +12781,7 @@ app.post("/api/pagamento/vip/cartao", authCliente, async (req, res) => {
       );
 
       if (primeiraAssinatura) {
-        const _boasVindas12334 = modeloIdNum === 859
-          ? "¡Hola!! Bienvenido(a), cuál es tu nombre?🥰"
-          : "Oii!! Bem vindo(a), qual seu nome?🥰";
+        const _boasVindas12334 = await getMensagemBoasVindas(client, cliente_id);
         await client.query(
           `INSERT INTO messages
              (cliente_id, modelo_id, text, sender, tipo, created_at, lida, visto, deletada)
