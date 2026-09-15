@@ -22,7 +22,21 @@ if (token && window.io) {
 
   socket.on("authOk", () => {
     console.log("Socket autenticado no perfil");
+    // Entra na sala do chat para receber vipAtivado em tempo real
+    if (role === "cliente" && modelo_id) {
+      socket.emit("joinChat", { cliente_id: window.CLIENTE_ID, modelo_id });
+    }
   });
+
+  // Se authOk já disparou antes de modelo_id estar definido (raro), refaz o join
+  // quando o perfil terminar de carregar e MODELO_ID_ATUAL for definido
+  const _perfilJoinChat = () => {
+    if (role !== "cliente") return;
+    const mId = modelo_id || window.MODELO_ID_ATUAL;
+    if (!mId || !window.socket?.connected) return;
+    window.socket.emit("joinChat", { cliente_id: window.CLIENTE_ID, modelo_id: mId });
+  };
+  window._perfilJoinChat = _perfilJoinChat;
 
   socket.on("disconnect", () => {
     console.log("Socket desconectado no perfil");
@@ -246,6 +260,9 @@ document.querySelector("#modalMidia .modal-backdrop")
     return;
   }
   window.MODELO_ID_ATUAL = modelo_id;
+
+  // Garante join na sala do chat caso authOk já tenha disparado
+  window._perfilJoinChat?.();
 
   // =========================
   // VERIFICAR SE É DONA
