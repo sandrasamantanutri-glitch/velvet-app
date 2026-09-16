@@ -1,297 +1,353 @@
 <!DOCTYPE html>
-<html lang="pt">
+<html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Meus Ganhos</title>
-  <link rel="stylesheet" href="/css/header.css">
-  <link rel="stylesheet" href="/css/relatorio.css">
-  <link rel="stylesheet" href="/css/pages.css">
-  <script src="/i18n.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meus Ganhos | Velvet</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+<link href="/css/relatorio.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js"></script>
+<style>
+body { padding-top: 0; font-family: 'Poppins', -apple-system, sans-serif; }
+
+/* LOGIN */
+#loginScreen {
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(180deg, #fbfaff 0%, #f0ebff 100%);
+}
+.login-box {
+  background: #fff; border-radius: 20px; padding: 2rem 1.75rem;
+  width: 100%; max-width: 380px;
+  box-shadow: 0 8px 40px rgba(123,44,255,.15);
+}
+.login-logo { text-align: center; margin-bottom: 1.75rem; }
+.login-logo h2 { font-size: 1.7rem; font-weight: 800; color: var(--purple); }
+.login-logo p { color: var(--text-muted); font-size: 0.875rem; margin-top: 0.2rem; }
+.login-err { display: none; background: #fff5f5; border: 1px solid #fecaca; border-radius: 10px; padding: .7rem 1rem; font-size: .85rem; color: #dc2626; margin-bottom: 1rem; }
+.login-lbl { display: block; font-size: .8rem; font-weight: 600; color: #555; margin-bottom: .35rem; }
+.login-inp {
+  width: 100%; padding: 11px 13px; border-radius: 12px;
+  border: 1.5px solid #e2e0ea; background: #fff;
+  font-family: inherit; font-size: .9rem; color: var(--text);
+  box-sizing: border-box; outline: none; transition: border-color .15s;
+}
+.login-inp:focus { border-color: var(--purple); box-shadow: 0 0 0 3px rgba(123,44,255,.1); }
+.btn-entrar {
+  width: 100%; padding: 12px; border: none; border-radius: 12px;
+  background: var(--purple); color: #fff;
+  font-family: inherit; font-size: .95rem; font-weight: 700; cursor: pointer;
+  transition: background .15s;
+}
+.btn-entrar:hover { background: #6a1fe0; }
+.btn-entrar:disabled { opacity: .6; cursor: not-allowed; }
+
+/* GANHOS */
+#ganhoScreen { display: none; }
+.g-wrap { max-width: 540px; margin: 0 auto; padding-bottom: 80px; }
+
+.g-topo {
+  display: flex; align-items: center; gap: 8px;
+  padding: 14px 16px 8px;
+  position: sticky; top: 0; z-index: 40;
+  background: linear-gradient(180deg, #fbfaff 85%, transparent 100%);
+}
+.btn-voltar {
+  border: none; background: none; width: 36px; height: 36px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; flex-shrink: 0; color: var(--purple); font-size: 1.2rem;
+  text-decoration: none; transition: transform .2s;
+}
+.btn-voltar:hover { transform: scale(1.1); }
+.g-titulo { flex: 1; font-size: 18px; font-weight: 700; color: var(--purple); margin: 0; }
+
+.spin-wrap { display: flex; justify-content: center; padding: 3rem 0; }
+.spin { width: 30px; height: 30px; border: 3px solid #e2d9ff; border-top-color: var(--purple); border-radius: 50%; animation: rot .8s linear infinite; }
+@keyframes rot { to { transform: rotate(360deg); } }
+
+/* Histórico colapsável */
+.hist-header {
+  display: flex; align-items: center; justify-content: space-between;
+  cursor: pointer; user-select: none;
+}
+.hist-body { display: none; padding-top: 10px; }
+.hist-body.open { display: block; }
+.hist-chevron { transition: transform .2s; color: var(--purple-light); font-size: .9rem; }
+.hist-header.open .hist-chevron { transform: rotate(180deg); }
+</style>
 </head>
 <body>
 
-  <div id="header-container"></div>
-
-  <section class="area-card">
-
-    <div class="rel-topo">
-      <button type="button" class="btn-voltar" onclick="history.back()" data-i18n-title="relatorio.voltar">
-        <img src="/assets/voltar.png" alt="Voltar" data-i18n-alt="relatorio.voltar">
-      </button>
-      <h1 class="rel-titulo" data-i18n="relatorio.titulo_ganhos">Meus ganhos</h1>
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">
+      <h2>✦ Velvet</h2>
+      <p>Painel de Ganhos</p>
     </div>
-
-    <div class="acord-lista">
-
-      <!-- GANHOS — aberto por padrão -->
-      <div class="acord-item acord-aberto" id="acordGanhos">
-        <div class="acord-btn acord-btn-ganhos" id="toggleGanhos">
-          <span id="labelMesAtual" data-i18n="relatorio.mes_atual">Mês Atual</span>
-          <div class="acord-btn-right" onclick="event.stopPropagation()">
-            <select id="filtroMes" class="rel-filtro-mes"></select>
-            <button id="btnImprimir" class="rel-btn-print" title="Imprimir relatório" onclick="imprimirRelatorio()">
-              &#x1F5A8;
-            </button>
-          </div>
-          <span class="acord-chevron">&#8964;</span>
-        </div>
-        <div class="acord-corpo" id="corpo-ganhos">
-
-          <!-- HERO: MÊS ATUAL -->
-          <div class="rel-hero">
-            <div class="rel-hero-grid">
-              <div>
-                <p class="rel-hero-sublabel" data-i18n="relatorio.mes_midias">Mídias</p>
-                <span class="rel-hero-sub" id="mesMidias">R$ 0,00</span>
-              </div>
-              <div>
-                <p class="rel-hero-sublabel" data-i18n="relatorio.mes_assinaturas">Assinaturas</p>
-                <span class="rel-hero-sub" id="mesAssinaturas">R$ 0,00</span>
-              </div>
-            </div>
-            <div class="rel-hero-total-row">
-              <span class="rel-hero-total-lbl" data-i18n="relatorio.total">Total</span>
-              <strong class="rel-hero-total" id="totalMesAtual">R$ 0,00</strong>
-            </div>
-          </div>
-
-          <!-- HOJE -->
-          <div id="secaoHoje">
-            <div class="rel-g2">
-              <div class="rel-st">
-                <p class="rel-st-lbl" data-i18n="relatorio.hoje_midias">Mídias</p>
-                <strong class="rel-st-val" id="hojeMidias">R$ 0,00</strong>
-              </div>
-              <div class="rel-st">
-                <p class="rel-st-lbl" data-i18n="relatorio.hoje_assinaturas">Assinaturas</p>
-                <strong class="rel-st-val" id="hojeAssinaturas">R$ 0,00</strong>
-              </div>
-            </div>
-          </div>
-
-          <!-- ASSINANTES -->
-          <div id="secaoAssinantes" class="rel-assinantes">
-            <div class="rel-ass-info">
-              <div>
-                <p class="rel-ass-lbl" data-i18n="relatorio.assinantes_ativos">Assinantes ativos</p>
-                <strong class="rel-ass-num" id="totalAssinantes">0</strong>
-              </div>
-            </div>
-            <span class="rel-badge-ok" id="assinantesHoje">+0 hoje</span>
-          </div>
-
-          <!-- SITUAÇÃO DOS VALORES -->
-          <div id="secaoStatusMes">
-            <p class="rel-sec-lbl" data-i18n="relatorio.situacao_valores">Situação dos valores</p>
-            <div class="rel-g2">
-              <div class="rel-st ok">
-                <p class="rel-st-lbl" data-i18n="relatorio.liberado_hoje">Liberado hoje</p>
-                <strong class="rel-st-val" id="liberadoHoje">R$ 0,00</strong>
-              </div>
-              <div class="rel-st hold">
-                <p class="rel-st-lbl" data-i18n="relatorio.pendentes_hoje">Pendentes hoje</p>
-                <strong class="rel-st-val" id="bloqueadoHoje">R$ 0,00</strong>
-              </div>
-            </div>
-            <div class="rel-g2" style="margin-top:8px">
-              <div class="rel-st ok">
-                <p class="rel-st-lbl" data-i18n="relatorio.liberado_mes">Liberado no mês</p>
-                <strong class="rel-st-val" id="liberadoMes">R$ 0,00</strong>
-              </div>
-              <div class="rel-st hold">
-                <p class="rel-st-lbl" data-i18n="relatorio.pendentes_mes">Pendentes no mês</p>
-                <strong class="rel-st-val" id="bloqueadoMes">R$ 0,00</strong>
-              </div>
-            </div>
-            <div class="pendentes"><p data-i18n="relatorio.pendentesT"><strong>O QUE SÃO VALORES PENDENTES?</strong></p>
-                <p data-i18n="relatorio.pendentesS">São valores pagos pelo cliente via cartão de crédito. Dependemos da operadora avaliar o pagamento, descartar fraude e liberar o valor — o que pode levar de 3 a 30 dias. Não se preocupe! A própria plataforma atualiza os ganhos pendentes para liberados automaticamente!</p>
-              </div>
-          </div>
-
-          <!-- SITUAÇÃO DO MÊS FILTRADO -->
-          <div id="secaoStatusFiltro" style="display:none">
-            <p class="rel-sec-lbl" data-i18n="relatorio.situacao_valores">Situação dos valores</p>
-            <div class="rel-g2">
-              <div class="rel-st ok">
-                <p class="rel-st-lbl" data-i18n="relatorio.liberados_mes">Liberados no mês</p>
-                <strong class="rel-st-val" id="liberadoFiltroMes">R$ 0,00</strong>
-              </div>
-              <div class="rel-st hold">
-                <p class="rel-st-lbl" data-i18n="relatorio.pendentes_mes">Pendentes no mês</p>
-                <strong class="rel-st-val" id="bloqueadoFiltroMes">R$ 0,00</strong>
-              </div>
-            </div>
-            <div class="pendentes"><p data-i18n="relatorio.pendentesT"><strong>O que são valores pendentes?</strong></p>
-              <p data-i18n="relatorio.pendentesS">São valores pagos pelo cliente via cartão de crédito. Dependemos da operadora avaliar o pagamento, descartar fraude e liberar o valor — o que pode levar de 3 a 30 dias. Não se preocupe! A própria plataforma atualiza os ganhos pendentes para liberados automaticamente!</p>
-            </div>
-          </div>
-
-          <!-- MÊS ANTERIOR -->
-          <div id="secaoMesAnterior">
-            <hr class="separator">
-            <p class="rel-sec-lbl" id="labelMesAnterior" data-i18n="relatorio.mes_anterior">Mês anterior</p>
-
-            <div class="rel-hero rel-hero-sm">
-              <div class="rel-hero-grid">
-                <div>
-                  <p class="rel-hero-sublabel" data-i18n="relatorio.midias">Mídias</p>
-                  <span class="rel-hero-sub" id="mesAnteriorMidias">R$ 0,00</span>
-                </div>
-                <div>
-                  <p class="rel-hero-sublabel" data-i18n="relatorio.assinaturas">Assinaturas</p>
-                  <span class="rel-hero-sub" id="mesAnteriorAssinaturas">R$ 0,00</span>
-                </div>
-              </div>
-              <div class="rel-hero-total-row">
-                <span class="rel-hero-total-lbl" data-i18n="relatorio.total_bruto">Total bruto</span>
-                <strong class="rel-hero-total" style="font-size:20px" id="totalMesAnterior">R$ 0,00</strong>
-              </div>
-            </div>
-
-            <div class="rel-g2" style="margin-top:8px">
-              <div class="rel-st ok">
-                <p class="rel-st-lbl" data-i18n="relatorio.liberados_mes_anterior">Liberados Mês Anterior</p>
-                <strong class="rel-st-val" id="liberadoMesAnterior">R$ 0,00</strong>
-              </div>
-              <div class="rel-st hold">
-                <p class="rel-st-lbl" data-i18n="relatorio.pendentes_mes_anterior">Pendentes Mês Anterior</p>
-                <strong class="rel-st-val" id="bloqueadoMesAnterior">R$ 0,00</strong>
-              </div>
-            </div>
-          </div>
-
-        </div>
-      </div>
-
-      <!-- TRANSAÇÕES -->
-      <div class="acord-item">
-        <button class="acord-btn" data-target="tab-transacoes">
-          <span data-i18n="relatorio.tab_transacoes">Transações</span>
-          <span class="acord-chevron">&#8964;</span>
-        </button>
-        <div class="acord-corpo" id="tab-transacoes">
-          <div id="resumoDisponibilidadeTransacoes" class="resumo-disponibilidade"></div>
-          <div id="listaTransacoes" data-i18n="relatorio.carregando_transacoes">Carregando...</div>
-          <div id="paginacaoTransacoes"></div>
-        </div>
-      </div>
-
-      <!-- PAGAMENTOS -->
-      <div class="acord-item">
-        <button class="acord-btn" data-target="tab-pagamentos">
-          <span data-i18n="relatorio.tab_pagamentos">Pagamentos</span>
-          <span class="acord-chevron">&#8964;</span>
-        </button>
-        <div class="acord-corpo" id="tab-pagamentos">
-          <div id="listaPagamentos" data-i18n="relatorio.carregando_pagamentos">Carregando...</div>
-        </div>
-      </div>
-
-      <!-- CHARGEBACKS -->
-      <div class="acord-item">
-        <button class="acord-btn" data-target="tab-chargebacks">
-          <span data-i18n="relatorio.chargebacks">Chargebacks</span>
-          <span class="acord-chevron">&#8964;</span>
-        </button>
-        <div class="acord-corpo" id="tab-chargebacks">
-          <div id="resumoChargebacks" class="rel-cb-resumo"></div>
-          <div id="listaChargebacks" data-i18n="relatorio.carregando">Carregando...</div>
-          <div id="secaoChargebacksAnterior" style="display:none;margin-top:16px;">
-            <p class="rel-sec-lbl" id="labelChargebacksAnterior"></p>
-            <div id="resumoChargebacksAnterior" class="rel-cb-resumo"></div>
-            <div id="listaChargebacksAnterior"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- DADOS BANCÁRIOS -->
-      <div class="acord-item">
-        <button class="acord-btn" data-target="tab-dados-bancarios">
-          <span data-i18n="relatorio.tab_dados_bancarios">Dados Bancários</span>
-          <span class="acord-chevron">&#8964;</span>
-        </button>
-        <div class="acord-corpo" id="tab-dados-bancarios">
-          <div id="statusDadosBancarios" class="status-box" style="display:none;"></div>
-
-          <form id="formDadosBancarios" class="cardbank">
-            <div class="linha">
-              <strong data-i18n="relatorio.tipo_recebimento">Tipo de recebimento</strong>
-            </div>
-            <select id="tipoRecebimento" required>
-              <option value="" data-i18n="relatorio.selecione">Selecione</option>
-              <option value="pix" data-i18n="relatorio.pix">PIX</option>
-              <option value="transferencia" data-i18n="relatorio.transferencia_bancaria">Transferência bancária</option>
-            </select>
-
-            <div id="pixCampos" style="display:none;">
-              <label for="pixTipo" data-i18n="relatorio.pix_tipo">Tipo de chave PIX</label>
-              <select id="pixTipo">
-                <option value="cpf" data-i18n="relatorio.pix_cpf">CPF</option>
-                <option value="email" data-i18n="relatorio.pix_email">E-mail</option>
-                <option value="telefone" data-i18n="relatorio.pix_telefone">Telefone</option>
-                <option value="aleatoria" data-i18n="relatorio.pix_aleatoria">Chave aleatória</option>
-              </select>
-              <label for="pixChave" data-i18n="relatorio.pix_chave">Chave PIX</label>
-              <input type="text" id="pixChave">
-            </div>
-
-            <div id="transferenciaCampos" style="display:none;">
-              <label for="banco" data-i18n="relatorio.banco">Banco</label>
-              <input type="text" id="banco">
-              <label for="agencia" data-i18n="relatorio.agencia">Agência</label>
-              <input type="text" id="agencia">
-              <label for="conta" data-i18n="relatorio.conta">Conta</label>
-              <input type="text" id="conta">
-              <label for="contaTipo" data-i18n="relatorio.tipo_conta">Tipo de conta</label>
-              <select id="contaTipo">
-                <option value="corrente" data-i18n="relatorio.conta_corrente">Corrente</option>
-                <option value="poupanca" data-i18n="relatorio.conta_poupanca">Poupança</option>
-              </select>
-            </div>
-
-            <label for="titularNome" data-i18n="relatorio.titular_nome">Nome do titular</label>
-            <input type="text" id="titularNome" required>
-
-            <label for="titularDocumento" data-i18n="relatorio.titular_documento">Documento do titular (CPF)</label>
-            <input type="text" id="titularDocumento" required>
-
-            <div class="confirmacao-box">
-              <label class="confirmacao-label">
-                <input type="checkbox" id="confirmarTitular">
-                <span data-i18n="relatorio.confirmar_titular">Confirmo que sou titular da conta informada</span>
-              </label>
-            </div>
-
-            <div id="justificativaBox" style="display:none;">
-              <label for="justificativa" data-i18n="relatorio.justificativa_alteracao">Justificativa da alteração</label>
-              <textarea id="justificativa"></textarea>
-            </div>
-
-            <div class="acoes-form">
-              <button type="submit" class="btn-principal" data-i18n="relatorio.salvar_dados">Salvar dados</button>
-              <button type="button" id="btnAlterarDados" class="btn-principal" data-i18n="relatorio.alterar_dados">Alterar dados</button>
-            </div>
-          </form>
-        </div>
-      </div>
-
+    <div class="login-err" id="loginErr"></div>
+    <div style="margin-bottom:.9rem">
+      <label class="login-lbl">E-mail</label>
+      <input type="email" id="loginEmail" class="login-inp" placeholder="seu@email.com" autocomplete="email">
     </div>
-
-  </section>
-
-  <!-- SEÇÃO DE IMPRESSÃO (oculta na tela) -->
-  <div id="secaoPrint">
-    <div id="printConteudo"></div>
+    <div style="margin-bottom:1.4rem">
+      <label class="login-lbl">Senha</label>
+      <input type="password" id="loginPwd" class="login-inp" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <button class="btn-entrar" id="btnLogin" onclick="doLogin()">Entrar</button>
   </div>
+</div>
 
-  <div id="footer-container"></div>
+<!-- GANHOS -->
+<div id="ganhoScreen">
+  <div class="g-wrap">
+    <div class="g-topo">
+      <a class="btn-voltar" href="/areaUsuario.html"><i class="bi bi-arrow-left"></i></a>
+      <h1 class="g-titulo">Meus Ganhos</h1>
+      <select class="rel-filtro-mes" id="monthSel" onchange="onMonthChange()" style="flex:0 0 auto;width:auto"></select>
+    </div>
+    <div style="padding:0 16px">
+      <div id="ganhoContent">
+        <div class="spin-wrap"><div class="spin"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
 
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="/js/relatorio.modelo.js"></script>
-  <script src="/js/header.js"></script>
-  <script src="/js/footer-shared.js"></script>
+<script>
+const SUPA_URL = 'https://jfgjihgolfeejfhqdqax.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpmZ2ppaGdvbGZlZWpmaHFkcWF4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU5OTI1MDIsImV4cCI6MjA5MTU2ODUwMn0.euRDsKeCIgNhAx-8uavtsXF3JqXBfBIdpcPDcRaVyxk';
+const { createClient } = supabase;
+const db = createClient(SUPA_URL, SUPA_KEY);
 
+let SESSION = null;
+
+const fmt = v => 'R$ ' + Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const MES  = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const MESS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+function currentYM() {
+  const n = new Date();
+  return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}`;
+}
+
+function buildMonthOptions(sel) {
+  const now = new Date();
+  const el = document.getElementById('monthSel');
+  el.innerHTML = '';
+  for (let i = 0; i < 12; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const val = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    const opt = document.createElement('option');
+    opt.value = val;
+    opt.textContent = `${MESS[d.getMonth()]}. de ${d.getFullYear()}`;
+    if (val === sel) opt.selected = true;
+    el.appendChild(opt);
+  }
+}
+
+async function rpc(fn, params = {}) {
+  const { data, error } = await db.rpc(fn, { p_token: SESSION.token, ...params });
+  if (error) throw error;
+  if (data?.error) throw new Error(data.error);
+  return data;
+}
+
+async function doLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pwd   = document.getElementById('loginPwd').value;
+  const btn   = document.getElementById('btnLogin');
+  const err   = document.getElementById('loginErr');
+  err.style.display = 'none';
+  if (!email || !pwd) { showErr('Preencha e-mail e senha.'); return; }
+  btn.disabled = true; btn.textContent = 'Entrando...';
+  try {
+    const { data, error } = await db.rpc('login_modelo', { p_email: email, p_password: pwd });
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+    SESSION = data;
+    initGanhos();
+  } catch (e) {
+    showErr(e.message || 'Credenciais inválidas.');
+    btn.disabled = false; btn.textContent = 'Entrar';
+  }
+}
+function showErr(msg) { const el = document.getElementById('loginErr'); el.textContent = msg; el.style.display = 'block'; }
+document.getElementById('loginPwd').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+document.getElementById('loginEmail').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+function initGanhos() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('ganhoScreen').style.display = 'block';
+  const ym = currentYM();
+  buildMonthOptions(ym);
+  loadGanhos(ym);
+}
+
+function onMonthChange() { loadGanhos(document.getElementById('monthSel').value); }
+
+async function loadGanhos(ym) {
+  document.getElementById('ganhoContent').innerHTML = '<div class="spin-wrap"><div class="spin"></div></div>';
+  try {
+    const [y, m] = ym.split('-').map(Number);
+    const todayStr = new Date().toLocaleDateString('sv', { timeZone: 'America/Sao_Paulo' });
+    const now = new Date();
+
+    const [dpix, dstripe, dgeral] = await Promise.all([
+      rpc('painel_transacoes', { p_ano: y, p_mes: m, p_gateway: 'pix' }),
+      rpc('painel_transacoes', { p_ano: y, p_mes: m, p_gateway: 'stripe' }),
+      rpc('painel_geral'),
+    ]);
+
+    const rows = [...(dpix.rows || []), ...(dstripe.rows || [])];
+
+    const totalMidias      = rows.filter(r => r.tipo === 'midia').reduce((a,r) => a + +r.valor_modelo, 0);
+    const totalAssinaturas = rows.filter(r => r.tipo === 'assinatura').reduce((a,r) => a + +r.valor_modelo, 0);
+    const totalMes         = totalMidias + totalAssinaturas;
+
+    const hojeRows = rows.filter(r => r.created_at?.startsWith(todayStr));
+    const hojeMidias      = hojeRows.filter(r => r.tipo === 'midia').reduce((a,r) => a + +r.valor_modelo, 0);
+    const hojeAssinaturas = hojeRows.filter(r => r.tipo === 'assinatura').reduce((a,r) => a + +r.valor_modelo, 0);
+
+    const isLib  = r => !r.disponivel_em || new Date(r.disponivel_em) <= now;
+    const isPend = r => r.disponivel_em && new Date(r.disponivel_em) > now;
+
+    const libHoje  = hojeRows.filter(isLib).reduce((a,r) => a + +r.valor_modelo, 0);
+    const pendHoje = hojeRows.filter(isPend).reduce((a,r) => a + +r.valor_modelo, 0);
+    const libMes   = rows.filter(isLib).reduce((a,r) => a + +r.valor_modelo, 0);
+    const pendMes  = rows.filter(isPend).reduce((a,r) => a + +r.valor_modelo, 0);
+
+    const assinantes = dgeral.assinantes || 0;
+    const assHoje    = hojeRows.filter(r => r.tipo === 'assinatura').length;
+
+    const histData = await Promise.all([1,2,3].map(i => {
+      const d = new Date(y, m - 1 - i, 1);
+      const hy = d.getFullYear(), hm = d.getMonth() + 1;
+      const hym = `${hy}-${String(hm).padStart(2,'0')}`;
+      return Promise.all([
+        rpc('painel_transacoes', { p_ano: hy, p_mes: hm, p_gateway: 'pix' }),
+        rpc('painel_transacoes', { p_ano: hy, p_mes: hm, p_gateway: 'stripe' }),
+      ]).then(([hp, hs]) => {
+        const hr = [...(hp.rows || []), ...(hs.rows || [])];
+        return {
+          ym: hym,
+          midias: hr.filter(r => r.tipo === 'midia').reduce((a,r) => a + +r.valor_modelo, 0),
+          assinaturas: hr.filter(r => r.tipo === 'assinatura').reduce((a,r) => a + +r.valor_modelo, 0),
+        };
+      });
+    }));
+
+    renderGanhos({ totalMidias, totalAssinaturas, totalMes, hojeMidias, hojeAssinaturas, assinantes, assHoje, libHoje, pendHoje, libMes, pendMes, histData });
+  } catch(e) {
+    document.getElementById('ganhoContent').innerHTML = `<p style="color:#dc2626;text-align:center;padding:2rem">${e.message || 'Erro ao carregar dados.'}</p>`;
+  }
+}
+
+function renderGanhos({ totalMidias, totalAssinaturas, totalMes, hojeMidias, hojeAssinaturas, assinantes, assHoje, libHoje, pendHoje, libMes, pendMes, histData }) {
+  const histHTML = histData.map(h => {
+    const total = h.midias + h.assinaturas;
+    const [hy, hm] = h.ym.split('-').map(Number);
+    return `
+    <div class="hero-card hero-sm" style="margin-bottom:10px">
+      <div class="hist-header" onclick="toggleHist(this)">
+        <div>
+          <p class="hero-sublabel" style="margin:0 0 2px">${MES[hm-1].toUpperCase()} DE ${hy}</p>
+          <p class="hero-total" style="margin:0">${fmt(total)}</p>
+        </div>
+        <i class="bi bi-chevron-down hist-chevron"></i>
+      </div>
+      <div class="hist-body">
+        <div style="display:flex;justify-content:space-between;padding-top:8px;border-top:1.5px solid var(--purple-border);margin-top:10px">
+          <div>
+            <p class="hero-sublabel" style="margin:0 0 2px">Mídias</p>
+            <p class="hero-sub" style="margin:0">${fmt(h.midias)}</p>
+          </div>
+          <div style="text-align:right">
+            <p class="hero-sublabel" style="margin:0 0 2px">Assinaturas</p>
+            <p class="hero-sub" style="margin:0">${fmt(h.assinaturas)}</p>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('ganhoContent').innerHTML = `
+
+    <div class="hero-card">
+      <div class="hero-grid">
+        <div>
+          <p class="hero-sublabel">Mês Atual · Mídias</p>
+          <p class="hero-sub">${fmt(totalMidias)}</p>
+        </div>
+        <div>
+          <p class="hero-sublabel">Mês Atual · Assinaturas</p>
+          <p class="hero-sub">${fmt(totalAssinaturas)}</p>
+        </div>
+      </div>
+      <div class="hero-total-row">
+        <span class="hero-total-lbl">Total</span>
+        <span class="hero-total">${fmt(totalMes)}</span>
+      </div>
+    </div>
+
+    <p class="sec-label">Hoje</p>
+    <div class="g2">
+      <div class="stat-card ok">
+        <p class="stat-lbl">Mídias</p>
+        <p class="stat-val">${fmt(hojeMidias)}</p>
+      </div>
+      <div class="stat-card ok">
+        <p class="stat-lbl">Assinaturas</p>
+        <p class="stat-val">${fmt(hojeAssinaturas)}</p>
+      </div>
+    </div>
+
+    <div class="ass-card">
+      <div>
+        <p class="stat-lbl" style="margin:0 0 2px">Assinantes Ativos</p>
+        <p class="ass-num">${assinantes}</p>
+      </div>
+      ${assHoje > 0 ? `<span class="badge-verde">+${assHoje} hoje</span>` : ''}
+    </div>
+
+    <p class="sec-label">Situação dos Valores</p>
+    <div class="g2">
+      <div class="stat-card ok">
+        <p class="stat-lbl">Liberado Hoje</p>
+        <p class="stat-val">${fmt(libHoje)}</p>
+      </div>
+      <div class="stat-card hold">
+        <p class="stat-lbl">Pendentes Hoje</p>
+        <p class="stat-val">${fmt(pendHoje)}</p>
+      </div>
+      <div class="stat-card ok mt8">
+        <p class="stat-lbl">Liberado no Mês</p>
+        <p class="stat-val">${fmt(libMes)}</p>
+      </div>
+      <div class="stat-card hold mt8">
+        <p class="stat-lbl">Pendentes no Mês</p>
+        <p class="stat-val">${fmt(pendMes)}</p>
+      </div>
+    </div>
+
+    <div class="pendentes-info">
+      <strong>O que são valores pendentes?</strong>
+      São valores pagos pelo cliente via cartão de crédito. Dependemos da operadora avaliar o pagamento, descartar fraude e liberar o valor — o que pode levar de 3 a 30 dias. Não se preocupe! A própria plataforma atualiza os ganhos pendentes para liberados automaticamente!
+    </div>
+
+    ${histData.some(h => h.midias + h.assinaturas > 0) ? `
+    <hr class="separador">
+    <p class="sec-label">Histórico de Meses</p>
+    ${histHTML}` : ''}
+  `;
+}
+
+function toggleHist(header) {
+  const body = header.nextElementSibling;
+  const open = body.classList.toggle('open');
+  header.classList.toggle('open', open);
+}
+</script>
 </body>
 </html>

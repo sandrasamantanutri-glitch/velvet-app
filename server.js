@@ -2436,45 +2436,68 @@ app.post("/api/webhook/stripe", express.raw({ type: "application/json" }), async
         const novaExpiracao = new Date(vip.expiration_at);
         novaExpiracao.setMonth(novaExpiracao.getMonth() + 1);
 
-        const invoicePiId = invoice.payment_intent;
+        const invoicePiId  = invoice.payment_intent;
+        const invoiceCharge = invoice.charge || null;
         const amountPaidBrl = Number(invoice.amount_paid || 0) / 100;
+        const invoiceCurrency = invoice.currency || 'brl';
 
+        // Atualiza estado da assinatura (sempre, independente do valor)
         await client.query(
           `UPDATE vip_subscriptions
            SET ativo = true, expiration_at = $1, updated_at = NOW(),
-               aviso_7_dias_enviado = false, aviso_24h_enviado = false,
+               aviso_7_dias_enviado = false, aviso_24h_aviado = false,
                gateway_subscription_id = COALESCE($2, gateway_subscription_id)
            WHERE id = $3`,
           [novaExpiracao, invoicePiId, vip.id]
         );
 
-        const taxaGatewayRen = Number((vip.valor_assinatura * 0.15).toFixed(2));
-        const valoresRen = await calcularValores({
-          modelo_id: vip.modelo_id,
-          valor_bruto: vip.valor_assinatura,
-          taxa_gateway: taxaGatewayRen
-        });
+        if (amountPaidBrl > 0) {
+          // Cobrança real — registra pagamento e receita
+          const { rows: pcRows } = await client.query(
+            `INSERT INTO pagamentos_cartao
+               (cliente_id, modelo_id, tipo, valor, valor_brl, currency,
+                status, pago_em, gateway,
+                stripe_payment_intent_id, stripe_charge_id,
+                created_at, updated_at)
+             VALUES ($1,$2,'vip',$3,$3,$4,'pago',NOW(),'stripe',$5,$6,NOW(),NOW())
+             RETURNING id`,
+            [
+              vip.cliente_id, vip.modelo_id,
+              amountPaidBrl, invoiceCurrency,
+              invoicePiId, invoiceCharge
+            ]
+          );
 
-        await client.query(
-          `INSERT INTO transacoes_agency
-           (modelo_id, cliente_id, tipo, valor_bruto, valor_modelo,
-            agency_fee, velvet_fee, taxa_gateway, status, created_at,
-            gateway, disponivel_em, stripe_payment_intent_id)
-           VALUES ($1,$2,'assinatura_renovacao',$3,$4,$5,$6,$7,'pago',NOW(),'stripe',NULL,$8)`,
-          [
-            vip.modelo_id, vip.cliente_id,
-            vip.valor_assinatura,
-            Number(valoresRen.valor_modelo || 0),
-            Number(valoresRen.agency_fee || 0),
-            Number(valoresRen.velvet_fee || 0),
-            taxaGatewayRen,
-            invoicePiId
-          ]
-        );
+          const taxaGatewayRen = Number((vip.valor_assinatura * 0.15).toFixed(2));
+          const valoresRen = await calcularValores({
+            modelo_id: vip.modelo_id,
+            valor_bruto: vip.valor_assinatura,
+            taxa_gateway: taxaGatewayRen
+          });
+
+          await client.query(
+            `INSERT INTO transacoes_agency
+               (modelo_id, cliente_id, tipo, valor_bruto, valor_modelo,
+                agency_fee, velvet_fee, taxa_gateway, status, created_at,
+                gateway, disponivel_em, stripe_payment_intent_id)
+             VALUES ($1,$2,'assinatura',$3,$4,$5,$6,$7,'pago',NOW(),'stripe',NULL,$8)`,
+            [
+              vip.modelo_id, vip.cliente_id,
+              vip.valor_assinatura,
+              Number(valoresRen.valor_modelo || 0),
+              Number(valoresRen.agency_fee   || 0),
+              Number(valoresRen.velvet_fee   || 0),
+              taxaGatewayRen,
+              invoicePiId
+            ]
+          );
+
+          console.log('✅ VIP renovado — pagamento registrado em pagamentos_cartao e transacoes_agency. sub:', subscriptionId);
+        } else {
+          console.log('ℹ️ subscription_cycle amount_paid=0 — só expiracao atualizada, sem registro financeiro. sub:', subscriptionId);
+        }
 
         await client.query('COMMIT');
-
-        console.log('✅ VIP renovado automaticamente via Stripe Subscription:', subscriptionId);
         return res.status(200).send('ok');
       }
 

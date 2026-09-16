@@ -485,7 +485,7 @@ function mostrarAviso(texto) {
     aviso.style.background = "#fff7e6";
     aviso.style.color = "#9a6b00";
     aviso.style.marginBottom = "16px";
-    document.getElementById("tab-dados-bancarios").prepend(aviso);
+    document.getElementById("tab-bancarios").prepend(aviso);
   }
   aviso.innerText = texto;
 }
@@ -625,7 +625,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   popularFiltroMes();
   carregarResumoModelo();
-  inicializarAccordion();
 
   // FORM DADOS BANCÁRIOS — eventos (wiring permanente)
   const form = document.getElementById("formDadosBancarios");

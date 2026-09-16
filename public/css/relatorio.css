@@ -1,81 +1,55 @@
-/* ===========================
-   BASE
-=========================== */
+/* ── BASE ───────────────────────────────────────────────────── */
+:root {
+  --purple: #7B2CFF;
+  --purple-light: #9b7dff;
+  --purple-bg: #f0ebff;
+  --purple-border: #d1c0ff;
+  --ok: #22c55e;
+  --ok-dark: #15803d;
+  --ok-bg: #dcfce7;
+  --hold: #f59e0b;
+  --hold-dark: #b45309;
+  --danger: #dc2626;
+  --text: #1E1E26;
+  --text-muted: rgba(30,30,38,.55);
+  --card-shadow: 0 2px 12px rgba(0,0,0,.06);
+  --radius: 16px;
+  --radius-sm: 12px;
+}
+
 body {
-  font-family: 'poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   background: linear-gradient(180deg, #fbfaff 0%, #f4f2fa 100%);
-  color: #1E1E26;
+  color: var(--text);
   padding-top: 64px;
+  min-height: 100vh;
 }
 
-.area-card {
-  max-width: 520px;
+/* ── PAGE WRAPPER ───────────────────────────────────────────── */
+.rel-page {
+  max-width: 540px;
   margin: 0 auto;
-  padding: 16px 16px 60px;
+  padding-bottom: 80px;
 }
 
-/* ===========================
-   TOPO: TÍTULO + FILTRO + PRINT
-=========================== */
+/* ── TOPO ───────────────────────────────────────────────────── */
 .rel-topo {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 20px;
+  padding: 14px 16px 8px;
 }
 
 .rel-titulo {
   flex: 1;
   font-size: 18px;
   font-weight: 700;
-  color: #7B2CFF;
+  color: var(--purple);
   margin: 0;
 }
 
-.rel-acoes {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.rel-filtro-mes {
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  color: #7B2CFF;
-  background: #f0ebff;
-  border: 1.5px solid #d1c0ff;
-  border-radius: 10px;
-  padding: 6px 10px;
-  cursor: pointer;
-  outline: none;
-  max-width: 130px;
-}
-
-.rel-btn-print {
-  background: #f0ebff;
-  border: 1.5px solid #d1c0ff;
-  border-radius: 10px;
-  width: 36px;
-  height: 36px;
-  cursor: pointer;
-  font-size: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #7B2CFF;
-  transition: background 0.15s;
-}
-
-.rel-btn-print:hover {
-  background: #e2d9ff;
-}
-
-/* ===========================
-   BOTÃO VOLTAR
-=========================== */
+/* ── BOTÃO VOLTAR ───────────────────────────────────────────── */
 .btn-voltar {
-  position: relative;
   border: none;
   width: 38px;
   height: 38px;
@@ -86,314 +60,331 @@ body {
   justify-content: center;
   cursor: pointer;
   flex-shrink: 0;
-  transition: 0.2s ease;
+  transition: transform .2s;
 }
 
-.btn-voltar img {
-  width: 28px;
+.btn-voltar img { width: 28px; }
+.btn-voltar:hover { transform: scale(1.08); }
+
+/* ── TABS ───────────────────────────────────────────────────── */
+.tabs-wrap {
+  position: sticky;
+  top: 64px;
+  z-index: 40;
+  background: linear-gradient(180deg, #fbfaff 80%, transparent 100%);
+  padding: 6px 0 4px;
 }
 
-.btn-voltar:hover {
-  transform: scale(1.08);
+.tabs-scroll {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 2px 16px 6px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
-/* ===========================
-   HERO CARD
-=========================== */
-.rel-hero {
-  background: transparent;
-  border-radius: 20px;
-  padding: 22px 20px 18px;
-  margin-bottom: 16px;
-  box-shadow: 0 10px 28px rgba(143, 107, 255, 0.28);
-}
+.tabs-scroll::-webkit-scrollbar { display: none; }
 
-.rel-hero-topo {
-  margin-bottom: 16px;
-}
-
-.rel-hero-label {
-  display: block;
-  font-size: 12px;
+.tab-btn {
+  flex-shrink: 0;
+  font-family: inherit;
+  font-size: 13px;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-  color: #7b2cff;
-  margin-bottom: 4px;
+  color: var(--text-muted);
+  background: #fff;
+  border: 1.5px solid var(--purple-border);
+  border-radius: 20px;
+  padding: 7px 16px;
+  cursor: pointer;
+  transition: all .2s;
+  white-space: nowrap;
 }
 
-.rel-hero-total {
-  display: block;
-  font-size: 30px;
-  font-weight: 800;
-  color: #1e1e269e;
-  line-height: 1.1;
+.tab-btn.tab-ativo {
+  background: var(--purple);
+  color: #fff;
+  border-color: var(--purple);
+  box-shadow: 0 4px 14px rgba(123,44,255,.3);
 }
 
-.rel-hero-grid {
+/* ── TAB PANELS ─────────────────────────────────────────────── */
+.tab-content { padding: 8px 16px 0; }
+
+.tab-panel { display: none; }
+.tab-panel.tab-ativo { display: block; }
+
+/* ── GANHOS HEADER ──────────────────────────────────────────── */
+.ganhos-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.rel-filtro-mes {
+  flex: 1;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--purple);
+  background: var(--purple-bg);
+  border: 1.5px solid var(--purple-border);
+  border-radius: 12px;
+  padding: 8px 12px;
+  cursor: pointer;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.rel-btn-print {
+  flex-shrink: 0;
+  background: var(--purple-bg);
+  border: 1.5px solid var(--purple-border);
+  border-radius: 12px;
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--purple);
+  transition: background .15s;
+}
+
+.rel-btn-print:hover { background: #e2d9ff; }
+
+/* ── HERO CARD ──────────────────────────────────────────────── */
+.hero-card {
+  background: linear-gradient(135deg, #7B2CFF 0%, #5a1dcc 100%);
+  border-radius: var(--radius);
+  padding: 20px 18px 16px;
+  margin-bottom: 14px;
+  box-shadow: 0 10px 28px rgba(123,44,255,.35);
+  color: #fff;
+}
+
+.hero-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
+  margin-bottom: 14px;
 }
 
-.rel-hero-sublabel {
+.hero-sublabel {
   font-size: 11px;
   font-weight: 600;
-  color:#7b2cff;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin: 0 0 2px;
+  letter-spacing: .5px;
+  color: rgba(255,255,255,.7);
+  margin: 0 0 3px;
 }
 
-.rel-hero-sub {
+.hero-sub {
   font-size: 16px;
   font-weight: 700;
-  color:#1e1e269e;
+  color: #fff;
 }
 
-.rel-hero-sm {
-  box-shadow: 0 4px 14px rgba(123, 44, 255, 0.08);
-  margin-bottom: 0;
-}
-
-.rel-hero-sm .rel-hero-label,
-.rel-hero-sm .rel-hero-sublabel {
-  color: #9b7dff;
-}
-
-.rel-hero-sm .rel-hero-total,
-.rel-hero-sm .rel-hero-sub {
-  color: #7B2CFF;
-}
-
-.rel-hero-total-row {
+.hero-total-row {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  margin-top: 14px;
   padding-top: 12px;
-  border-top: 3px solid #d1c0ff;
+  border-top: 1.5px solid rgba(255,255,255,.25);
 }
 
-.rel-hero-total-lbl {
-  font-size: 12px;
+.hero-total-lbl {
+  font-size: 11px;
   font-weight: 600;
-  color:#7b2cff;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: .5px;
+  color: rgba(255,255,255,.75);
 }
 
-.rel-hero-sm .rel-hero-total-row {
-  border-top-color: rgba(123,44,255,0.15);
+.hero-total {
+  font-size: 26px;
+  font-weight: 800;
+  color: #fff;
 }
 
-.rel-hero-sm .rel-hero-total-lbl {
-  color: #9b7dff;
+/* Hero menor (mês anterior) */
+.hero-sm {
+  background: var(--purple-bg);
+  box-shadow: 0 4px 14px rgba(123,44,255,.1);
+  border: 1.5px solid var(--purple-border);
 }
 
-/* ===========================
-   SEÇÃO LABEL
-=========================== */
-.rel-sec-lbl {
+.hero-sm .hero-sublabel { color: var(--purple-light); }
+.hero-sm .hero-sub { color: var(--purple); }
+.hero-sm .hero-total-row { border-top-color: var(--purple-border); }
+.hero-sm .hero-total-lbl { color: var(--purple-light); }
+.hero-sm .hero-total { color: var(--purple); font-size: 20px; }
+
+/* ── SECTION LABEL ──────────────────────────────────────────── */
+.sec-label {
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.7px;
-  color: #9b7dff;
-  margin: 16px 0 8px;
+  letter-spacing: .7px;
+  color: var(--purple-light);
+  margin: 14px 0 8px;
 }
 
-/* ===========================
-   GRADE 2 COLUNAS
-=========================== */
-.rel-g2 {
+/* ── 2-COL GRID ─────────────────────────────────────────────── */
+.g2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
 }
 
-/* ===========================
-   CARD STAT
-=========================== */
-.rel-st {
+.mt8  { margin-top: 8px; }
+.mt12 { margin-top: 12px; }
+
+/* ── STAT CARD ──────────────────────────────────────────────── */
+.stat-card {
   background: #fff;
-  border-radius: 14px;
+  border-radius: var(--radius-sm);
   padding: 14px 14px 12px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-  border-left: 3px solid #d1c0ff;
+  box-shadow: var(--card-shadow);
+  border-left: 3px solid var(--purple-border);
 }
 
-.rel-st.ok {
-  border-left-color: #22c55e;
-}
+.stat-card.ok   { border-left-color: var(--ok); }
+.stat-card.hold { border-left-color: var(--hold); }
 
-.rel-st.hold {
-  border-left-color: #f59e0b;
-}
-
-.rel-st-lbl {
-  font-size: 11px;
-  font-weight: 600;
-  color: #1E1E26;
-  margin: 0 0 4px;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-}
-
-.rel-st-val {
-  font-size: 16px;
-  font-weight: 700;
-  color: #1e1e269e;
-}
-
-.rel-st.ok .rel-st-val  { color: #15803d; }
-.rel-st.hold .rel-st-val { color: #b45309; }
-
-.pendentes {
-  font-size: 11px;
-  font-weight: 600;
-  color: #1e1e269e;
-  letter-spacing: 0.4px;
-  margin: 15px 0 8px;
-
-}
-
-/* ===========================
-   ASSINANTES
-=========================== */
-.rel-assinantes {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: #fff;
-  border-radius: 14px;
-  padding: 14px 16px;
-  margin: 8px 0;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-}
-
-.rel-ass-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.rel-ass-icon {
-  font-style: normal;
-  font-size: 22px;
-}
-
-.rel-ass-lbl {
+.stat-lbl {
   font-size: 11px;
   font-weight: 600;
   color: #888;
   text-transform: uppercase;
-  letter-spacing: 0.4px;
-  margin: 0;
+  letter-spacing: .4px;
+  margin: 0 0 4px;
 }
 
-.rel-ass-num {
-  font-size: 22px;
+.stat-val {
+  font-size: 16px;
   font-weight: 700;
-  color:#1e1e269e;
+  color: var(--text-muted);
 }
 
-.rel-badge-ok {
+.stat-card.ok   .stat-val { color: var(--ok-dark); }
+.stat-card.hold .stat-val { color: var(--hold-dark); }
+
+/* ── ASSINANTES CARD ────────────────────────────────────────── */
+.ass-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fff;
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  margin: 8px 0;
+  box-shadow: var(--card-shadow);
+}
+
+.ass-num {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--purple);
+}
+
+.badge-verde {
   font-size: 12px;
   font-weight: 700;
-  color: #15803d;
-  background: #dcfce7;
-  padding: 4px 10px;
+  color: var(--ok-dark);
+  background: var(--ok-bg);
+  padding: 5px 12px;
   border-radius: 20px;
   white-space: nowrap;
 }
 
-/* ===========================
-   SEPARADOR
-=========================== */
-.separador,
-.separator {
+/* ── PENDENTES INFO ─────────────────────────────────────────── */
+.pendentes-info {
+  background: #fffbf0;
+  border: 1px solid #fde68a;
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  margin-top: 10px;
+  font-size: 12px;
+  color: #92400e;
+}
+
+.pendentes-info strong {
+  display: block;
+  font-size: 12px;
+  margin-bottom: 4px;
+  color: #b45309;
+}
+
+/* ── SEPARADOR ──────────────────────────────────────────────── */
+.separador, .separator {
   border: none;
   height: 1px;
-  background: linear-gradient(to right, transparent, #7B2CFF, transparent);
+  background: linear-gradient(to right, transparent, var(--purple), transparent);
   margin: 20px 0;
 }
 
-/* ===========================
-   ACCORDION
-=========================== */
-.acord-lista {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.acord-item {
+/* ── TRANSAÇÕES ─────────────────────────────────────────────── */
+.transacao {
   background: #fff;
-  border-radius: 14px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-  overflow: hidden;
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  box-shadow: var(--card-shadow);
+  color: #333;
 }
 
-.acord-btn {
-  width: 100%;
+.linha {
+  font-size: 14px;
+  margin-bottom: 5px;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 18px;
-  background: none;
-  border: none;
-  font-family: inherit;
-  font-size: 15px;
-  font-weight: 600;
-  color: #1E1E26;
-  cursor: pointer;
-  text-align: left;
-}
-
-.acord-btn:hover {
-  background: #faf8ff;
-}
-
-.acord-chevron {
-  font-size: 18px;
-  color: #7B2CFF;
-  transition: transform 0.25s ease;
-  display: inline-block;
-  flex-shrink: 0;
-}
-
-/* Variante div para ganhos (contém elementos interativos internos) */
-.acord-btn-ganhos {
-  cursor: pointer;
-  user-select: none;
-}
-
-.acord-btn-right {
-  display: flex;
-  align-items: center;
   gap: 6px;
-  margin-left: auto;
-  margin-right: 8px;
+  flex-wrap: wrap;
 }
 
-.acord-item.acord-aberto .acord-chevron {
-  transform: rotate(180deg);
+.linha strong { font-weight: 600; }
+
+.resumo-disponibilidade {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+  font-size: 14px;
+  font-weight: 600;
 }
 
-.acord-corpo {
-  display: none;
-  padding: 0 16px 16px;
-  border-top: 1px solid #f0ebff;
+.resumo-disponibilidade .resumo-liberado { color: var(--ok-dark); }
+.resumo-disponibilidade .resumo-pendente { color: var(--hold-dark); }
+.status-liberado { color: var(--ok-dark); font-weight: 600; font-size: 13px; }
+.status-pendente { color: var(--hold-dark); font-weight: 600; font-size: 13px; }
+
+/* ── PAGINAÇÃO ──────────────────────────────────────────────── */
+#paginacaoTransacoes {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-top: 20px;
 }
 
-.acord-item.acord-aberto .acord-corpo {
-  display: block;
+.pag-btn {
+  border: none;
+  background: var(--purple);
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
 }
 
-/* ===========================
-   CHARGEBACKS — CARD STYLE
-=========================== */
+.pag-btn:disabled { opacity: .4; cursor: not-allowed; }
+.pag-info { font-weight: 600; color: var(--purple); }
+
+/* ── CHARGEBACKS ────────────────────────────────────────────── */
 .rel-cb-resumo {
   display: flex;
   gap: 10px;
@@ -403,10 +394,10 @@ body {
 
 .rel-cb-res-card {
   flex: 1;
-  min-width: 100px;
+  min-width: 90px;
   background: #fff8f8;
   border: 1.5px solid #fecaca;
-  border-radius: 12px;
+  border-radius: var(--radius-sm);
   padding: 10px 12px;
   text-align: center;
 }
@@ -416,23 +407,23 @@ body {
   color: #888;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.4px;
+  letter-spacing: .4px;
   margin: 0 0 4px;
 }
 
 .rel-cb-res-card strong {
   font-size: 16px;
-  color: #dc2626;
+  color: var(--danger);
   font-weight: 700;
 }
 
 .rel-cb-card {
   background: #fff;
-  border-radius: 12px;
-  border-left: 3px solid #dc2626;
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--danger);
   padding: 14px 14px 12px;
   margin-bottom: 10px;
-  box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+  box-shadow: var(--card-shadow);
 }
 
 .rel-cb-row {
@@ -445,14 +436,14 @@ body {
 .rel-cb-valor {
   font-size: 17px;
   font-weight: 700;
-  color: #dc2626;
+  color: var(--danger);
 }
 
 .rel-cb-tipo {
   font-size: 11px;
   font-weight: 600;
-  color: #7B2CFF;
-  background: #f0ebff;
+  color: var(--purple);
+  background: var(--purple-bg);
   padding: 2px 8px;
   border-radius: 20px;
 }
@@ -463,124 +454,44 @@ body {
   line-height: 1.7;
 }
 
-.rel-cb-meta span {
-  margin-right: 10px;
-}
+.rel-cb-meta span { margin-right: 10px; }
 
-/* ===========================
-   TRANSAÇÕES (mantido)
-=========================== */
-.transacao {
-  background: #fff;
-  border-radius: 14px;
-  padding: 16px 18px;
-  margin-bottom: 12px;
-  box-shadow: 0 4px 14px rgba(0,0,0,0.06);
-  color: #333;
-  text-align: start;
-}
-
-.linha {
-  font-size: 14px;
-  margin-bottom: 6px;
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.linha strong {
-  font-weight: 600;
-}
-
-.resumo-disponibilidade {
-  display: flex;
-  gap: 14px;
-  flex-wrap: wrap;
-  margin-bottom: 14px;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.resumo-disponibilidade .resumo-liberado { color: #15803d; }
-.resumo-disponibilidade .resumo-pendente { color: #b26a00; }
-
-.status-liberado { color: #15803d; font-weight: 600; font-size: 13px; }
-.status-pendente { color: #b26a00; font-weight: 600; font-size: 13px; }
-
-/* ===========================
-   PAGINAÇÃO TRANSAÇÕES (mantido)
-=========================== */
-#paginacaoTransacoes {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 12px;
-  margin-top: 20px;
-}
-
-.pag-btn {
-  border: none;
-  background: #7B2CFF;
-  color: #fff;
-  padding: 6px 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-family: inherit;
-  font-size: 13px;
-}
-
-.pag-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.pag-info {
-  font-weight: 600;
-  color: #7B2CFF;
-}
-
-/* ===========================
-   DADOS BANCÁRIOS FORM (mantido)
-=========================== */
-.cardbank {
-  max-width: 480px;
-  margin: 0 auto;
-}
-
-#tab-dados-bancarios label {
-  font-size: 13px;
-  margin-top: 10px;
-  display: block;
-}
-
-#tab-dados-bancarios input,
-#tab-dados-bancarios select,
-#tab-dados-bancarios textarea {
-  width: 100%;
-  padding: 10px;
-  margin-top: 6px;
-  border-radius: 10px;
-  border: 1px solid #ddd;
-  box-sizing: border-box;
-  font-family: inherit;
-}
-
+/* ── DADOS BANCÁRIOS FORM ───────────────────────────────────── */
 .status-box {
-  margin-bottom: 16px;
   padding: 14px 16px;
-  border-radius: 12px;
+  border-radius: var(--radius-sm);
   font-size: 14px;
   font-weight: 600;
+  margin-bottom: 14px;
 }
 
-.status-aprovado {
-  background: #e9f9ef;
-  color: #1f7a3f;
+.status-aprovado { background: #e9f9ef; color: #1f7a3f; }
+
+.cardbank { margin: 0; }
+
+.inp-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #555;
+  margin: 12px 0 4px;
 }
 
-.confirmacao-box {
-  margin-top: 14px;
+.inp {
+  width: 100%;
+  padding: 11px 12px;
+  border-radius: 12px;
+  border: 1.5px solid #e2e0ea;
+  background: #fff;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--text);
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color .15s;
 }
+
+.inp:focus { border-color: var(--purple); }
 
 .confirmacao-label {
   display: flex;
@@ -588,102 +499,88 @@ body {
   gap: 8px;
   font-size: 13px;
   cursor: pointer;
+  margin-top: 4px;
 }
 
 .acoes-form {
   display: flex;
   gap: 10px;
-  margin-top: 18px;
-  flex-wrap: wrap;
+  margin-top: 20px;
 }
 
 .btn-principal {
-  background: #7B2CFF;
+  flex: 1;
+  background: var(--purple);
   color: #fff;
   border: none;
-  border-radius: 10px;
-  padding: 10px 20px;
+  border-radius: 12px;
+  padding: 13px 20px;
   font-family: inherit;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
+  transition: background .15s;
+}
+
+.btn-principal:hover { background: #6a1fe0; }
+
+.btn-secundario {
   flex: 1;
+  background: #fff;
+  color: var(--purple);
+  border: 1.5px solid var(--purple-border);
+  border-radius: 12px;
+  padding: 13px 20px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .15s;
 }
 
-.btn-principal:hover {
-  background: #6a1fe0;
+.btn-secundario:hover { background: var(--purple-bg); }
+
+/* ── PAGAMENTOS CARDS (gerados pelo JS) ─────────────────────── */
+.pagamento-card {
+  background: #fff;
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  box-shadow: var(--card-shadow);
 }
 
-/* ===========================
-   SEÇÃO IMPRESSÃO (oculta na tela)
-=========================== */
-#secaoPrint {
-  display: none;
-}
+/* ── PRINT AREA (hidden on screen) ─────────────────────────── */
+#secaoPrint { display: none; }
 
-/* ===========================
-   PRINT / PDF — imprime a tela como está
-=========================== */
+/* ── PRINT MEDIA ─────────────────────────────────────────────── */
 @media print {
-  /* Esconde tudo exceto o conteúdo de ganhos */
   #header-container,
   #footer-container,
   .btn-voltar,
-  .acord-btn-ganhos .acord-btn-right,
-  .acord-chevron,
+  .tabs-wrap,
+  .ganhos-header,
+  .rel-btn-print,
   #secaoPrint,
-  .acord-item:not(#acordGanhos) {
+  .tab-panel:not(#tab-ganhos),
+  #secaoHoje,
+  #secaoAssinantes {
     display: none !important;
   }
 
-  /* Remove sombra e padding do card na impressão */
-  .area-card {
-    box-shadow: none !important;
-    padding: 16px !important;
-    margin: 0 !important;
-    border-radius: 0 !important;
-    max-width: 100% !important;
-  }
+  #tab-ganhos { display: block !important; }
 
-  /* Garante que o accordion de ganhos fica totalmente aberto */
-  #corpo-ganhos {
-    display: block !important;
-    max-height: none !important;
-    overflow: visible !important;
-  }
+  .rel-page { padding-bottom: 0; max-width: 100%; }
 
-  /* Mantém as cores nas impressões */
+  body { background: #fff !important; padding-top: 0; }
+
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
-
-  /* Oculta select de mês e botão imprimir dentro do header do accordion */
-  #filtroMes,
-  #btnImprimir {
-    display: none !important;
-  }
-
-  body {
-    background: #fff !important;
-  }
 }
 
-/* ===========================
-   RESPONSIVO
-=========================== */
-@media (max-width: 480px) {
-  .area-card {
-    padding: 12px 12px 60px;
-  }
-
-  .rel-hero-total {
-    font-size: 26px;
-  }
-
-  .rel-btn-print {
-    width: 32px;
-    height: 32px;
-    font-size: 14px;
-  }
+/* ── RESPONSIVE ─────────────────────────────────────────────── */
+@media (max-width: 400px) {
+  .hero-total { font-size: 22px; }
+  .stat-val   { font-size: 15px; }
 }
