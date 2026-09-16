@@ -24,6 +24,16 @@ async function getStripeInstance() {
 
 let pollingPixInterval = null;
 let pollingCartaoInterval = null;
+let _pixOrderIdAtivo = null;
+
+// Quando o usuário sai para o app bancário e volta, o setInterval pode ter sido
+// pausado/throttled. Este listener garante que o status é re-verificado
+// imediatamente ao retornar ao app.
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" && _pixOrderIdAtivo && !pollingPixInterval) {
+    iniciarVerificacaoPix(_pixOrderIdAtivo);
+  }
+});
 
 function whenSocketReady(cb, { timeoutMs = 8000, intervalMs = 50 } = {}) {
   if (window.socket) {
@@ -613,6 +623,7 @@ window.fecharPopupPagamento = function () {
       clearInterval(pollingPixInterval);
       pollingPixInterval = null;
     }
+    _pixOrderIdAtivo = null;
 
     if (typeof pollingCartaoInterval !== "undefined" && pollingCartaoInterval) {
       clearInterval(pollingCartaoInterval);
@@ -637,6 +648,18 @@ window.fecharPopupPagamento = function () {
   pagamentoEmProcesso = false;
 
   limparPagamentoConfirmado();
+
+  // Re-verifica acesso/VIP ao fechar o popup — captura pagamentos que foram
+  // confirmados no banco mas cujo callback não chegou a atualizar a UI.
+  setTimeout(async () => {
+    try {
+      if (typeof window.atualizarPerfilPosPagamento === "function") {
+        await window.atualizarPerfilPosPagamento();
+      } else {
+        await aplicarRegrasDeAcesso?.();
+      }
+    } catch (_) {}
+  }, 300);
 };
 
 function definirPagamentoAtualCartao(dados = {}) {
@@ -1556,6 +1579,8 @@ function iniciarVerificacaoPix(orderId) {
     pollingPixInterval = null;
   }
 
+  _pixOrderIdAtivo = orderId;
+
   pollingPixInterval = setInterval(async () => {
     try {
       const res = await fetch(`/api/pagamento/status/${orderId}`, {
@@ -1573,6 +1598,7 @@ function iniciarVerificacaoPix(orderId) {
       if (data.status === "pago") {
         clearInterval(pollingPixInterval);
         pollingPixInterval = null;
+        _pixOrderIdAtivo = null;
 
         const confirmId = montarConfirmIdPagamento(tipoAtual, data, orderId);
 
@@ -1656,6 +1682,7 @@ function iniciarVerificacaoPix(orderId) {
       if (data.status === "expirado") {
         clearInterval(pollingPixInterval);
         pollingPixInterval = null;
+        _pixOrderIdAtivo = null;
 
         document.getElementById("pixAguardando")?.classList.add("hidden");
 
@@ -1669,6 +1696,7 @@ function iniciarVerificacaoPix(orderId) {
       if (data.status === "falhou") {
         clearInterval(pollingPixInterval);
         pollingPixInterval = null;
+        _pixOrderIdAtivo = null;
 
         document.getElementById("pixAguardando")?.classList.add("hidden");
 
