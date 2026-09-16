@@ -166,3 +166,46 @@
   object-fit: cover;
   display: block;
 }
+
+/* ── FOOTER INSTITUCIONAL (footer-shared.js) ───── */
+.footer {
+  padding: 1.5rem 1rem 1rem;
+  text-align: center;
+  border-top: 1px solid #e8e4f4;
+  margin-top: 2rem;
+}
+
+.footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: .35rem .1rem;
+  list-style: none;
+  padding: 0;
+  margin: 0 0 .75rem;
+}
+
+.footer-links a {
+  color: rgba(30, 30, 38, .55);
+  font-size: .78rem;
+  text-decoration: none;
+  padding: 0 .25rem;
+  transition: color .15s;
+}
+
+.footer-links a:hover {
+  color: #7B2CFF;
+}
+
+.footer-sep {
+  color: rgba(30, 30, 38, .3);
+  font-size: .78rem;
+  user-select: none;
+}
+
+.footer-copy {
+  font-size: .72rem;
+  color: rgba(30, 30, 38, .4);
+  margin: 0;
+}

@@ -384,9 +384,11 @@
     "erro_conexao": "Error de conexión."
   },
   "footer": {
+    "sobre": "Sobre nosotros",
     "termos": "Términos de Uso",
     "privacidade": "Política de Privacidad",
     "politicas": "Política de Uso",
+    "contato": "Contacto",
     "copy": "© 2026 Velvet. Todos los derechos reservados.",
     "postar_feed": "Publicar en el Feed",
     "postar_premium": "Publicar en Premium"

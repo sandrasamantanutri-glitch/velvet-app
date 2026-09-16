@@ -1,9 +1,22 @@
 /* footer-shared.js — footer único para todas as páginas internas
-   Para atualizar o footer em todas as páginas, edite apenas este arquivo.
    Cada página deve ter: <div id="footer-container"></div>
-   e carregar este script: <script src="/testes/footer-shared.js"></script>
+   e carregar este script: <script src="/js/footer-shared.js"></script>
 */
 (function () {
+  if (!document.getElementById('footer-shared-styles')) {
+    const style = document.createElement('style');
+    style.id = 'footer-shared-styles';
+    style.textContent = `
+      .footer { padding: 1.5rem 1rem 1rem; text-align: center; border-top: 1px solid #e8e4f4; margin-top: 2rem; }
+      .footer-links { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: .35rem .1rem; list-style: none; padding: 0; margin: 0 0 .75rem; }
+      .footer-links a { color: rgba(30,30,38,.55); font-size: .78rem; text-decoration: none; padding: 0 .25rem; transition: color .15s; }
+      .footer-links a:hover { color: #7B2CFF; }
+      .footer-sep { color: rgba(30,30,38,.3); font-size: .78rem; user-select: none; }
+      .footer-copy { font-size: .72rem; color: rgba(30,30,38,.4); margin: 0; }
+    `;
+    document.head.appendChild(style);
+  }
+
   const html = `
     <footer class="footer">
       <ul class="footer-links">
@@ -42,9 +55,15 @@
 
   function inject() {
     const container = document.getElementById('footer-container');
-
-    if (container) {
-      container.innerHTML = html;
+    if (!container) return;
+    container.innerHTML = html;
+    const applyWhenReady = () => {
+      if (typeof applyTranslations === 'function') applyTranslations(container);
+    };
+    if (typeof whenI18nReady === 'function') {
+      whenI18nReady().then(applyWhenReady);
+    } else {
+      applyWhenReady();
     }
   }
 
