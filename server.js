@@ -127,7 +127,8 @@ app.use(helmet({
       styleSrc: [
         "'self'",
         "'unsafe-inline'",
-        "https://fonts.googleapis.com"
+        "https://fonts.googleapis.com",
+        "https://cdn.jsdelivr.net"
       ],
       fontSrc: [
         "'self'",
@@ -7762,8 +7763,12 @@ app.get("/api/modelo/painel/transacoes", authModelo, async (req, res) => {
       return [sp.getUTCFullYear(), sp.getUTCMonth() + 1];
     })();
 
-    const gwFilter = gateway ? `AND gateway = $4` : '';
-    const params   = gateway ? [mid, ano, mes, gateway] : [mid, ano, mes];
+    // 'pix' = tudo que não é stripe (ipag, pagarme, etc)
+    const gwFilter = gateway === 'stripe'
+      ? `AND gateway = 'stripe'`
+      : gateway === 'pix'
+        ? `AND gateway != 'stripe'`
+        : '';
 
     const result = await db.query(`
       SELECT tipo, valor_modelo, created_at, disponivel_em, gateway, cliente_id
@@ -7773,7 +7778,7 @@ app.get("/api/modelo/painel/transacoes", authModelo, async (req, res) => {
         AND EXTRACT(MONTH FROM (created_at AT TIME ZONE 'America/Sao_Paulo')) = $3
         ${gwFilter}
       ORDER BY created_at DESC
-    `, params);
+    `, [mid, ano, mes]);
 
     res.json({ rows: result.rows });
   } catch (err) {
@@ -7826,12 +7831,14 @@ app.get("/api/modelo/painel/chargebacks", authModelo, async (req, res) => {
       return [sp.getUTCFullYear(), sp.getUTCMonth() + 1];
     })();
 
+    // Chargebacks são registados em transacoes_agency com chargeback_motivo preenchido
     const result = await db.query(`
       SELECT tipo, valor_modelo, created_at, updated_at, cliente_id, gateway, chargeback_motivo
-      FROM chargebacks
+      FROM transacoes_agency
       WHERE modelo_id = $1
-        AND EXTRACT(YEAR  FROM created_at) = $2
-        AND EXTRACT(MONTH FROM created_at) = $3
+        AND chargeback_motivo IS NOT NULL
+        AND EXTRACT(YEAR  FROM (created_at AT TIME ZONE 'America/Sao_Paulo')) = $2
+        AND EXTRACT(MONTH FROM (created_at AT TIME ZONE 'America/Sao_Paulo')) = $3
       ORDER BY created_at DESC
     `, [mid, ano, mes]);
 
