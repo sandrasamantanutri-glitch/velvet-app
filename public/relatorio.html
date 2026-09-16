@@ -3,58 +3,365 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Meus Ganhos | Velvet</title>
+<title>Painel Financeiro | Velvet</title>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <link href="/css/header.css" rel="stylesheet">
-<link href="/css/relatorio.css" rel="stylesheet">
 <style>
-.g-wrap { max-width: 540px; margin: 0 auto; padding-bottom: 80px; }
-
-.g-topo {
-  display: flex; align-items: center; gap: 8px;
-  padding: 14px 16px 8px;
-  position: sticky; top: 64px; z-index: 40;
-  background: linear-gradient(180deg, #fbfaff 85%, transparent 100%);
+:root {
+  --purple:        #7B2CFF;
+  --purple-light:  #9b7dff;
+  --purple-bg:     #f0ebff;
+  --purple-border: #d1c0ff;
+  --ok:     #22c55e;
+  --ok-bg:  #dcfce7;
+  --hold:   #f59e0b;
+  --hold-bg:#fef9c3;
+  --red:    #ef4444;
+  --red-bg: #fee2e2;
+  --pix:    #0891b2;
+  --pix-bg: #e0f2fe;
+  --text:   #1E1E26;
+  --muted:  rgba(30,30,38,.52);
+  --border: #e8e4f4;
+  --card:   #ffffff;
+  --bg:     #fbfaff;
 }
-.btn-voltar {
-  border: none; background: none; width: 36px; height: 36px; border-radius: 50%;
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: linear-gradient(180deg, #fbfaff 0%, #f4f2fa 100%);
+  color: var(--text);
+  font-family: 'Poppins', -apple-system, sans-serif;
+  min-height: 100vh;
+  padding-top: 64px; /* Velvet fixed header */
+}
+
+/* ── LAYOUT ─────────────────────────────────── */
+.layout { display: flex; min-height: calc(100vh - 64px); }
+
+/* ── SIDEBAR ────────────────────────────────── */
+.sidebar {
+  width: 220px;
+  background: #fff;
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  position: fixed;
+  top: 64px; left: 0; bottom: 0;
+  z-index: 100;
+  overflow-y: auto;
+}
+.sidebar-user {
+  padding: .9rem 1rem;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: .65rem;
+}
+.avatar-sm {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--purple), var(--purple-light));
   display: flex; align-items: center; justify-content: center;
-  cursor: pointer; flex-shrink: 0; color: var(--purple); font-size: 1.2rem;
-  text-decoration: none; transition: transform .2s;
+  font-size: .75rem; font-weight: 700; color: #fff; flex-shrink: 0;
+  overflow: hidden;
 }
-.btn-voltar:hover { transform: scale(1.1); }
-.g-titulo { flex: 1; font-size: 18px; font-weight: 700; color: var(--purple); margin: 0; }
+.avatar-sm img { width: 100%; height: 100%; object-fit: cover; }
+.sidebar-user-info .name { font-size: .8rem; font-weight: 600; color: var(--text); }
+.sidebar-user-info .role { font-size: .7rem; color: var(--muted); }
+.sidebar-nav { flex: 1; padding: .5rem 0; }
+.nav-label { padding: .45rem 1rem; font-size: .65rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); font-weight: 600; }
+.nav-item {
+  display: flex; align-items: center; gap: .65rem;
+  padding: .55rem 1rem;
+  cursor: pointer; color: var(--muted); font-size: .82rem;
+  transition: all .15s; border-left: 3px solid transparent;
+  text-decoration: none; user-select: none;
+}
+.nav-item:hover { color: var(--text); background: var(--purple-bg); }
+.nav-item.active { color: var(--purple); border-left-color: var(--purple); background: var(--purple-bg); font-weight: 600; }
+.nav-item i { font-size: .95rem; width: 18px; text-align: center; }
+.badge-soon { font-size: .6rem; padding: .15rem .4rem; border-radius: 4px; background: var(--hold-bg); color: var(--hold); margin-left: auto; font-weight: 600; }
+.sidebar-footer { padding: .75rem 1rem; border-top: 1px solid var(--border); }
+.btn-logout { width: 100%; padding: .45rem; border: 1px solid var(--border); border-radius: 8px; background: transparent; color: var(--muted); font-size: .8rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: .5rem; transition: all .15s; }
+.btn-logout:hover { color: var(--red); border-color: var(--red); }
 
-.spin-wrap { display: flex; justify-content: center; padding: 3rem 0; }
-.spin { width: 30px; height: 30px; border: 3px solid #e2d9ff; border-top-color: var(--purple); border-radius: 50%; animation: rot .8s linear infinite; }
+/* ── MAIN ───────────────────────────────────── */
+.main-content { margin-left: 220px; flex: 1; padding: 1.25rem 1.5rem; }
+.page-header { margin-bottom: 1.25rem; }
+.page-header h1 { font-size: 1.3rem; font-weight: 700; color: var(--text); }
+.page-header p  { color: var(--muted); font-size: .82rem; margin-top: .15rem; }
+
+/* ── STAT CARDS ─────────────────────────────── */
+.cards-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: .75rem; margin-bottom: 1rem; }
+@media (min-width: 900px) { .cards-grid { grid-template-columns: repeat(4, 1fr); } }
+@media (min-width: 640px) { .cards-grid-2 { grid-template-columns: repeat(2, 1fr); } }
+.cards-grid-2 { display: grid; grid-template-columns: 1fr; gap: .75rem; margin-bottom: 1rem; }
+
+.sc {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px; padding: 1rem;
+  position: relative; overflow: hidden;
+}
+.sc::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+.sc.green::before  { background: linear-gradient(90deg, var(--ok), transparent); }
+.sc.purple::before { background: linear-gradient(90deg, var(--purple), transparent); }
+.sc.blue::before   { background: linear-gradient(90deg, var(--pix), transparent); }
+.sc.amber::before  { background: linear-gradient(90deg, var(--hold), transparent); }
+.sc.red::before    { background: linear-gradient(90deg, var(--red), transparent); }
+.sc .sc-lbl { font-size: .72rem; color: var(--muted); margin-bottom: .4rem; display: flex; align-items: center; gap: .4rem; }
+.sc .sc-val { font-size: 1.35rem; font-weight: 700; }
+.sc .sc-sub { font-size: .7rem; color: var(--muted); margin-top: .2rem; }
+.sc .sc-icon { position: absolute; right: .85rem; top: .85rem; width: 36px; height: 36px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 1rem; }
+.sc.green  .sc-icon { background: var(--ok-bg);   color: var(--ok); }
+.sc.purple .sc-icon { background: var(--purple-bg); color: var(--purple); }
+.sc.blue   .sc-icon { background: var(--pix-bg);  color: var(--pix); }
+.sc.amber  .sc-icon { background: var(--hold-bg); color: var(--hold); }
+.sc.red    .sc-icon { background: var(--red-bg);  color: var(--red); }
+
+/* ── TABLE CARD ─────────────────────────────── */
+.tcard {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px; overflow: hidden;
+  margin-bottom: 1rem;
+}
+.tcard-hd {
+  padding: .85rem 1rem;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .6rem;
+}
+.tcard-hd h5 { font-size: .88rem; font-weight: 600; margin: 0; color: var(--text); }
+.table-resp { overflow-x: auto; }
+.dt { width: 100%; border-collapse: collapse; font-size: .8rem; }
+.dt th { padding: .6rem .9rem; text-align: left; color: var(--muted); font-weight: 500; font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.dt td { padding: .65rem .9rem; border-bottom: 1px solid rgba(0,0,0,.04); vertical-align: middle; white-space: nowrap; }
+.dt tr:last-child td { border-bottom: none; }
+.dt tr:hover td { background: var(--purple-bg); }
+.tcard-ft { padding: .65rem 1rem; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .5rem; }
+.tcard-ft .ft-lbl { color: var(--muted); font-size: .8rem; }
+.tcard-ft .ft-val { font-size: .95rem; font-weight: 700; }
+
+/* badges */
+.bdg { font-size: .68rem; padding: .2rem .55rem; border-radius: 20px; font-weight: 500; }
+.bdg.midia      { background: var(--purple-bg); color: var(--purple); }
+.bdg.assinatura { background: var(--pix-bg);    color: var(--pix); }
+.bdg.chargeback { background: var(--red-bg);    color: var(--red); }
+.bdg.pix    { background: var(--pix-bg);    color: var(--pix); }
+.bdg.stripe { background: var(--purple-bg); color: var(--purple-light); }
+.bdg-lib  { font-size: .72rem; color: var(--ok);   font-weight: 600; }
+.bdg-pend { font-size: .72rem; color: var(--hold); font-weight: 600; }
+
+/* custom select */
+.csel {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 8px;
+  padding: .35rem .65rem;
+  font-size: .8rem; font-family: inherit;
+  cursor: pointer;
+}
+.csel:focus { outline: none; border-color: var(--purple); }
+
+/* ── MEU BANCO ──────────────────────────────── */
+.banco-main {
+  background: linear-gradient(135deg, var(--purple), var(--purple-light));
+  border-radius: 16px; padding: 1.5rem;
+  text-align: center; color: #fff; margin-bottom: .75rem;
+}
+.banco-main .bm-lbl { font-size: .8rem; opacity: .85; margin-bottom: .4rem; }
+.banco-main .bm-amt { font-size: 2.2rem; font-weight: 800; }
+.banco-main .bm-sub { font-size: .75rem; opacity: .7; margin-top: .3rem; }
+.btn-saque {
+  margin-top: 1rem; padding: .6rem 1.75rem;
+  border: 2px solid rgba(255,255,255,.4); border-radius: 8px;
+  background: rgba(255,255,255,.15); color: #fff;
+  font-family: inherit; font-size: .88rem; font-weight: 600;
+  opacity: .6; cursor: not-allowed;
+}
+.soon-tag { font-size: .65rem; padding: .15rem .5rem; border-radius: 20px; background: var(--hold-bg); color: var(--hold); font-weight: 600; }
+
+/* pending info */
+.pend-info {
+  background: #fffbeb; border: 1px solid #fde68a;
+  border-radius: 12px; padding: 1rem 1.1rem;
+  margin-bottom: 1rem;
+}
+.pend-info p { font-size: .82rem; color: #92400e; line-height: 1.6; margin: 0; }
+
+/* LOADING */
+.spin-wrap { display: flex; align-items: center; justify-content: center; padding: 2.5rem; }
+.spin { width: 30px; height: 30px; border: 3px solid var(--border); border-top-color: var(--purple); border-radius: 50%; animation: rot .8s linear infinite; }
 @keyframes rot { to { transform: rotate(360deg); } }
+.empty-st { text-align: center; padding: 2.5rem; color: var(--muted); }
+.empty-st i { font-size: 2rem; display: block; margin-bottom: .65rem; opacity: .4; }
 
-.hist-header {
-  display: flex; align-items: center; justify-content: space-between;
-  cursor: pointer; user-select: none;
+/* section */
+.section { display: none; }
+.section.active { display: block; }
+
+/* chart */
+.chart-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 1.1rem; margin-bottom: 1rem; }
+.chart-card h5 { font-size: .88rem; font-weight: 600; margin-bottom: .9rem; }
+
+/* mobile toggle */
+.mob-toggle { display: none; position: fixed; top: 72px; left: .75rem; z-index: 200; background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: .35rem .6rem; cursor: pointer; color: var(--purple); font-size: 1.1rem; box-shadow: 0 2px 8px rgba(123,44,255,.1); }
+.overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.25); z-index: 99; }
+.overlay.show { display: block; }
+
+@media (max-width: 768px) {
+  .sidebar { transform: translateX(-100%); transition: transform .3s; top: 64px; }
+  .sidebar.open { transform: translateX(0); }
+  .main-content { margin-left: 0; padding: .9rem; }
+  .mob-toggle { display: flex; }
+  .cards-grid { grid-template-columns: 1fr 1fr; gap: .6rem; }
+  .banco-main .bm-amt { font-size: 1.8rem; }
 }
-.hist-body { display: none; padding-top: 10px; }
-.hist-body.open { display: block; }
-.hist-chevron { transition: transform .2s; color: var(--purple-light); font-size: .9rem; }
-.hist-header.open .hist-chevron { transform: rotate(180deg); }
+@media (max-width: 420px) {
+  .cards-grid { grid-template-columns: 1fr; }
+}
+
+/* info row */
+.info-row { display: flex; justify-content: space-between; align-items: center; padding: .75rem 1rem; border-bottom: 1px solid var(--border); font-size: .83rem; }
+.info-row:last-child { border-bottom: none; }
+.info-row .ir-lbl { color: var(--muted); }
+.info-row .ir-val { font-weight: 600; }
+
+/* traffic legend */
+.traf-legend { display: flex; gap: .85rem; flex-wrap: wrap; }
+.traf-leg-item { display: flex; align-items: center; gap: .35rem; font-size: .75rem; color: var(--muted); }
+.leg-dot { width: 9px; height: 9px; border-radius: 50%; }
 </style>
 </head>
 <body>
 
 <div id="header-container"></div>
 
-<div class="g-wrap">
-  <div class="g-topo">
-    <a class="btn-voltar" href="/areaUsuario.html"><i class="bi bi-arrow-left"></i></a>
-    <h1 class="g-titulo">Meus Ganhos</h1>
-    <select class="rel-filtro-mes" id="monthSel" onchange="onMonthChange()" style="flex:0 0 auto;width:auto"></select>
-  </div>
-  <div style="padding:0 16px">
-    <div id="ganhoContent">
-      <div class="spin-wrap"><div class="spin"></div></div>
+<div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+<button class="mob-toggle" onclick="toggleSidebar()"><i class="bi bi-list"></i></button>
+
+<div class="layout">
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-user">
+      <div class="avatar-sm" id="avatarEl">M</div>
+      <div class="sidebar-user-info">
+        <div class="name" id="userNameEl">Modelo</div>
+        <div class="role">Painel Financeiro</div>
+      </div>
     </div>
-  </div>
+    <nav class="sidebar-nav">
+      <div class="nav-label">Visão Geral</div>
+      <a class="nav-item active" onclick="showSection('geral')">
+        <i class="bi bi-grid-1x2-fill"></i> Geral
+      </a>
+      <div class="nav-label">Financeiro</div>
+      <a class="nav-item" onclick="showSection('pix')">
+        <i class="bi bi-qr-code-scan"></i> Ganhos PIX
+      </a>
+      <a class="nav-item" onclick="showSection('cartao')">
+        <i class="bi bi-credit-card-2-front"></i> Ganhos Cartão
+      </a>
+      <a class="nav-item" onclick="showSection('meubanco')">
+        <i class="bi bi-bank2"></i> Meu Banco
+      </a>
+      <a class="nav-item" onclick="showSection('saques')">
+        <i class="bi bi-arrow-up-circle"></i> Saques
+        <span class="badge-soon">Breve</span>
+      </a>
+      <a class="nav-item" onclick="showSection('chargebacks')">
+        <i class="bi bi-exclamation-triangle"></i> Chargebacks
+      </a>
+      <div class="nav-label">Análise</div>
+      <a class="nav-item" onclick="showSection('trafego')">
+        <i class="bi bi-bar-chart-line"></i> Tráfego
+      </a>
+      <a class="nav-item" onclick="showSection('assinantes')">
+        <i class="bi bi-people-fill"></i> Assinantes
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="btn-logout" onclick="window.location.href='/areaUsuario.html'">
+        <i class="bi bi-arrow-left"></i> Voltar
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main-content">
+
+    <!-- GERAL -->
+    <div class="section active" id="secGeral">
+      <div class="page-header">
+        <h1>Visão Geral</h1>
+        <p>Resumo financeiro e métricas do seu perfil</p>
+      </div>
+      <div id="geralContent"><div class="spin-wrap"><div class="spin"></div></div></div>
+    </div>
+
+    <!-- PIX -->
+    <div class="section" id="secPix">
+      <div class="page-header">
+        <h1>Ganhos do Mês — PIX</h1>
+        <p>Transações pagas via PIX</p>
+      </div>
+      <div id="pixContent"><div class="spin-wrap"><div class="spin"></div></div></div>
+    </div>
+
+    <!-- CARTÃO -->
+    <div class="section" id="secCartao">
+      <div class="page-header">
+        <h1>Ganhos do Mês — Cartão</h1>
+        <p>Transações pagas via cartão de crédito</p>
+      </div>
+      <div id="cartaoContent"><div class="spin-wrap"><div class="spin"></div></div></div>
+    </div>
+
+    <!-- MEU BANCO -->
+    <div class="section" id="secMeubanco">
+      <div class="page-header">
+        <h1>Meu Banco</h1>
+        <p>Saldo disponível e valores aguardando liberação</p>
+      </div>
+      <div id="meubancoContent"><div class="spin-wrap"><div class="spin"></div></div></div>
+    </div>
+
+    <!-- SAQUES -->
+    <div class="section" id="secSaques">
+      <div class="page-header">
+        <h1>Histórico de Saques <span class="soon-tag" style="font-size:.75rem">Em Breve</span></h1>
+        <p>Esta funcionalidade estará disponível em breve</p>
+      </div>
+      <div class="empty-st"><i class="bi bi-clock-history"></i><p>Em desenvolvimento — disponível em breve!</p></div>
+    </div>
+
+    <!-- CHARGEBACKS -->
+    <div class="section" id="secChargebacks">
+      <div class="page-header">
+        <h1>Chargebacks</h1>
+        <p>Reembolsos e estornos registrados</p>
+      </div>
+      <div id="chargebackContent"><div class="spin-wrap"><div class="spin"></div></div></div>
+    </div>
+
+    <!-- TRÁFEGO -->
+    <div class="section" id="secTrafego">
+      <div class="page-header">
+        <h1>Tráfego</h1>
+        <p>Acessos ao seu perfil por origem</p>
+      </div>
+      <div id="trafegoContent"><div class="spin-wrap"><div class="spin"></div></div></div>
+    </div>
+
+    <!-- ASSINANTES -->
+    <div class="section" id="secAssinantes">
+      <div class="page-header">
+        <h1>Assinantes</h1>
+        <p>Ativações de assinatura por dia</p>
+      </div>
+      <div id="assinantesContent"><div class="spin-wrap"><div class="spin"></div></div></div>
+    </div>
+
+  </main>
 </div>
 
 <script src="/js/header.js"></script>
@@ -62,207 +369,455 @@
 const token = localStorage.getItem('token');
 if (!token) { window.location.href = '/'; }
 
+let loadedSections = new Set();
+let trafegoChart = null;
+
 const fmt = v => 'R$ ' + Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const MES  = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-const MESS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+const fmtDate = d => d ? new Date(d).toLocaleDateString('pt-BR') : '—';
+const MON = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+const MONFULL = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
 function currentYM() {
-  const partes = new Intl.DateTimeFormat('sv-SE', {
-    timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit'
-  }).formatToParts(new Date());
-  return `${partes.find(p => p.type === 'year').value}-${partes.find(p => p.type === 'month').value}`;
+  const p = new Intl.DateTimeFormat('sv-SE', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit' }).formatToParts(new Date());
+  return `${p.find(x=>x.type==='year').value}-${p.find(x=>x.type==='month').value}`;
 }
-
 function todaySP() {
   return new Intl.DateTimeFormat('sv-SE', { timeZone: 'America/Sao_Paulo' }).format(new Date());
 }
 
-function buildMonthOptions(selectedYM) {
-  const el = document.getElementById('monthSel');
-  el.innerHTML = '';
-  const now = new Date();
+function buildMonthOpts(sel) {
   const cur = currentYM();
-  const [curY, curM] = cur.split('-').map(Number);
+  const [cy, cm] = cur.split('-').map(Number);
+  let html = '';
   for (let i = 0; i < 12; i++) {
-    let m = curM - i, a = curY;
-    if (m <= 0) { m += 12; a -= 1; }
-    const val = `${a}-${String(m).padStart(2, '0')}`;
-    const opt = document.createElement('option');
-    opt.value = val;
-    opt.textContent = `${MESS[m-1]}. de ${a}`;
-    if (val === selectedYM) opt.selected = true;
-    el.appendChild(opt);
+    let m = cm - i, y = cy;
+    if (m <= 0) { m += 12; y--; }
+    const val = `${y}-${String(m).padStart(2,'0')}`;
+    html += `<option value="${val}"${val===sel?' selected':''}>${MON[m-1]} ${y}</option>`;
   }
+  return html;
 }
 
-async function fetchGanhos(mesParam) {
-  const url = mesParam ? `/api/modelo/ganhos?mes=${mesParam}` : '/api/modelo/ganhos';
-  const res = await fetch(url, { headers: { Authorization: 'Bearer ' + token } });
+async function api(path) {
+  const res = await fetch(path, { headers: { Authorization: 'Bearer ' + token } });
   if (res.status === 401 || res.status === 403) { window.location.href = '/'; return null; }
   if (!res.ok) throw new Error('HTTP ' + res.status);
   return res.json();
 }
 
-async function loadGanhos(ym) {
-  document.getElementById('ganhoContent').innerHTML = '<div class="spin-wrap"><div class="spin"></div></div>';
+// ── NAVIGATION ───────────────────────────────────────────────────────
+const secMap = {
+  geral:'secGeral', pix:'secPix', cartao:'secCartao',
+  meubanco:'secMeubanco', saques:'secSaques', chargebacks:'secChargebacks',
+  trafego:'secTrafego', assinantes:'secAssinantes'
+};
+
+function showSection(name) {
+  document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  const sec = document.getElementById(secMap[name]);
+  if (sec) sec.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(el => {
+    if (el.getAttribute('onclick')?.includes(`'${name}'`)) el.classList.add('active');
+  });
+  closeSidebar();
+  if (!loadedSections.has(name)) loadSection(name);
+}
+
+const loaders = {
+  geral: loadGeral, pix: loadPix, cartao: loadCartao,
+  meubanco: loadMeubanco, chargebacks: loadChargebacks,
+  trafego: loadTrafego, assinantes: loadAssinantes,
+};
+const errMap = {
+  geral:'geralContent', pix:'pixContent', cartao:'cartaoContent',
+  meubanco:'meubancoContent', chargebacks:'chargebackContent',
+  trafego:'trafegoContent', assinantes:'assinantesContent'
+};
+
+async function loadSection(name) {
+  if (!loaders[name]) return;
   try {
-    const data = await fetchGanhos(ym);
-    if (!data) return;
-
-    const rows = data.rows || [];
-    const now = new Date();
-    const today = todaySP();
-
-    const totalMidias      = rows.filter(r => r.tipo === 'midia').reduce((a, r) => a + +r.valor_modelo, 0);
-    const totalAssinaturas = rows.filter(r => r.tipo === 'assinatura').reduce((a, r) => a + +r.valor_modelo, 0);
-    const totalMes         = totalMidias + totalAssinaturas;
-
-    const hojeRows = rows.filter(r => r.created_at?.startsWith(today));
-    const hojeMidias      = hojeRows.filter(r => r.tipo === 'midia').reduce((a, r) => a + +r.valor_modelo, 0);
-    const hojeAssinaturas = hojeRows.filter(r => r.tipo === 'assinatura').reduce((a, r) => a + +r.valor_modelo, 0);
-
-    const isLib  = r => !r.disponivel_em || new Date(r.disponivel_em) <= now;
-    const isPend = r => r.disponivel_em && new Date(r.disponivel_em) > now;
-
-    const libHoje  = hojeRows.filter(isLib).reduce((a, r) => a + +r.valor_modelo, 0);
-    const pendHoje = hojeRows.filter(isPend).reduce((a, r) => a + +r.valor_modelo, 0);
-    const libMes   = rows.filter(isLib).reduce((a, r) => a + +r.valor_modelo, 0);
-    const pendMes  = rows.filter(isPend).reduce((a, r) => a + +r.valor_modelo, 0);
-
-    const assinantes = data.assinantes || 0;
-    const assHoje    = data.assHoje || 0;
-
-    // Historical: 3 months before ym
-    const [y, m] = ym.split('-').map(Number);
-    const histData = await Promise.all([1, 2, 3].map(async i => {
-      let hm = m - i, hy = y;
-      if (hm <= 0) { hm += 12; hy -= 1; }
-      const hym = `${hy}-${String(hm).padStart(2, '0')}`;
-      const hdata = await fetchGanhos(hym);
-      const hrows = hdata?.rows || [];
-      return {
-        ym: hym,
-        midias:      hrows.filter(r => r.tipo === 'midia').reduce((a, r) => a + +r.valor_modelo, 0),
-        assinaturas: hrows.filter(r => r.tipo === 'assinatura').reduce((a, r) => a + +r.valor_modelo, 0),
-      };
-    }));
-
-    renderGanhos({ totalMidias, totalAssinaturas, totalMes, hojeMidias, hojeAssinaturas, assinantes, assHoje, libHoje, pendHoje, libMes, pendMes, histData });
-  } catch (e) {
-    document.getElementById('ganhoContent').innerHTML = `<p style="color:#dc2626;text-align:center;padding:2rem">${e.message || 'Erro ao carregar dados.'}</p>`;
+    await loaders[name]();
+    loadedSections.add(name);
+  } catch(e) {
+    console.error('Erro', name, e);
+    const el = document.getElementById(errMap[name]);
+    if (el) el.innerHTML = `<div class="empty-st"><i class="bi bi-exclamation-triangle" style="color:var(--hold)"></i><p>Erro ao carregar. Tente novamente.</p></div>`;
   }
 }
 
-function onMonthChange() { loadGanhos(document.getElementById('monthSel').value); }
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('overlay').classList.toggle('show');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('overlay').classList.remove('show');
+}
 
-function renderGanhos({ totalMidias, totalAssinaturas, totalMes, hojeMidias, hojeAssinaturas, assinantes, assHoje, libHoje, pendHoje, libMes, pendMes, histData }) {
-  const histHTML = histData.map(h => {
-    const total = h.midias + h.assinaturas;
-    const [hy, hm] = h.ym.split('-').map(Number);
-    return `
-    <div class="hero-card hero-sm" style="margin-bottom:10px">
-      <div class="hist-header" onclick="toggleHist(this)">
-        <div>
-          <p class="hero-sublabel" style="margin:0 0 2px">${MES[hm-1].toUpperCase()} DE ${hy}</p>
-          <p class="hero-total" style="margin:0">${fmt(total)}</p>
-        </div>
-        <i class="bi bi-chevron-down hist-chevron"></i>
+// ── GERAL ────────────────────────────────────────────────────────────
+async function loadGeral() {
+  const d = await api('/api/modelo/painel/geral');
+  if (!d) return;
+  document.getElementById('geralContent').innerHTML = `
+    <div class="cards-grid">
+      <div class="sc green">
+        <div class="sc-icon"><i class="bi bi-cash-stack"></i></div>
+        <div class="sc-lbl"><i class="bi bi-circle-fill" style="color:var(--ok);font-size:.45rem"></i> Saldo para Saque</div>
+        <div class="sc-val" style="color:var(--ok)">${fmt(d.disponivel)}</div>
+        <div class="sc-sub">Disponível agora</div>
       </div>
-      <div class="hist-body">
-        <div style="display:flex;justify-content:space-between;padding-top:8px;border-top:1.5px solid var(--purple-border);margin-top:10px">
-          <div>
-            <p class="hero-sublabel" style="margin:0 0 2px">Mídias</p>
-            <p class="hero-sub" style="margin:0">${fmt(h.midias)}</p>
-          </div>
-          <div style="text-align:right">
-            <p class="hero-sublabel" style="margin:0 0 2px">Assinaturas</p>
-            <p class="hero-sub" style="margin:0">${fmt(h.assinaturas)}</p>
-          </div>
-        </div>
+      <div class="sc amber">
+        <div class="sc-icon"><i class="bi bi-hourglass-split"></i></div>
+        <div class="sc-lbl"><i class="bi bi-circle-fill" style="color:var(--hold);font-size:.45rem"></i> Saldo a Liberar</div>
+        <div class="sc-val" style="color:var(--hold)">${fmt(d.pendente)}</div>
+        <div class="sc-sub">Aguardando liberação</div>
       </div>
-    </div>`;
-  }).join('');
-
-  document.getElementById('ganhoContent').innerHTML = `
-    <div class="hero-card">
-      <div class="hero-grid">
-        <div>
-          <p class="hero-sublabel">Mês Atual · Mídias</p>
-          <p class="hero-sub">${fmt(totalMidias)}</p>
-        </div>
-        <div>
-          <p class="hero-sublabel">Mês Atual · Assinaturas</p>
-          <p class="hero-sub">${fmt(totalAssinaturas)}</p>
-        </div>
+      <div class="sc blue">
+        <div class="sc-icon"><i class="bi bi-people-fill"></i></div>
+        <div class="sc-lbl"><i class="bi bi-circle-fill" style="color:var(--pix);font-size:.45rem"></i> Assinantes Ativos</div>
+        <div class="sc-val" style="color:var(--pix)">${d.assinantes}</div>
+        <div class="sc-sub">Este mês</div>
       </div>
-      <div class="hero-total-row">
-        <span class="hero-total-lbl">Total</span>
-        <span class="hero-total">${fmt(totalMes)}</span>
+      <div class="sc purple">
+        <div class="sc-icon"><i class="bi bi-eye-fill"></i></div>
+        <div class="sc-lbl"><i class="bi bi-circle-fill" style="color:var(--purple);font-size:.45rem"></i> Visitas Hoje</div>
+        <div class="sc-val" style="color:var(--purple)">${d.visitas_hoje.toLocaleString('pt-BR')}</div>
+        <div class="sc-sub">Total no mês: ${d.visitas_mes.toLocaleString('pt-BR')}</div>
       </div>
     </div>
-
-    <p class="sec-label">Hoje</p>
-    <div class="g2">
-      <div class="stat-card ok">
-        <p class="stat-lbl">Mídias</p>
-        <p class="stat-val">${fmt(hojeMidias)}</p>
-      </div>
-      <div class="stat-card ok">
-        <p class="stat-lbl">Assinaturas</p>
-        <p class="stat-val">${fmt(hojeAssinaturas)}</p>
-      </div>
+    <div class="pend-info">
+      <p><strong>O que são valores pendentes?</strong><br>
+      São valores pagos pelo cliente via cartão de crédito. Dependemos da operadora avaliar o pagamento, descartar fraude e liberar o valor — o que pode levar de 3 a 30 dias. Não se preocupe! A própria plataforma atualiza os ganhos pendentes para liberados automaticamente.</p>
     </div>
-
-    <div class="ass-card">
-      <div>
-        <p class="stat-lbl" style="margin:0 0 2px">Assinantes Ativos</p>
-        <p class="ass-num">${assinantes}</p>
-      </div>
-      ${assHoje > 0 ? `<span class="badge-verde">+${assHoje} hoje</span>` : ''}
-    </div>
-
-    <p class="sec-label">Situação dos Valores</p>
-    <div class="g2">
-      <div class="stat-card ok">
-        <p class="stat-lbl">Liberado Hoje</p>
-        <p class="stat-val">${fmt(libHoje)}</p>
-      </div>
-      <div class="stat-card hold">
-        <p class="stat-lbl">Pendentes Hoje</p>
-        <p class="stat-val">${fmt(pendHoje)}</p>
-      </div>
-      <div class="stat-card ok mt8">
-        <p class="stat-lbl">Liberado no Mês</p>
-        <p class="stat-val">${fmt(libMes)}</p>
-      </div>
-      <div class="stat-card hold mt8">
-        <p class="stat-lbl">Pendentes no Mês</p>
-        <p class="stat-val">${fmt(pendMes)}</p>
-      </div>
-    </div>
-
-    <div class="pendentes-info">
-      <strong>O que são valores pendentes?</strong>
-      São valores pagos pelo cliente via cartão de crédito. Dependemos da operadora avaliar o pagamento, descartar fraude e liberar o valor — o que pode levar de 3 a 30 dias. Não se preocupe! A própria plataforma atualiza os ganhos pendentes para liberados automaticamente!
-    </div>
-
-    ${histData.some(h => h.midias + h.assinaturas > 0) ? `
-    <hr class="separador">
-    <p class="sec-label">Histórico de Meses</p>
-    ${histHTML}` : ''}
   `;
 }
 
-function toggleHist(header) {
-  const body = header.nextElementSibling;
-  const open = body.classList.toggle('open');
-  header.classList.toggle('open', open);
+// ── PIX ──────────────────────────────────────────────────────────────
+async function loadPix(ym) {
+  if (!ym) ym = currentYM();
+  const d = await api(`/api/modelo/painel/transacoes?gateway=pix&mes=${ym}`);
+  if (!d) return;
+  const rows = d.rows || [];
+  const now = new Date();
+  const today = todaySP();
+  const total = rows.reduce((a,r) => a + +r.valor_modelo, 0);
+  const ganhoHoje = rows.filter(r => r.created_at?.startsWith(today)).reduce((a,r) => a + +r.valor_modelo, 0);
+  const totalMidias = rows.filter(r=>r.tipo==='midia').reduce((a,r)=>a+ +r.valor_modelo,0);
+  const totalAss    = rows.filter(r=>r.tipo==='assinatura').reduce((a,r)=>a+ +r.valor_modelo,0);
+
+  const tbody = rows.length ? rows.map(r => {
+    const isLib = !r.disponivel_em || new Date(r.disponivel_em) <= now;
+    const disp  = isLib
+      ? `<span class="bdg-lib"><i class="bi bi-check-circle"></i> Liberado</span>`
+      : `<span class="bdg-pend"><i class="bi bi-clock"></i> ${fmtDate(r.disponivel_em)}</span>`;
+    return `<tr>
+      <td>${fmtDate(r.created_at)}</td>
+      <td><span class="bdg ${r.tipo}">${r.tipo||'—'}</span></td>
+      <td style="color:var(--ok);font-weight:600">${fmt(r.valor_modelo)}</td>
+      <td><span class="bdg pix">PIX</span></td>
+      <td>${disp}</td>
+      <td style="color:var(--muted)">#${r.cliente_id}</td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="6"><div class="empty-st"><i class="bi bi-inbox"></i><p>Nenhum registro</p></div></td></tr>`;
+
+  document.getElementById('pixContent').innerHTML = `
+    <div class="cards-grid">
+      <div class="sc blue"><div class="sc-icon"><i class="bi bi-qr-code-scan"></i></div><div class="sc-lbl">Total do Mês</div><div class="sc-val" style="color:var(--pix)">${fmt(total)}</div></div>
+      <div class="sc green"><div class="sc-icon"><i class="bi bi-calendar-day"></i></div><div class="sc-lbl">Ganho de Hoje</div><div class="sc-val" style="color:var(--ok)">${fmt(ganhoHoje)}</div></div>
+      <div class="sc amber"><div class="sc-icon"><i class="bi bi-images"></i></div><div class="sc-lbl">Mídias</div><div class="sc-val" style="color:var(--hold)">${fmt(totalMidias)}</div></div>
+      <div class="sc purple"><div class="sc-icon"><i class="bi bi-star-fill"></i></div><div class="sc-lbl">Assinaturas</div><div class="sc-val" style="color:var(--purple)">${fmt(totalAss)}</div></div>
+    </div>
+    <div class="tcard">
+      <div class="tcard-hd">
+        <h5><i class="bi bi-qr-code-scan me-1" style="color:var(--pix)"></i>Transações PIX</h5>
+        <select class="csel" onchange="loadedSections.delete('pix');loadPix(this.value)">${buildMonthOpts(ym)}</select>
+      </div>
+      <div class="table-resp"><table class="dt">
+        <thead><tr><th>Data</th><th>Tipo</th><th>Valor</th><th>Gateway</th><th>Disponibilidade</th><th>Cliente</th></tr></thead>
+        <tbody>${tbody}</tbody>
+      </table></div>
+      <div class="tcard-ft"><span class="ft-lbl">Total</span><span class="ft-val" style="color:var(--ok)">${fmt(total)}</span></div>
+    </div>
+  `;
 }
 
-// Bootstrap
-const ym = currentYM();
-buildMonthOptions(ym);
-carregarHeader().then(() => loadGanhos(ym));
+// ── CARTÃO ───────────────────────────────────────────────────────────
+async function loadCartao(ym) {
+  if (!ym) ym = currentYM();
+  const d = await api(`/api/modelo/painel/transacoes?gateway=stripe&mes=${ym}`);
+  if (!d) return;
+  const rows = d.rows || [];
+  const now = new Date();
+  const today = todaySP();
+  const total = rows.reduce((a,r) => a + +r.valor_modelo, 0);
+  const ganhoHoje = rows.filter(r => r.created_at?.startsWith(today)).reduce((a,r) => a + +r.valor_modelo, 0);
+
+  const todayD = new Date(today);
+  const t30 = new Date(todayD); t30.setDate(t30.getDate()-30);
+  const libF = r => { if (!r.disponivel_em) return false; const d = new Date(r.disponivel_em.split('T')[0]); return d <= todayD && d >= t30; };
+  const totalMidias = rows.filter(r=>r.tipo==='midia'      && libF(r)).reduce((a,r)=>a+ +r.valor_modelo,0);
+  const totalAss    = rows.filter(r=>r.tipo==='assinatura' && libF(r)).reduce((a,r)=>a+ +r.valor_modelo,0);
+
+  const tbody = rows.length ? rows.map(r => {
+    const dispD = r.disponivel_em ? new Date(r.disponivel_em) : null;
+    const isLib = !dispD || dispD <= now;
+    const disp  = isLib
+      ? `<span class="bdg-lib"><i class="bi bi-check-circle"></i> Liberado${dispD?' em '+fmtDate(dispD):''}</span>`
+      : `<span class="bdg-pend"><i class="bi bi-clock"></i> Libera ${fmtDate(dispD)}</span>`;
+    return `<tr>
+      <td>${fmtDate(r.created_at)}</td>
+      <td><span class="bdg ${r.tipo}">${r.tipo||'—'}</span></td>
+      <td style="color:var(--purple-light);font-weight:600">${fmt(r.valor_modelo)}</td>
+      <td><span class="bdg stripe">Stripe</span></td>
+      <td>${disp}</td>
+      <td style="color:var(--muted)">#${r.cliente_id}</td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="6"><div class="empty-st"><i class="bi bi-inbox"></i><p>Nenhum registro</p></div></td></tr>`;
+
+  document.getElementById('cartaoContent').innerHTML = `
+    <div class="cards-grid">
+      <div class="sc purple"><div class="sc-icon"><i class="bi bi-credit-card-2-front"></i></div><div class="sc-lbl">Total do Mês</div><div class="sc-val" style="color:var(--purple-light)">${fmt(total)}</div></div>
+      <div class="sc green"><div class="sc-icon"><i class="bi bi-calendar-day"></i></div><div class="sc-lbl">Ganho de Hoje</div><div class="sc-val" style="color:var(--ok)">${fmt(ganhoHoje)}</div></div>
+      <div class="sc amber"><div class="sc-icon"><i class="bi bi-images"></i></div><div class="sc-lbl">Mídias (30d lib.)</div><div class="sc-val" style="color:var(--hold)">${fmt(totalMidias)}</div></div>
+      <div class="sc purple"><div class="sc-icon"><i class="bi bi-star-fill"></i></div><div class="sc-lbl">Assinaturas (30d lib.)</div><div class="sc-val" style="color:var(--purple)">${fmt(totalAss)}</div></div>
+    </div>
+    <div class="tcard">
+      <div class="tcard-hd">
+        <h5><i class="bi bi-credit-card-2-front me-1" style="color:var(--purple-light)"></i>Transações Cartão</h5>
+        <select class="csel" onchange="loadedSections.delete('cartao');loadCartao(this.value)">${buildMonthOpts(ym)}</select>
+      </div>
+      <div class="table-resp"><table class="dt">
+        <thead><tr><th>Data</th><th>Tipo</th><th>Valor</th><th>Gateway</th><th>Liberação</th><th>Cliente</th></tr></thead>
+        <tbody>${tbody}</tbody>
+      </table></div>
+      <div class="tcard-ft"><span class="ft-lbl">Total</span><span class="ft-val" style="color:var(--purple-light)">${fmt(total)}</span></div>
+    </div>
+  `;
+}
+
+// ── MEU BANCO ────────────────────────────────────────────────────────
+async function loadMeubanco() {
+  const d = await api('/api/modelo/painel/meubanco');
+  if (!d) return;
+  const { disponivel, pendente } = d;
+  document.getElementById('meubancoContent').innerHTML = `
+    <div class="cards-grid-2">
+      <div class="banco-main">
+        <div class="bm-lbl"><i class="bi bi-bank2"></i> Saldo Disponível para Saque</div>
+        <div class="bm-amt">${fmt(disponivel)}</div>
+        <div class="bm-sub">Valores liberados prontos para retirada</div>
+        <button class="btn-saque" disabled>Solicitar Saque <span class="soon-tag">Em Breve</span></button>
+        ${disponivel > 0 && disponivel < 500 ? '<div style="margin-top:.6rem;font-size:.72rem;opacity:.8">Saldo mínimo: R$ 500,00</div>' : ''}
+      </div>
+      <div class="sc amber" style="display:flex;flex-direction:column;justify-content:center">
+        <div class="sc-icon"><i class="bi bi-hourglass-split"></i></div>
+        <div class="sc-lbl"><i class="bi bi-circle-fill" style="color:var(--hold);font-size:.45rem"></i> Saldo a Liberar</div>
+        <div class="sc-val" style="color:var(--hold)">${fmt(pendente)}</div>
+        <div class="sc-sub">Últimos 30 dias — aguardando operadora</div>
+      </div>
+    </div>
+    <div class="pend-info">
+      <p><strong>O que são valores pendentes?</strong><br>
+      São valores pagos pelo cliente via cartão de crédito. Dependemos da operadora avaliar o pagamento, descartar fraude e liberar o valor — o que pode levar de 3 a 30 dias. Não se preocupe! A própria plataforma atualiza os ganhos pendentes para liberados automaticamente!</p>
+    </div>
+    <div class="tcard">
+      <div class="tcard-hd"><h5><i class="bi bi-info-circle me-1" style="color:var(--purple)"></i>Informações de Saque</h5></div>
+      <div class="info-row"><span class="ir-lbl">Valor mínimo</span><span class="ir-val">R$ 500,00</span></div>
+      <div class="info-row"><span class="ir-lbl">Prazo de processamento</span><span class="ir-val">48 horas úteis</span></div>
+      <div class="info-row"><span class="ir-lbl">Status</span><span class="soon-tag">Em Implantação</span></div>
+    </div>
+  `;
+}
+
+// ── CHARGEBACKS ──────────────────────────────────────────────────────
+async function loadChargebacks(ym) {
+  if (!ym) ym = currentYM();
+  const d = await api(`/api/modelo/painel/chargebacks?mes=${ym}`);
+  if (!d) return;
+  const rows = d.rows || [];
+  const total = rows.reduce((a,r) => a + +r.valor_modelo, 0);
+
+  const tbody = rows.length ? rows.map(r => {
+    const gw = r.gateway || '—';
+    return `<tr>
+      <td>${fmtDate(r.created_at)}</td>
+      <td>${fmtDate(r.updated_at)}</td>
+      <td style="color:var(--muted)">#${r.cliente_id}</td>
+      <td><span class="bdg ${r.tipo}">${r.tipo||'—'}</span></td>
+      <td style="color:var(--red);font-weight:600">${fmt(r.valor_modelo)}</td>
+      <td><span class="bdg ${gw.toLowerCase().includes('stripe')?'stripe':'pix'}">${gw}</span></td>
+      <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;color:var(--muted)">${r.chargeback_motivo||'—'}</td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="7"><div class="empty-st"><i class="bi bi-shield-check"></i><p>Nenhum chargeback neste período</p></div></td></tr>`;
+
+  document.getElementById('chargebackContent').innerHTML = `
+    <div class="cards-grid" style="grid-template-columns:1fr 1fr">
+      <div class="sc red"><div class="sc-icon"><i class="bi bi-exclamation-triangle"></i></div><div class="sc-lbl">Total Reembolsado</div><div class="sc-val" style="color:var(--red)">${fmt(total)}</div><div class="sc-sub">${rows.length} ocorrência(s)</div></div>
+    </div>
+    <div class="tcard">
+      <div class="tcard-hd">
+        <h5><i class="bi bi-exclamation-triangle me-1" style="color:var(--red)"></i>Chargebacks</h5>
+        <select class="csel" onchange="loadedSections.delete('chargebacks');loadChargebacks(this.value)">${buildMonthOpts(ym)}</select>
+      </div>
+      <div class="table-resp"><table class="dt">
+        <thead><tr><th>Data Compra</th><th>Reembolso</th><th>Cliente</th><th>Tipo</th><th>Valor</th><th>Gateway</th><th>Motivo</th></tr></thead>
+        <tbody>${tbody}</tbody>
+      </table></div>
+      <div class="tcard-ft"><span class="ft-lbl">Total de reembolsos</span><span class="ft-val" style="color:var(--red)">${fmt(total)}</span></div>
+    </div>
+  `;
+}
+
+// ── TRÁFEGO ──────────────────────────────────────────────────────────
+async function loadTrafego(ym) {
+  if (!ym) ym = currentYM();
+  const d = await api(`/api/modelo/painel/trafego?mes=${ym}`);
+  if (!d) return;
+  const rows = d.rows || [];
+
+  const byDay = {};
+  rows.forEach(r => {
+    const day = (r.created_at||'').split('T')[0] || (r.created_at||'').substring(0,10);
+    if (!day) return;
+    if (!byDay[day]) byDay[day] = { tiktok:0, instagram:0, direto:0, outros:0 };
+    const orig = (r.origem_trafego || 'direto').toLowerCase();
+    if (orig.includes('tiktok')) byDay[day].tiktok++;
+    else if (orig.includes('instagram') || orig.includes('ig')) byDay[day].instagram++;
+    else if (orig.includes('direto') || !orig) byDay[day].direto++;
+    else byDay[day].outros++;
+  });
+
+  const labels = Object.keys(byDay).sort();
+  const tkData = labels.map(d => byDay[d].tiktok);
+  const igData = labels.map(d => byDay[d].instagram);
+  const drData = labels.map(d => byDay[d].direto);
+  const [yyy, mmm] = ym.split('-').map(Number);
+
+  const dayOpts = ['<option value="">Selecione um dia</option>']
+    .concat(labels.map(d => `<option value="${d}">${new Date(d+'T12:00:00').toLocaleDateString('pt-BR')}</option>`)).join('');
+
+  document.getElementById('trafegoContent').innerHTML = `
+    <div class="cards-grid">
+      <div class="sc purple"><div class="sc-icon"><i class="bi bi-graph-up-arrow"></i></div><div class="sc-lbl">Total no Mês</div><div class="sc-val" style="color:var(--purple)">${rows.length.toLocaleString('pt-BR')}</div></div>
+      <div class="sc" style="background:var(--card)">
+        <div class="sc-lbl">Ver dia específico</div>
+        <select class="csel" id="daySelect" style="width:100%;margin-top:.4rem" onchange="showDayDetail(this.value)">${dayOpts}</select>
+      </div>
+      <div class="sc" style="background:var(--card)">
+        <div class="sc-lbl">Comparar mês</div>
+        <select class="csel" style="width:100%;margin-top:.4rem" onchange="loadedSections.delete('trafego');loadTrafego(this.value)">${buildMonthOpts(ym)}</select>
+      </div>
+    </div>
+    <div id="dayDetailCard"></div>
+    <div class="chart-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem;flex-wrap:wrap;gap:.5rem">
+        <h5 style="margin:0">Acessos por Dia — ${MONFULL[mmm-1]} ${yyy}</h5>
+        <div class="traf-legend">
+          <div class="traf-leg-item"><div class="leg-dot" style="background:#ff6b81"></div> TikTok</div>
+          <div class="traf-leg-item"><div class="leg-dot" style="background:var(--purple)"></div> Instagram</div>
+          <div class="traf-leg-item"><div class="leg-dot" style="background:var(--ok)"></div> Direto</div>
+        </div>
+      </div>
+      <canvas id="trafegoChart" height="100"></canvas>
+    </div>
+  `;
+
+  window._trafData = { labels, byDay };
+  if (trafegoChart) trafegoChart.destroy();
+  const ctx = document.getElementById('trafegoChart')?.getContext('2d');
+  if (ctx) {
+    trafegoChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels.map(d => { const dt = new Date(d+'T12:00:00'); return `${dt.getDate()}/${dt.getMonth()+1}`; }),
+        datasets: [
+          { label: 'TikTok',    data: tkData, backgroundColor: 'rgba(255,107,129,.75)', borderRadius: 4 },
+          { label: 'Instagram', data: igData, backgroundColor: 'rgba(123,44,255,.75)',   borderRadius: 4 },
+          { label: 'Direto',    data: drData, backgroundColor: 'rgba(34,197,94,.75)',    borderRadius: 4 },
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false }, tooltip: { backgroundColor: '#fff', titleColor: '#1E1E26', bodyColor: '#555', borderColor: '#e8e4f4', borderWidth: 1 } },
+        scales: {
+          x: { stacked: true, grid: { color: 'rgba(0,0,0,.04)' }, ticks: { color: '#888', font: { size: 11 } } },
+          y: { stacked: true, grid: { color: 'rgba(0,0,0,.04)' }, ticks: { color: '#888', font: { size: 11 }, stepSize: 1 } },
+        }
+      }
+    });
+  }
+}
+
+function showDayDetail(day) {
+  const card = document.getElementById('dayDetailCard');
+  if (!day || !window._trafData) { card.innerHTML = ''; return; }
+  const d = window._trafData.byDay[day];
+  if (!d) { card.innerHTML = ''; return; }
+  const total = Object.values(d).reduce((a,b)=>a+b,0);
+  const dt = new Date(day+'T12:00:00').toLocaleDateString('pt-BR', { weekday:'long', day:'numeric', month:'long' });
+  card.innerHTML = `
+    <div class="tcard" style="border-color:var(--purple);margin-bottom:.75rem">
+      <div class="tcard-hd"><h5><i class="bi bi-calendar-check me-1" style="color:var(--purple)"></i>${dt}</h5><span style="font-weight:700;color:var(--purple)">${total} acessos</span></div>
+      <div style="display:flex;gap:1.5rem;padding:.85rem 1rem;flex-wrap:wrap">
+        <div><span style="color:#ff6b81;font-weight:600">●</span> TikTok: <strong>${d.tiktok}</strong></div>
+        <div><span style="color:var(--purple);font-weight:600">●</span> Instagram: <strong>${d.instagram}</strong></div>
+        <div><span style="color:var(--ok);font-weight:600">●</span> Direto: <strong>${d.direto}</strong></div>
+        ${d.outros>0?`<div><span style="color:var(--muted);font-weight:600">●</span> Outros: <strong>${d.outros}</strong></div>`:''}
+      </div>
+    </div>`;
+}
+
+// ── ASSINANTES ───────────────────────────────────────────────────────
+async function loadAssinantes(ym) {
+  if (!ym) ym = currentYM();
+  const el = document.getElementById('assinantesContent');
+  el.innerHTML = '<div class="spin-wrap"><div class="spin"></div></div>';
+  const d = await api(`/api/modelo/painel/assinantes-dia?mes=${ym}`);
+  if (!d) return;
+  const rows = d.rows || [];
+  const total = rows.reduce((a,r) => a + parseInt(r.qtd||0), 0);
+
+  const tbody = rows.length ? rows.map(r => {
+    const day = (r.dia||'').split('T')[0];
+    const dt  = day ? new Date(day+'T12:00:00').toLocaleDateString('pt-BR') : '—';
+    return `<tr><td>${dt}</td><td style="text-align:center"><strong style="color:var(--pix)">${r.qtd}</strong></td></tr>`;
+  }).join('') : `<tr><td colspan="2"><div class="empty-st"><i class="bi bi-people"></i><p>Nenhum assinante neste período</p></div></td></tr>`;
+
+  el.innerHTML = `
+    <div class="cards-grid" style="grid-template-columns:1fr 1fr">
+      <div class="sc blue"><div class="sc-icon"><i class="bi bi-people-fill"></i></div><div class="sc-lbl">Ativações no Mês</div><div class="sc-val" style="color:var(--pix)">${total}</div></div>
+    </div>
+    <div class="tcard">
+      <div class="tcard-hd">
+        <h5><i class="bi bi-people-fill me-1" style="color:var(--pix)"></i>Ativações por Dia</h5>
+        <select class="csel" onchange="loadedSections.delete('assinantes');loadAssinantes(this.value)">${buildMonthOpts(ym)}</select>
+      </div>
+      <div class="table-resp"><table class="dt">
+        <thead><tr><th>Data</th><th style="text-align:center">Ativações</th></tr></thead>
+        <tbody>${tbody}</tbody>
+      </table></div>
+      <div class="tcard-ft"><span class="ft-lbl">Total no mês</span><span class="ft-val" style="color:var(--pix)">${total}</span></div>
+    </div>
+  `;
+}
+
+// ── INIT ─────────────────────────────────────────────────────────────
+async function init() {
+  await carregarHeader();
+
+  // Preenche nome/avatar do sidebar com dados do localStorage
+  const nome = localStorage.getItem('nome') || localStorage.getItem('user_name') || '';
+  const avatar = localStorage.getItem('avatar_url') || localStorage.getItem('avatar') || '';
+  if (nome) document.getElementById('userNameEl').textContent = nome;
+  if (avatar) document.getElementById('avatarEl').innerHTML = `<img src="${avatar}" alt="">`;
+  else if (nome) document.getElementById('avatarEl').textContent = nome[0].toUpperCase();
+
+  loadSection('geral');
+}
+
+init();
 </script>
 </body>
 </html>

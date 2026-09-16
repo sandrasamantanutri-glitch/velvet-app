@@ -7697,6 +7697,207 @@ app.get("/modelo/relatorio", authModelo, (req, res) => {
   );
 });
 
+// ── PAINEL ENDPOINTS ─────────────────────────────────────────────────────
+
+const V_CORTE = "2026-09-01T03:00:00.000Z"; // UTC = 2026-09-01 00:00 BRT
+
+app.get("/api/modelo/painel/geral", authModelo, async (req, res) => {
+  try {
+    const mid = req.modelo_id;
+    const [disp, pend, ass, vis] = await Promise.all([
+      db.query(`
+        SELECT COALESCE(SUM(valor_modelo), 0) AS total
+        FROM transacoes_agency
+        WHERE modelo_id = $1 AND status = 'pago'
+          AND (
+            (disponivel_em IS NULL     AND created_at    >= $2)
+            OR
+            (disponivel_em IS NOT NULL AND disponivel_em >= $2
+              AND disponivel_em < (DATE_TRUNC('day', NOW() AT TIME ZONE 'America/Sao_Paulo') + INTERVAL '1 day') AT TIME ZONE 'America/Sao_Paulo')
+          )
+      `, [mid, V_CORTE]),
+      db.query(`
+        SELECT COALESCE(SUM(valor_modelo), 0) AS total
+        FROM transacoes_agency
+        WHERE modelo_id = $1 AND status = 'pago'
+          AND created_at >= NOW() - INTERVAL '30 days'
+          AND disponivel_em IS NOT NULL
+          AND disponivel_em >= (DATE_TRUNC('day', NOW() AT TIME ZONE 'America/Sao_Paulo') + INTERVAL '1 day') AT TIME ZONE 'America/Sao_Paulo'
+      `, [mid]),
+      db.query(`
+        SELECT COUNT(DISTINCT cliente_id) AS total
+        FROM vip_subscriptions
+        WHERE modelo_id = $1 AND ativo = true AND expiration_at > NOW()
+      `, [mid]),
+      db.query(`
+        SELECT
+          COUNT(*) FILTER (WHERE criado_em >= (DATE_TRUNC('day', NOW() AT TIME ZONE 'America/Sao_Paulo')) AT TIME ZONE 'America/Sao_Paulo') AS hoje,
+          COUNT(*) FILTER (WHERE criado_em >= DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo') AT TIME ZONE 'America/Sao_Paulo') AS mes
+        FROM modelo_visitas
+        WHERE modelo_id = $1
+      `, [mid]),
+    ]);
+    res.json({
+      disponivel:    parseFloat(disp.rows[0].total),
+      pendente:      parseFloat(pend.rows[0].total),
+      assinantes:    parseInt(ass.rows[0].total),
+      visitas_hoje:  parseInt(vis.rows[0].hoje || 0),
+      visitas_mes:   parseInt(vis.rows[0].mes  || 0),
+    });
+  } catch (err) {
+    console.error("Erro /api/modelo/painel/geral:", err);
+    res.status(500).json({ error: "Erro interno" });
+  }
+});
+
+app.get("/api/modelo/painel/transacoes", authModelo, async (req, res) => {
+  try {
+    const mid = req.modelo_id;
+    const mesParam = req.query.mes || null;
+    const gateway  = req.query.gateway || null;
+
+    let [ano, mes] = (() => {
+      if (mesParam && /^\d{4}-\d{2}$/.test(mesParam)) return mesParam.split('-').map(Number);
+      const sp = new Date(Date.now() - 3 * 3600000);
+      return [sp.getUTCFullYear(), sp.getUTCMonth() + 1];
+    })();
+
+    const gwFilter = gateway ? `AND gateway = $4` : '';
+    const params   = gateway ? [mid, ano, mes, gateway] : [mid, ano, mes];
+
+    const result = await db.query(`
+      SELECT tipo, valor_modelo, created_at, disponivel_em, gateway, cliente_id
+      FROM transacoes_agency
+      WHERE modelo_id = $1 AND status = 'pago'
+        AND EXTRACT(YEAR  FROM (created_at AT TIME ZONE 'America/Sao_Paulo')) = $2
+        AND EXTRACT(MONTH FROM (created_at AT TIME ZONE 'America/Sao_Paulo')) = $3
+        ${gwFilter}
+      ORDER BY created_at DESC
+    `, params);
+
+    res.json({ rows: result.rows });
+  } catch (err) {
+    console.error("Erro /api/modelo/painel/transacoes:", err);
+    res.status(500).json({ error: "Erro interno" });
+  }
+});
+
+app.get("/api/modelo/painel/meubanco", authModelo, async (req, res) => {
+  try {
+    const mid = req.modelo_id;
+    const [disp, pend] = await Promise.all([
+      db.query(`
+        SELECT COALESCE(SUM(valor_modelo), 0) AS total
+        FROM transacoes_agency
+        WHERE modelo_id = $1 AND status = 'pago'
+          AND (
+            (disponivel_em IS NULL     AND created_at    >= $2)
+            OR
+            (disponivel_em IS NOT NULL AND disponivel_em >= $2
+              AND disponivel_em < (DATE_TRUNC('day', NOW() AT TIME ZONE 'America/Sao_Paulo') + INTERVAL '1 day') AT TIME ZONE 'America/Sao_Paulo')
+          )
+      `, [mid, V_CORTE]),
+      db.query(`
+        SELECT COALESCE(SUM(valor_modelo), 0) AS total
+        FROM transacoes_agency
+        WHERE modelo_id = $1 AND status = 'pago'
+          AND created_at >= NOW() - INTERVAL '30 days'
+          AND disponivel_em IS NOT NULL
+          AND disponivel_em >= (DATE_TRUNC('day', NOW() AT TIME ZONE 'America/Sao_Paulo') + INTERVAL '1 day') AT TIME ZONE 'America/Sao_Paulo'
+      `, [mid]),
+    ]);
+    res.json({
+      disponivel: parseFloat(disp.rows[0].total),
+      pendente:   parseFloat(pend.rows[0].total),
+    });
+  } catch (err) {
+    console.error("Erro /api/modelo/painel/meubanco:", err);
+    res.status(500).json({ error: "Erro interno" });
+  }
+});
+
+app.get("/api/modelo/painel/chargebacks", authModelo, async (req, res) => {
+  try {
+    const mid = req.modelo_id;
+    const mesParam = req.query.mes || null;
+    let [ano, mes] = (() => {
+      if (mesParam && /^\d{4}-\d{2}$/.test(mesParam)) return mesParam.split('-').map(Number);
+      const sp = new Date(Date.now() - 3 * 3600000);
+      return [sp.getUTCFullYear(), sp.getUTCMonth() + 1];
+    })();
+
+    const result = await db.query(`
+      SELECT tipo, valor_modelo, created_at, updated_at, cliente_id, gateway, chargeback_motivo
+      FROM chargebacks
+      WHERE modelo_id = $1
+        AND EXTRACT(YEAR  FROM created_at) = $2
+        AND EXTRACT(MONTH FROM created_at) = $3
+      ORDER BY created_at DESC
+    `, [mid, ano, mes]);
+
+    res.json({ rows: result.rows });
+  } catch (err) {
+    console.error("Erro /api/modelo/painel/chargebacks:", err);
+    res.status(500).json({ error: "Erro interno" });
+  }
+});
+
+app.get("/api/modelo/painel/trafego", authModelo, async (req, res) => {
+  try {
+    const mid = req.modelo_id;
+    const mesParam = req.query.mes || null;
+    let [ano, mes] = (() => {
+      if (mesParam && /^\d{4}-\d{2}$/.test(mesParam)) return mesParam.split('-').map(Number);
+      const sp = new Date(Date.now() - 3 * 3600000);
+      return [sp.getUTCFullYear(), sp.getUTCMonth() + 1];
+    })();
+
+    const result = await db.query(`
+      SELECT mv.criado_em AS created_at, c.origem_trafego
+      FROM modelo_visitas mv
+      LEFT JOIN clientes c ON c.user_id = mv.cliente_id
+      WHERE mv.modelo_id = $1
+        AND EXTRACT(YEAR  FROM mv.criado_em) = $2
+        AND EXTRACT(MONTH FROM mv.criado_em) = $3
+      ORDER BY mv.criado_em DESC
+    `, [mid, ano, mes]);
+
+    res.json({ rows: result.rows });
+  } catch (err) {
+    console.error("Erro /api/modelo/painel/trafego:", err);
+    res.status(500).json({ error: "Erro interno" });
+  }
+});
+
+app.get("/api/modelo/painel/assinantes-dia", authModelo, async (req, res) => {
+  try {
+    const mid = req.modelo_id;
+    const mesParam = req.query.mes || null;
+    let [ano, mes] = (() => {
+      if (mesParam && /^\d{4}-\d{2}$/.test(mesParam)) return mesParam.split('-').map(Number);
+      const sp = new Date(Date.now() - 3 * 3600000);
+      return [sp.getUTCFullYear(), sp.getUTCMonth() + 1];
+    })();
+
+    const result = await db.query(`
+      SELECT
+        (created_at AT TIME ZONE 'America/Sao_Paulo')::date AS dia,
+        COUNT(*) AS qtd
+      FROM transacoes_agency
+      WHERE modelo_id = $1 AND status = 'pago' AND tipo = 'assinatura'
+        AND EXTRACT(YEAR  FROM (created_at AT TIME ZONE 'America/Sao_Paulo')) = $2
+        AND EXTRACT(MONTH FROM (created_at AT TIME ZONE 'America/Sao_Paulo')) = $3
+      GROUP BY dia
+      ORDER BY dia DESC
+    `, [mid, ano, mes]);
+
+    res.json({ rows: result.rows });
+  } catch (err) {
+    console.error("Erro /api/modelo/painel/assinantes-dia:", err);
+    res.status(500).json({ error: "Erro interno" });
+  }
+});
+
 app.get("/api/modelo/ganhos", authModelo, async (req, res) => {
   try {
     const modeloId = req.modelo_id;
