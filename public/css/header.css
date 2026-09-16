@@ -151,7 +151,7 @@ body {
 /* ── MUITO PEQUENO (≤ 380px) ── */
 @media (max-width: 380px) {
   .header-inner {
-    padding-left:  max(8px, env(safe-area-inset-left,  0px));
+    padding-left:  max(0px, env(safe-area-inset-left,  0px));
     padding-right: max(8px, env(safe-area-inset-right, 0px));
     gap: 6px;
   }

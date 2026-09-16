@@ -166,7 +166,7 @@ body {
 
 /* ── MEU BANCO ──────────────────────────────── */
 .banco-main {
-  background: linear-gradient(135deg, var(--purple), var(--purple-light));
+  background: #9b7dff;
   border-radius: 16px; padding: 1.5rem;
   text-align: center; color: #fff; margin-bottom: .75rem;
 }
@@ -176,7 +176,7 @@ body {
 .btn-saque {
   margin-top: 1rem; padding: .6rem 1.75rem;
   border: 2px solid rgba(255,255,255,.4); border-radius: 8px;
-  background: rgba(255,255,255,.15); color: #fff;
+  background: #e8e4f4; color: #7B2CFF;
   font-family: inherit; font-size: .88rem; font-weight: 600;
   opacity: .6; cursor: not-allowed;
 }
@@ -188,7 +188,7 @@ body {
   border-radius: 12px; padding: 1rem 1.1rem;
   margin-bottom: 1rem;
 }
-.pend-info p { font-size: .82rem; color: #92400e; line-height: 1.6; margin: 0; }
+.pend-info p { font-size: .6rem; color: #92400e; line-height: 1.6; margin: 0; }
 
 /* LOADING */
 .spin-wrap { display: flex; align-items: center; justify-content: center; padding: 2.5rem; }
@@ -238,6 +238,8 @@ body {
 .traf-legend { display: flex; gap: .85rem; flex-wrap: wrap; }
 .traf-leg-item { display: flex; align-items: center; gap: .35rem; font-size: .75rem; color: var(--muted); }
 .leg-dot { width: 9px; height: 9px; border-radius: 50%; }
+.grid-traf { grid-template-columns: repeat(3, 1fr); }
+@media (max-width: 768px) { .grid-traf { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
@@ -540,7 +542,7 @@ async function loadPix(ym) {
     </div>
     <div class="tcard">
       <div class="tcard-hd">
-        <h5><i class="bi bi-qr-code-scan me-1" style="color:var(--pix)"></i>Transações PIX</h5>
+        <h5><i class="bi bi-qr-code-scan me-1" style="color:var(--pix)"></i> Transações PIX</h5>
         <select class="csel" onchange="loadedSections.delete('pix');loadPix(this.value)">${buildMonthOpts(ym)}</select>
       </div>
       <div class="table-resp"><table class="dt">
@@ -632,7 +634,7 @@ async function loadMeubanco() {
       São valores pagos pelo cliente via cartão de crédito. Dependemos da operadora avaliar o pagamento, descartar fraude e liberar o valor — o que pode levar de 3 a 30 dias. Não se preocupe! A própria plataforma atualiza os ganhos pendentes para liberados automaticamente!</p>
     </div>
     <div class="tcard">
-      <div class="tcard-hd"><h5><i class="bi bi-info-circle me-1" style="color:var(--purple)"></i>Informações de Saque</h5></div>
+      <div class="tcard-hd"><h5><i class="bi bi-info-circle me-1" style="color:var(--purple)"></i> Informações de Saque</h5></div>
       <div class="info-row"><span class="ir-lbl">Valor mínimo</span><span class="ir-val">R$ 500,00</span></div>
       <div class="info-row"><span class="ir-lbl">Prazo de processamento</span><span class="ir-val">48 horas úteis</span></div>
       <div class="info-row"><span class="ir-lbl">Status</span><span class="soon-tag">Em Implantação</span></div>
@@ -662,7 +664,7 @@ async function loadChargebacks(ym) {
   }).join('') : `<tr><td colspan="7"><div class="empty-st"><i class="bi bi-shield-check"></i><p>Nenhum chargeback neste período</p></div></td></tr>`;
 
   document.getElementById('chargebackContent').innerHTML = `
-    <div class="cards-grid" style="grid-template-columns:1fr 1fr">
+    <div class="cards-grid" style="grid-template-columns:1fr">
       <div class="sc red"><div class="sc-icon"><i class="bi bi-exclamation-triangle"></i></div><div class="sc-lbl">Total Reembolsado</div><div class="sc-val" style="color:var(--red)">${fmt(total)}</div><div class="sc-sub">${rows.length} ocorrência(s)</div></div>
     </div>
     <div class="tcard">
@@ -708,7 +710,7 @@ async function loadTrafego(ym) {
     .concat(labels.map(d => `<option value="${d}">${new Date(d+'T12:00:00').toLocaleDateString('pt-BR')}</option>`)).join('');
 
   document.getElementById('trafegoContent').innerHTML = `
-    <div class="cards-grid">
+    <div class="cards-grid grid-traf">
       <div class="sc purple"><div class="sc-icon"><i class="bi bi-graph-up-arrow"></i></div><div class="sc-lbl">Total no Mês</div><div class="sc-val" style="color:var(--purple)">${rows.length.toLocaleString('pt-BR')}</div></div>
       <div class="sc" style="background:var(--card)">
         <div class="sc-lbl">Ver dia específico</div>
@@ -768,7 +770,7 @@ function showDayDetail(day) {
   const dt = new Date(day+'T12:00:00').toLocaleDateString('pt-BR', { weekday:'long', day:'numeric', month:'long' });
   card.innerHTML = `
     <div class="tcard" style="border-color:var(--purple);margin-bottom:.75rem">
-      <div class="tcard-hd"><h5><i class="bi bi-calendar-check me-1" style="color:var(--purple)"></i>${dt}</h5><span style="font-weight:700;color:var(--purple)">${total} acessos</span></div>
+      <div class="tcard-hd"><h5 style="display:flex;align-items:center;gap:.45rem"><i class="bi bi-calendar-check" style="color:var(--purple);font-size:1rem;flex-shrink:0"></i>${dt}</h5><span style="font-weight:700;color:var(--purple)">${total} acessos</span></div>
       <div style="display:flex;gap:1.5rem;padding:.85rem 1rem;flex-wrap:wrap">
         <div><span style="color:#ff6b81;font-weight:600">●</span> TikTok: <strong>${d.tiktok}</strong></div>
         <div><span style="color:var(--purple);font-weight:600">●</span> Instagram: <strong>${d.instagram}</strong></div>
