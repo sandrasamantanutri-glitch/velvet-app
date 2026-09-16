@@ -2421,6 +2421,12 @@ app.post("/api/webhook/stripe", express.raw({ type: "application/json" }), async
       const vip = vipRes.rows[0];
 
       if (eventType === 'invoice.payment_succeeded') {
+        if (billingReason !== 'subscription_cycle') {
+          console.log('ℹ️ invoice.payment_succeeded ignorado (billing_reason:', billingReason, '— apenas subscription_cycle renova)');
+          await client.query('COMMIT');
+          return res.status(200).send('ok');
+        }
+
         const novaExpiracao = new Date(vip.expiration_at);
         novaExpiracao.setMonth(novaExpiracao.getMonth() + 1);
 
