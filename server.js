@@ -2427,6 +2427,12 @@ app.post("/api/webhook/stripe", express.raw({ type: "application/json" }), async
           return res.status(200).send('ok');
         }
 
+        if (vip.cancelado_em) {
+          console.log('ℹ️ Renovação ignorada — assinatura cancelada em:', vip.cancelado_em, 'sub:', subscriptionId);
+          await client.query('COMMIT');
+          return res.status(200).send('ok');
+        }
+
         const novaExpiracao = new Date(vip.expiration_at);
         novaExpiracao.setMonth(novaExpiracao.getMonth() + 1);
 
@@ -8982,7 +8988,7 @@ app.put("/api/cliente/subscricoes/:id/cancelar", auth, async (req, res) => {
     const clienteId = clienteRes.rows[0].id;
 
     const subRes = await db.query(
-      `SELECT id, ativo, modelo_id, expiration_at, cancelado_em
+      `SELECT id, ativo, modelo_id, expiration_at, cancelado_em, stripe_subscription_id
        FROM vip_subscriptions
        WHERE id = $1 AND cliente_id = $2`,
       [subscriptionId, clienteId]
@@ -8991,6 +8997,16 @@ app.put("/api/cliente/subscricoes/:id/cancelar", auth, async (req, res) => {
 
     const sub = subRes.rows[0];
     if (sub.cancelado_em) return res.status(400).json({ error: "Esta subscrição já foi cancelada." });
+
+    // Cancela no Stripe para não renovar mais (cancel_at_period_end para manter acesso até expirar)
+    if (sub.stripe_subscription_id) {
+      try {
+        await stripe.subscriptions.update(sub.stripe_subscription_id, { cancel_at_period_end: true });
+      } catch (stripeErr) {
+        console.error("Aviso: erro ao cancelar Stripe sub:", stripeErr.message);
+        // Continua mesmo assim — o DB será atualizado
+      }
+    }
 
     // Mantém ativa até expirar, apenas registra cancelamento
     await db.query(
@@ -14013,6 +14029,15 @@ app.post("/api/pagamento/vip/criar-intent", authCliente, async (req, res) => {
       return res.status(403).json({ error: "Compras temporariamente bloqueadas para esta conta." });
     }
 
+    registrarLog(db, {
+      tipo: 'aceite_termos',
+      cliente_id,
+      modelo_id: modeloIdNum,
+      descricao: `Termos aceitos antes de pagamento VIP Cartão — modelo_id ${modeloIdNum} — versão ${versao_termos || ''}`,
+      ip,
+      user_agent: req.headers['user-agent'] || null
+    });
+
     const modeloRes = await client.query(
       `SELECT 1 FROM modelos WHERE id = $1 LIMIT 1`,
       [modeloIdNum]
@@ -14202,6 +14227,15 @@ app.post("/api/pagamento/midia/criar-intent", auth, async (req, res) => {
       return res.status(403).json({ error: "Compras temporariamente bloqueadas para esta conta." });
     }
 
+    registrarLog(db, {
+      tipo: 'aceite_termos',
+      cliente_id,
+      modelo_id: null,
+      descricao: `Termos aceitos antes de pagamento Mídia Cartão — conteudo_id ${conteudoId} — versão ${versao_termos || ''}`,
+      ip,
+      user_agent: req.headers['user-agent'] || null
+    });
+
     const messageRes = await client.query(
       `SELECT preco, modelo_id FROM messages WHERE id = $1 AND cliente_id = $2 LIMIT 1`,
       [conteudoId, cliente_id]
@@ -14362,6 +14396,15 @@ app.post("/api/pagamento/premium/criar-intent", authCliente, async (req, res) =>
       await client.query("ROLLBACK");
       return res.status(403).json({ error: "Compras temporariamente bloqueadas para esta conta." });
     }
+
+    registrarLog(db, {
+      tipo: 'aceite_termos',
+      cliente_id,
+      modelo_id: null,
+      descricao: `Termos aceitos antes de pagamento Premium Cartão — premium_post_id ${premium_id} — versão ${versao_termos || ''}`,
+      ip,
+      user_agent: req.headers['user-agent'] || null
+    });
 
     const postRes = await client.query(
       `SELECT pp.id, pp.preco, pp.descricao, pp.modelo_id
