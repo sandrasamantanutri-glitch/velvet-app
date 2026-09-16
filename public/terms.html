@@ -1,1771 +1,1556 @@
 <!DOCTYPE html>
-<html lang="pt">
+<html lang="pt-BR">
 <head>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Termos de Uso | Velvet</title>
-  <style>
-    :root {
-      --primary: #6f3cff;
-      --primary-dark: #5a2fe0;
-      --text: #1e1b2e;
-      --text-soft: #5e5873;
-      --bg: #f7f7fb;
-      --card: #f1eef4;
-      --line: #ddd8e6;
-      --white: #ffffff;
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    html {
-      scroll-behavior: smooth;
-    }
-
-    body {
-      margin: 0;
-      background: var(--bg);
-      color: var(--text);
-      font-family: 'Poppins', Arial, Helvetica, sans-serif;
-      line-height: 1.8;
-    }
-
-    .lang-switcher {
-      display: flex;
-      justify-content: flex-end;
-      gap: 10px;
-      max-width: 980px;
-      margin: 20px auto 0;
-      padding: 0 20px;
-    }
-
-    .lang-switcher button {
-      border: 1px solid var(--line);
-      background: var(--white);
-      color: var(--text);
-      border-radius: 10px;
-      padding: 8px 14px;
-      font-family: 'Poppins', Arial, sans-serif;
-      font-weight: 600;
-      cursor: pointer;
-      transition: 0.2s ease;
-    }
-
-    .lang-switcher button:hover,
-    .lang-switcher button.active {
-      background: var(--card);
-      color: var(--primary);
-      border-color: var(--primary);
-    }
-
-    .container {
-      max-width: 980px;
-      margin: 0 auto;
-      padding: 40px 20px 80px;
-    }
-
-    .page-title {
-      font-size: 2.2rem;
-      font-weight: 800;
-      color: var(--primary);
-      margin: 0 0 22px;
-      line-height: 1.2;
-      text-align: center;
-    }
-
-    .intro {
-      font-size: 1.08rem;
-      color: var(--text);
-      margin-bottom: 28px;
-    }
-
-    .toc {
-      background: var(--card);
-      border-radius: 18px;
-      padding: 26px 28px;
-      margin: 28px 0 48px;
-    }
-
-    .toc h2 {
-      margin: 0 0 18px;
-      font-size: 1.5rem;
-      color: var(--text);
-    }
-
-    .toc ol {
-      margin: 0;
-      padding-left: 22px;
-      columns: 1;
-    }
-
-    .toc li {
-      margin-bottom: 10px;
-      color: var(--text);
-    }
-
-    .toc a {
-      color: var(--text);
-      text-decoration: none;
-      transition: 0.2s ease;
-    }
-
-    .toc a:hover {
-      color: var(--primary);
-    }
-
-    .divider {
-      border: none;
-      border-top: 1px solid var(--line);
-      margin: 42px 0;
-    }
-
-    section {
-      scroll-margin-top: 30px;
-    }
-
-    .section-title {
-      font-size: 2rem;
-      font-weight: 600;
-      color: var(--primary);
-      margin: 0 0 20px;
-      line-height: 1.25;
-    }
-
-    .item-title {
-      font-size: 1.12rem;
-      font-weight: 700;
-      color: var(--text);
-      margin: 22px 0 8px;
-    }
-
-    p {
-      margin: 0 0 14px;
-      color: var(--text);
-      font-size: 1.06rem;
-    }
-
-    ul {
-      margin: 10px 0 18px 0;
-      padding-left: 22px;
-    }
-
-    li {
-      margin-bottom: 6px;
-      font-size: 1.04rem;
-    }
-
-    .contact-box {
-      background: var(--card);
-      border-radius: 16px;
-      padding: 20px 22px;
-      margin-top: 16px;
-    }
-
-    a.inline-link {
-      color: var(--primary);
-      text-decoration: none;
-      font-weight: 600;
-    }
-
-    a.inline-link:hover {
-      text-decoration: underline;
-    }
-
-    .last-updated {
-      margin: 0 0 24px;
-      padding: 10px 16px;
-      background: #f3eff5;
-      color: #1e1b2e;
-      border-radius: 12px;
-      font-size: 1rem;
-      line-height: 1.5;
-      text-align: center;
-    }
-
-    .footer {
-      margin-top: 60px;
-      padding: 20px;
-      background: none;
-      color: #1E1E26;
-      text-align: center;
-      font-size: 14px;
-    }
-
-    .footer-links {
-      margin-bottom: 10px;
-    }
-
-    .footer-links a {
-      color: #1E1E26;
-      margin: 0 10px;
-      text-decoration: none;
-    }
-
-    .footer-links a:hover {
-      color: #C9C9C9;
-      text-decoration: underline;
-    }
-
-    .footer-copy {
-      font-size: 12px;
-      color: #1E1E26;
-    }
-
-    @media (max-width: 768px) {
-      .lang-switcher {
-        justify-content: center;
-        padding: 0 16px;
-      }
-
-      .container {
-        padding: 28px 16px 60px;
-      }
-
-      .page-title {
-        font-size: 1.9rem;
-      }
-
-      .section-title {
-        font-size: 1.65rem;
-      }
-
-      .toc {
-        padding: 22px 20px;
-      }
-
-      p, li {
-        font-size: 1rem;
-      }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Termos de Uso e Políticas | Velvet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap">
+<style>
+:root {
+  --primary: #6f3cff;
+  --primary-soft: #ede8ff;
+  --text: #1e1b2e;
+  --text-soft: #5e5873;
+  --bg: #f7f7fb;
+  --card: #f1eef4;
+  --line: #ddd8e6;
+  --white: #fff;
+  --note-bg: #f0ebff;
+  --table-head: #ede8ff;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --primary: #9b71ff;
+    --primary-soft: #2a1f4a;
+    --text: #e8e4f0;
+    --text-soft: #9b91b8;
+    --bg: #0f0d1a;
+    --card: #1a1625;
+    --line: #2e2840;
+    --white: #1a1625;
+    --note-bg: #221a3a;
+    --table-head: #2a1f4a;
+  }
+}
+:root[data-theme="dark"] {
+  --primary: #9b71ff;
+  --primary-soft: #2a1f4a;
+  --text: #e8e4f0;
+  --text-soft: #9b91b8;
+  --bg: #0f0d1a;
+  --card: #1a1625;
+  --line: #2e2840;
+  --white: #1a1625;
+  --note-bg: #221a3a;
+  --table-head: #2a1f4a;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: Poppins, Arial, Helvetica, sans-serif;
+  line-height: 1.8;
+  padding-inline: 20px;
+  padding-block: env(safe-area-inset-top, 0px) env(safe-area-inset-bottom, 0px);
+}
+.lang-bar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  max-width: 980px;
+  margin: 24px auto 0;
+}
+.lang-bar button {
+  border: 1px solid var(--line);
+  background: var(--white);
+  color: var(--text);
+  border-radius: 10px;
+  padding: 7px 14px;
+  font: 600 .9rem Poppins, Arial, sans-serif;
+  cursor: pointer;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.lang-bar button:hover,
+.lang-bar button.active {
+  background: var(--primary-soft);
+  color: var(--primary);
+  border-color: var(--primary);
+}
+.container {
+  max-width: 980px;
+  margin: 0 auto;
+  padding-block: 40px 80px;
+}
+.page-title {
+  font-size: 2.1rem;
+  font-weight: 800;
+  color: var(--primary);
+  margin: 0 0 20px;
+  line-height: 1.2;
+  text-align: center;
+  text-wrap: balance;
+}
+.last-updated {
+  text-align: center;
+  font-size: .92rem;
+  color: var(--text-soft);
+  margin-bottom: 18px;
+}
+.intro {
+  font-size: 1.06rem;
+  margin-bottom: 20px;
+  color: var(--text);
+}
+.legal-note {
+  background: var(--note-bg);
+  border-left: 4px solid var(--primary);
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin: 0 0 32px;
+  font-size: 1rem;
+  color: var(--text);
+}
+.toc {
+  background: var(--card);
+  border-radius: 16px;
+  padding: 24px 28px;
+  margin: 0 0 48px;
+}
+.toc h2 {
+  margin: 0 0 16px;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+.toc ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 24px;
+}
+.toc li { margin: 0; }
+.toc a {
+  color: var(--text-soft);
+  text-decoration: none;
+  font-size: .95rem;
+  line-height: 1.6;
+  transition: color .15s;
+}
+.toc a:hover { color: var(--primary); }
+.divider {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: 44px 0;
+}
+section { scroll-margin-top: 32px; }
+.section-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin: 0 0 18px;
+  line-height: 1.25;
+  text-wrap: balance;
+}
+.item-title {
+  font-size: 1.08rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 22px 0 8px;
+}
+h4.item-title { font-size: 1rem; }
+p { margin: 0 0 13px; font-size: 1.03rem; }
+ul, ol { margin: 8px 0 16px; padding-left: 22px; }
+li { margin-bottom: 5px; font-size: 1.01rem; }
+.table-wrap { overflow-x: auto; margin: 16px 0 24px; }
+table { border-collapse: collapse; width: 100%; min-width: 480px; font-size: .97rem; }
+thead tr { background: var(--table-head); }
+th, td {
+  text-align: left;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+}
+th { font-weight: 700; color: var(--primary); }
+.contact-box {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 20px 24px;
+}
+.inline-link { color: var(--primary); }
+.footer {
+  margin-top: 60px;
+  padding: 20px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-soft);
+}
+.footer-links { margin-bottom: 8px; }
+.footer-links a {
+  color: var(--text-soft);
+  margin: 0 10px;
+  text-decoration: none;
+}
+.footer-links a:hover { color: var(--primary); }
+@media (max-width: 700px) {
+  .toc ol { grid-template-columns: 1fr; }
+}
+@media (max-width: 480px) {
+  body { padding-inline: 16px; }
+  .lang-bar { justify-content: center; }
+  .container { padding-block: 28px 60px; }
+  .page-title { font-size: 1.75rem; }
+  .section-title { font-size: 1.35rem; }
+  .toc { padding: 20px 18px; }
+}
+</style>
 </head>
 <body>
-  <div class="lang-switcher">
-    <button type="button" data-lang="pt">PT</button>
-    <button type="button" data-lang="en">EN</button>
-    <button type="button" data-lang="es">ESP</button>
+<div class="lang-bar">
+  <button type="button" data-lang="pt">PT</button>
+  <button type="button" data-lang="en">EN</button>
+  <button type="button" data-lang="es">ESP</button>
+</div>
+<main class="container">
+  <h1 class="page-title" id="pageTitle"></h1>
+  <div class="last-updated"><strong id="lastUpdatedLabel"></strong> <span id="lastUpdatedDate"></span></div>
+  <p class="intro" id="introText"></p>
+  <div class="legal-note" id="legalNote"></div>
+  <nav class="toc" aria-label="" id="tocNav">
+    <h2 id="tocTitle"></h2>
+    <ol id="tocList"></ol>
+  </nav>
+  <div id="sectionsContainer"></div>
+</main>
+<footer class="footer">
+  <div class="footer-links">
+    <a href="/terms.html" id="footerTerms"></a>
+    <a href="/privacy.html" id="footerPrivacy"></a>
   </div>
+  <div id="footerCopy"></div>
+</footer>
 
-  <main class="container">
-    <h1 class="page-title" id="pageTitle"></h1>
-
-    <div class="last-updated">
-      <strong id="lastUpdatedLabel"></strong> <span id="lastUpdatedDate"></span>
-    </div>
-
-    <p class="intro" id="introText"></p>
-
-    <nav class="toc" id="toc" aria-label="">
-      <h2 id="tocTitle"></h2>
-      <ol id="tocList"></ol>
-    </nav>
-
-    <div id="sectionsContainer"></div>
-  </main>
-
-  <footer class="footer">
-    <div class="footer-links">
-      <a href="/terms.html" id="footerTerms"></a>
-      <a href="/privacy.html" id="footerPrivacy"></a>
-      <a href="/policies.html" id="footerPolicies"></a>
-    </div>
-    <div class="footer-copy" id="footerCopy"></div>
-  </footer>
-
-  <script>
-    const translations = {
-      pt: {
-        htmlLang: "pt-BR",
-        title: "Termos de Uso | Velvet",
-        pageTitle: "Termos de Uso da Plataforma Velvet",
-        lastUpdatedLabel: "Última atualização:",
-        lastUpdatedDate: "07/06/2026",
-        introText: "Estes Termos de Uso regulam o acesso e a utilização da plataforma digital Velvet, estabelecendo as condições aplicáveis à navegação, cadastro, monetização, publicação de conteúdo e utilização dos serviços disponibilizados pela Plataforma.",
-        tocAriaLabel: "Índice dos Termos de Uso",
-        tocTitle: "Índice",
-        tocItems: [
-          "1. Aceitação dos Termos",
-          "2. Definições",
-          "3. Objeto",
-          "4. Natureza da Plataforma (Intermediação)",
-          "5. Estrutura dos Serviços",
-          "6. Cadastro, Acesso e Elegibilidade",
-          "7. Uso da Plataforma",
-          "8. Obrigações dos Criadores",
-          "9. Obrigações dos Clientes",
-          "10. Propriedade Intelectual",
-          "11. Pagamentos e Monetização",
-          "12. Moderação de Conteúdo",
-          "13. Responsabilidade e Limitação",
-          "14. Proteção de Dados",
-          "15. Natureza do Conteúdo na Plataforma",
-          "16. Suspensão e Encerramento",
-          "17. Alterações dos Termos",
-          "18. Legislação Aplicável e Foro",
-          "19. Fraude, Chargeback e Segurança Financeira",
-          "20. Termos Específicos para Criadores (Monetização)",
-          "21. Política de Conteúdo (Diretrizes e Restrições)",
-          "22. Compliance Internacional e Pagamentos",
-          "23. Contato",
-          "24. Disposições Finais"
-        ],
-        sections: [
-          {
-            id: "secao-1",
-            title: "1. Aceitação dos Termos",
-            content: `
-              <p>Estes Termos de Uso (“Termos”) regulam o acesso e a utilização da plataforma digital Velvet (“Plataforma”), operada por <strong>Velvet Entertainment Ltda</strong>, CNPJ: 66.615.892/0001-43.</p>
-              <p>A Velvet consiste em uma plataforma digital que combina funcionalidades de rede social e marketplace, permitindo a criadores de conteúdo (“Criadores”) disponibilizar conteúdos digitais e interagir diretamente com usuários (“Clientes”).</p>
-              <p>Ao utilizar a Plataforma, o usuário declara ter lido, compreendido e concordado integralmente com estes Termos e com a Política de Privacidade.</p>
-            `
-          },
-          {
-            id: "secao-2",
-            title: "2. Definições",
-            content: `
-              <p>Para os fins destes Termos:</p>
-              <ul>
-                <li><strong>Usuário:</strong> qualquer pessoa física ou jurídica que acesse ou utilize a Plataforma.</li>
-                <li><strong>Criador:</strong> usuário que disponibiliza conteúdos para monetização.</li>
-                <li><strong>Cliente:</strong> usuário que consome ou adquire conteúdos.</li>
-                <li><strong>Conta:</strong> cadastro individual criado pelo usuário para acesso aos serviços.</li>
-                <li><strong>Conteúdo:</strong> quaisquer dados, informações, textos, imagens, vídeos ou materiais inseridos na Plataforma.</li>
-              </ul>
-            `
-          },
-          {
-            id: "secao-3",
-            title: "3. Objeto",
-            content: `
-              <p>A Plataforma Velvet tem por finalidade disponibilizar infraestrutura digital para publicação, compartilhamento e monetização de conteúdos, bem como intermediação entre Criadores e Clientes.</p>
-              <p>A utilização da Plataforma está condicionada ao cumprimento destes Termos e da legislação aplicável.</p>
-            `
-          },
-          {
-            id: "secao-4",
-            title: "4. Natureza da Plataforma (Intermediação)",
-            content: `
-              <p><strong>4.1.</strong> A Velvet atua exclusivamente como plataforma intermediadora, conectando Criadores e Clientes.</p>
-              <p><strong>4.2.</strong> A Velvet:</p>
-              <ul>
-                <li>não produz, edita ou controla previamente o conteúdo disponibilizado;</li>
-                <li>não é parte na relação comercial direta entre Criadores e Clientes;</li>
-                <li>não garante a qualidade, legalidade ou adequação dos conteúdos.</li>
-              </ul>
-              <p><strong>4.3.</strong> As transações realizadas na Plataforma ocorrem entre Criadores e Clientes, cabendo à Velvet apenas a intermediação tecnológica e financeira.</p>
-            `
-          },
-          {
-            id: "secao-5",
-            title: "5. Estrutura dos Serviços",
-            content: `
-              <p>A Plataforma oferece:</p>
-              <h3 class="item-title">5.1. Camada social</h3>
-              <ul>
-                <li>perfis públicos de Criadores;</li>
-                <li>feed de conteúdo;</li>
-                <li>sistema de mensagens privadas (chat);</li>
-                <li>mecanismos de interação.</li>
-              </ul>
-              <h3 class="item-title">5.2. Camada de monetização</h3>
-              <ul>
-                <li>assinaturas recorrentes (VIP);</li>
-                <li>conteúdos pagos por acesso (pay-per-view);</li>
-                <li>venda direta de mídia via chat.</li>
-              </ul>
-              <h3 class="item-title">5.3. Camada de intermediação</h3>
-              <ul>
-                <li>processamento de pagamentos;</li>
-                <li>disponibilização de infraestrutura tecnológica;</li>
-                <li>gestão de acesso ao conteúdo.</li>
-              </ul>
-            `
-          },
-          {
-            id: "secao-6",
-            title: "6. Cadastro, Acesso e Elegibilidade",
-            content: `
-              <p><strong>6.1.</strong> O acesso à Plataforma é restrito a maiores de 18 anos.</p>
-              <p><strong>6.2.</strong> Para utilizar determinadas funcionalidades, o usuário deverá realizar cadastro, fornecendo informações verdadeiras, completas e atualizadas.</p>
-              <p><strong>6.3.</strong> O usuário declara:</p>
-              <ul>
-                <li>possuir capacidade legal;</li>
-                <li>não utilizar identidade falsa;</li>
-                <li>manter a confidencialidade de suas credenciais de acesso.</li>
-              </ul>
-              <p><strong>6.4.</strong> Criadores poderão ser submetidos a procedimentos de verificação de identidade (KYC).</p>
-              <p><strong>6.5.</strong> A Plataforma poderá suspender ou cancelar contas em caso de:</p>
-              <ul>
-                <li>informações falsas;</li>
-                <li>uso indevido;</li>
-                <li>violação destes Termos.</li>
-              </ul>
-            `
-          },
-          {
-            id: "secao-7",
-            title: "7. Uso da Plataforma",
-            content: `
-              <p>O usuário compromete-se a:</p>
-              <ul>
-                <li>utilizar a Plataforma de forma lícita e ética;</li>
-                <li>não violar direitos de terceiros, incluindo propriedade intelectual;</li>
-                <li>não inserir conteúdos ilícitos, ofensivos ou fraudulentos;</li>
-                <li>não tentar acessar sistemas ou dados não autorizados.</li>
-              </ul>
-            `
-          },
-          {
-            id: "secao-8",
-            title: "8. Obrigações dos Criadores",
-            content: `
-              <p>Os Criadores comprometem-se a:</p>
-              <ul>
-                <li>publicar apenas conteúdo lícito;</li>
-                <li>possuir todos os direitos sobre o conteúdo;</li>
-                <li>não violar direitos de terceiros;</li>
-                <li>respeitar normas aplicáveis, incluindo direitos de imagem e proteção de dados.</li>
-              </ul>
-              <p>É expressamente proibido:</p>
-              <ul>
-                <li>conteúdo envolvendo menores;</li>
-                <li>conteúdo não consensual;</li>
-                <li>material ilegal ou que viole direitos fundamentais.</li>
-              </ul>
-            `
-          },
-          {
-            id: "secao-9",
-            title: "9. Obrigações dos Clientes",
-            content: `
-              <p>Os Clientes comprometem-se a:</p>
-              <ul>
-                <li>não reproduzir ou redistribuir conteúdos adquiridos;</li>
-                <li>não violar direitos autorais;</li>
-                <li>não utilizar a Plataforma para assédio, fraude ou atividades ilícitas.</li>
-              </ul>
-            `
-          },
-          {
-            id: "secao-10",
-            title: "10. Propriedade Intelectual",
-            content: `
-              <p><strong>10.1.</strong> O conteúdo pertence aos Criadores.</p>
-              <p><strong>10.2.</strong> O usuário é integralmente responsável pelo conteúdo que inserir na Plataforma.</p>
-              <p><strong>10.3.</strong> Ao publicar conteúdo, o usuário concede à Velvet licença não exclusiva para:</p>
-              <ul>
-                <li>hospedar;</li>
-                <li>distribuir;</li>
-                <li>exibir o conteúdo na Plataforma.</li>
-              </ul>
-              <p><strong>10.4.</strong> Todos os direitos relativos à Plataforma (software, marcas, layout e funcionalidades) pertencem à Velvet ou a seus licenciadores.</p>
-              <p><strong>10.5.</strong> É proibido ao Cliente:</p>
-              <ul>
-                <li>copiar;</li>
-                <li>gravar;</li>
-                <li>redistribuir conteúdo sem autorização.</li>
-              </ul>
-            `
-          },
-          {
-            id: "secao-11",
-            title: "11. Pagamentos e Monetização",
-            content: `
-              <p><strong>11.1.</strong> A Plataforma disponibiliza:</p>
-              <ul>
-                <li>assinaturas recorrentes;</li>
-                <li>compras individuais de conteúdo.</li>
-              </ul>
-              <h3 class="item-title">11.2 Assinaturas</h3>
-              <ul>
-                <li>Concedem acesso ao perfil da criadora, incluindo conteúdo do feed e interação via chat, conforme definido pela criadora;</li>
-                <li>O conteúdo do feed é de responsabilidade exclusiva da criadora, podendo incluir conteúdo adulto ou não, exclusivo ou não exclusivo;</li>
-                <li>A Velvet não garante frequência, tipo ou padrão de conteúdo;</li>
-                <li>As assinaturas não incluem conteúdos pagos adicionais, salvo quando expressamente indicado.</li>
-              </ul>
-              <h3 class="item-title">11.3 Diamantes (Moeda Virtual)</h3>
-              <ul>
-                <li>Uso exclusivo dentro da Plataforma;</li>
-                <li>Não possuem valor monetário fora da Velvet;</li>
-                <li>Não são transferíveis nem resgatáveis;</li>
-                <li>Não são reembolsáveis, salvo obrigação legal.</li>
-              </ul>
-              <p><strong>11.4.</strong> A Velvet poderá:</p>
-              <ul>
-                <li>reter comissão sobre transações;</li>
-                <li>intermediar pagamentos por terceiros.</li>
-              </ul>
-              <p><strong>11.5.</strong> A Velvet não armazena dados completos de cartão dos usuários. O processamento é realizado pelos parceiros de pagamento da Plataforma.</p>
-            `
-          },
-          {
-            id: "secao-12",
-            title: "12. Moderação de Conteúdo",
-            content: `
-              <p><strong>12.1.</strong> A Velvet poderá:</p>
-              <ul>
-                <li>remover conteúdos;</li>
-                <li>suspender contas;</li>
-                <li>bloquear acessos;</li>
-              </ul>
-              <p>sempre que identificar violação destes Termos ou da legislação.</p>
-              <p><strong>12.2.</strong> A moderação poderá ocorrer de forma:</p>
-              <ul>
-                <li>automatizada (incluindo uso de inteligência artificial);</li>
-                <li>manual.</li>
-              </ul>
-            `
-          },
-          {
-            id: "secao-13",
-            title: "13. Responsabilidade e Limitação",
-            content: `
-              <p><strong>13.1.</strong> A Velvet não se responsabiliza por:</p>
-              <ul>
-                <li>conteúdos publicados por Criadores;</li>
-                <li>interações entre usuários;</li>
-                <li>expectativas comerciais entre Criadores e Clientes;</li>
-                <li>indisponibilidades temporárias da Plataforma.</li>
-              </ul>
-              <p><strong>13.2.</strong> A responsabilidade da Plataforma limita-se à sua atuação como intermediadora, nos termos da legislação aplicável.</p>
-            `
-          },
-          {
-            id: "secao-14",
-            title: "14. Proteção de Dados",
-            content: `
-              <p><strong>14.1.</strong> O tratamento de dados pessoais ocorre conforme a Política de Privacidade da Plataforma, em conformidade com a legislação aplicável, incluindo a Lei Geral de Proteção de Dados (Lei nº 13.709/2018) e, quando aplicável, o GDPR.</p>
-              <p><strong>14.2.</strong> A Plataforma adota medidas de segurança adequadas para proteção das informações.</p>
-              <p><strong>14.3.</strong> Os dados poderão ser utilizados para:</p>
-              <ul>
-                <li>operação da Plataforma;</li>
-                <li>prevenção de fraudes;</li>
-                <li>melhoria de serviços.</li>
-              </ul>
-              <p>Mais informações estão disponíveis na Política de Privacidade.</p>
-            `
-          },
-          {
-            id: "secao-15",
-            title: "15. Natureza do Conteúdo na Plataforma",
-            content: `
-              <p><strong>15.1.</strong> A Plataforma Velvet não se destina exclusivamente à disponibilização de conteúdo adulto.</p>
-              <p><strong>15.2.</strong> Os Criadores poderão disponibilizar e monetizar quaisquer tipos de conteúdo digital, incluindo, mas não se limitando a conteúdos educativos, artísticos, culturais, informativos, de entretenimento ou de natureza pessoal, desde que estejam em conformidade com estes Termos e com as Políticas de Uso da Plataforma.</p>
-              <p><strong>15.3.</strong> A eventual disponibilização de conteúdo de natureza adulta por determinados Criadores não caracteriza a Plataforma como um serviço voltado exclusivamente a esse tipo de conteúdo.</p>
-              <p><strong>15.4.</strong> Todos os conteúdos, independentemente de sua natureza, deverão respeitar:</p>
-              <ul>
-                <li>a legislação aplicável;</li>
-                <li>os direitos de terceiros;</li>
-                <li>as diretrizes e políticas internas da Plataforma.</li>
-              </ul>
-              <p><strong>15.5.</strong> A Velvet reserva-se o direito de remover conteúdos que violem estes Termos, independentemente de sua natureza.</p>
-            `
-          },
-          {
-            id: "secao-16",
-            title: "16. Suspensão e Encerramento",
-            content: `
-              <p>A Velvet poderá, a qualquer momento:</p>
-              <ul>
-                <li>suspender ou encerrar o acesso do usuário;</li>
-                <li>modificar ou descontinuar funcionalidades;</li>
-                <li>remover conteúdos que violem estes Termos.</li>
-              </ul>
-            `
-          },
-          {
-            id: "secao-17",
-            title: "17. Alterações dos Termos",
-            content: `
-              <p>Estes Termos poderão ser atualizados a qualquer tempo. O uso contínuo da Plataforma após alterações implica aceitação das novas condições.</p>
-            `
-          },
-          {
-            id: "secao-18",
-            title: "18. Legislação Aplicável e Foro",
-            content: `
-              <p><strong>18.1.</strong> Estes Termos serão regidos pelas leis da República Federativa do Brasil.</p>
-              <p><strong>18.2.</strong> Fica eleito o foro da comarca de São Paulo – SP, com renúncia a qualquer outro, por mais privilegiado que seja.</p>
-            `
-          },
-          {
-            id: "secao-19",
-            title: "19. Fraude, Chargeback e Segurança Financeira",
-            content: `
-              <p><strong>19.1.</strong> A Velvet adota mecanismos de prevenção e detecção de fraudes, podendo monitorar transações, comportamentos e padrões de uso.</p>
-              <p><strong>19.2.</strong> Em caso de suspeita de fraude, abuso financeiro ou uso indevido da Plataforma, a Velvet poderá, a seu exclusivo critério:</p>
-              <ul>
-                <li>suspender temporariamente contas;</li>
-                <li>bloquear transações;</li>
-                <li>reter valores;</li>
-                <li>cancelar pagamentos;</li>
-                <li>solicitar verificação adicional de identidade.</li>
-              </ul>
-              <p><strong>19.3.</strong> O usuário compromete-se a não realizar:</p>
-              <ul>
-                <li>chargebacks indevidos;</li>
-                <li>disputas fraudulentas;</li>
-                <li>utilização de meios de pagamento sem autorização.</li>
-              </ul>
-              <p><strong>19.4.</strong> Em caso de chargeback ou disputa:</p>
-              <ul>
-                <li>a Velvet poderá debitar os valores correspondentes do saldo do Criador;</li>
-                <li>aplicar taxas administrativas;</li>
-                <li>suspender ou encerrar a conta do usuário responsável.</li>
-              </ul>
-              <p><strong>19.5.</strong> O usuário reconhece que disputas abusivas podem resultar em responsabilização civil e/ou criminal, nos termos da legislação aplicável.</p>
-            `
-          },
-          {
-            id: "secao-20",
-            title: "20. Termos Específicos para Criadores (Monetização)",
-            content: `
-              <p><strong>20.1.</strong> Os Criadores poderão monetizar seus conteúdos por meio de:</p>
-              <ul>
-                <li>assinaturas recorrentes;</li>
-                <li>vendas avulsas (pay-per-view);</li>
-                <li>conteúdos pagos via chat.</li>
-              </ul>
-              <p><strong>20.2.</strong> A Velvet atuará como intermediadora financeira, podendo:</p>
-              <ul>
-                <li>processar pagamentos;</li>
-                <li>reter comissão sobre as transações (“revenue share”);</li>
-                <li>estabelecer valores mínimos para saque.</li>
-              </ul>
-              <p><strong>20.3.</strong> O percentual de divisão de receitas (revenue split) será definido pela Plataforma e poderá ser atualizado mediante comunicação prévia.</p>
-              <p><strong>20.4.</strong> Os valores devidos aos Criadores poderão ser:</p>
-              <ul>
-                <li>retidos temporariamente para prevenção de fraude;</li>
-                <li>ajustados em caso de reembolsos ou chargebacks;</li>
-                <li>bloqueados em caso de violação destes Termos.</li>
-              </ul>
-              <p><strong>20.5.</strong> Os saques estarão sujeitos a:</p>
-              <ul>
-                <li>verificação de identidade (KYC);</li>
-                <li>cumprimento de requisitos operacionais;</li>
-                <li>prazos de processamento definidos pela Plataforma.</li>
-              </ul>
-              <p><strong>20.6.</strong> O Criador é integralmente responsável por:</p>
-              <ul>
-                <li>obrigações fiscais;</li>
-                <li>declaração de rendimentos;</li>
-                <li>cumprimento de leis locais aplicáveis.</li>
-              </ul>
-            `
-          },
-          {
-            id: "secao-21",
-            title: "21. Política de Conteúdo (Diretrizes e Restrições)",
-            content: `
-              <h3 class="item-title">21.1. Conteúdos permitidos</h3>
-              <p>A Plataforma permite a publicação e monetização de conteúdos, incluindo, mas não se limitando a:</p>
-              <ul>
-                <li>conteúdo educativo;</li>
-                <li>conteúdo artístico e cultural;</li>
-                <li>entretenimento;</li>
-                <li>conteúdo pessoal;</li>
-                <li>conteúdo adulto consensual entre maiores de idade (quando permitido pela legislação aplicável).</li>
-              </ul>
-              <h3 class="item-title">21.2. Conteúdos proibidos (tolerância zero)</h3>
-              <p>É expressamente proibida a publicação de conteúdos que envolvam:</p>
-              <ul>
-                <li>menores de idade, direta ou indiretamente;</li>
-                <li>exploração sexual, abuso ou violência;</li>
-                <li>conteúdo não consensual (incluindo “revenge porn”);</li>
-                <li>tráfico de pessoas ou exploração;</li>
-                <li>atividades ilegais;</li>
-                <li>discurso de ódio ou incitação à violência;</li>
-                <li>fraude ou engano deliberado;</li>
-                <li>violação de direitos autorais ou de imagem.</li>
-              </ul>
-              <h3 class="item-title">21.3. Conteúdo adulto (se aplicável)</h3>
-              <p>Caso permitido:</p>
-              <ul>
-                <li>deve envolver exclusivamente maiores de 18 anos;</li>
-                <li>deve ser consensual;</li>
-                <li>deve respeitar a legislação aplicável;</li>
-                <li>não pode envolver coerção, exploração ou ilegalidade.</li>
-              </ul>
-              <p>A Velvet poderá impor restrições adicionais, incluindo:</p>
-              <ul>
-                <li>classificação de conteúdo;</li>
-                <li>restrição de acesso;</li>
-                <li>verificação adicional de identidade.</li>
-              </ul>
-              <h3 class="item-title">21.4. Aplicação e enforcement</h3>
-              <p>A Velvet poderá:</p>
-              <ul>
-                <li>remover conteúdos;</li>
-                <li>suspender ou encerrar contas;</li>
-                <li>reportar atividades às autoridades competentes.</li>
-              </ul>
-            `
-          },
-          {
-            id: "secao-22",
-            title: "22. Prestação de Serviços Financeiros",
-            content: `
-              <p><strong>22.1.</strong> Os serviços de pagamentos disponibilizados por meio desta Plataforma são processados pela <strong>Stripe</strong>, parceira tecnológica de pagamento da Velvet.</p>
-              <p><strong>22.2.</strong> A Velvet atua exclusivamente como integradora tecnológica e distribuidora da experiência do produto, não sendo instituição financeira ou de pagamento, nem realizando intermediação financeira em nome próprio.</p>
-              <p><strong>22.3.</strong> O usuário declara ciência de que os pagamentos são processados pelos parceiros acima indicados, conforme suas respectivas políticas e regulamentações vigentes.</p>
-              <p><strong>22.4.</strong> A Plataforma poderá:</p>
-              <ul>
-                <li>bloquear transações com base em risco;</li>
-                <li>cumprir obrigações regulatórias;</li>
-                <li>aplicar políticas de prevenção à lavagem de dinheiro (AML) e financiamento ao terrorismo.</li>
-              </ul>
-              <p><strong>22.5.</strong> O usuário declara que:</p>
-              <ul>
-                <li>não está localizado em jurisdição sancionada;</li>
-                <li>não está incluído em listas de restrição internacional;</li>
-                <li>não utilizará a Plataforma para atividades ilegais.</li>
-              </ul>
-            `
-          },
-          {
-            id: "secao-23",
-            title: "23. Contato",
-            content: `
-              <div class="contact-box">
-                <p><strong>23.1.</strong> O usuário poderá entrar em contato com a Velvet por meio dos seguintes canais:</p>
-                <p>E-mail: <a class="inline-link" href="mailto:contato@velvet.lat">contato@velvet.lat</a></p>
-                <p><strong>23.2.</strong> A Plataforma poderá disponibilizar canais adicionais de atendimento conforme necessário.</p>
-              </div>
-            `
-          },
-          {
-            id: "secao-24",
-            title: "24. Disposições Finais",
-            content: `
-              <p><strong>24.1.</strong> A eventual tolerância quanto ao descumprimento destes Termos não implicará renúncia de direitos.</p>
-              <p><strong>24.2.</strong> Caso qualquer disposição destes Termos seja considerada inválida ou inexequível, as demais permanecerão em pleno vigor.</p>
-              <p><strong>24.3.</strong> Estes Termos constituem o acordo integral entre as partes em relação ao uso da Plataforma.</p>
-            `
-          }
-        ],
-        footerTerms: "Termos de Uso",
-        footerPrivacy: "Política de Privacidade",
-        footerPolicies: "Política de Utilização",
-        footerCopy: "© 2026 Velvet. Todos os direitos reservados."
+<script>
+const T = {
+  pt: {
+    htmlLang: "pt-BR",
+    pageTitle: "Termos de Uso e Políticas da Plataforma Velvet",
+    lastUpdatedLabel: "Última atualização:",
+    lastUpdatedDate: "16/09/2026",
+    introText: "Este documento consolida os Termos de Uso e as Políticas de Utilização da Velvet em um único instrumento. As regras sobre conteúdo, pagamentos, KYC, propriedade intelectual, moderação e sanções integram estes Termos.",
+    legalNote: "Estes Termos têm natureza de contrato de adesão. Ao utilizar a Plataforma, o usuário declara ter lido, compreendido e concordado integralmente com todas as disposições aqui contidas.",
+    tocTitle: "Índice",
+    tocAriaLabel: "Índice dos Termos de Uso",
+    footerTerms: "Termos e Políticas",
+    footerPrivacy: "Política de Privacidade",
+    footerCopy: "© 2026 Velvet. Todos os direitos reservados.",
+    sections: [
+      {
+        id: "secao-1",
+        title: "1. Aceitação dos Termos",
+        content: `
+          <p>Estes Termos de Uso (<strong>"Termos"</strong>) regulam o acesso e a utilização da plataforma digital Velvet (<strong>"Plataforma"</strong>), operada por <strong>Velvet Entertainment Ltda</strong>, CNPJ: 66.615.892/0001-43.</p>
+          <p>Ao utilizar a Plataforma, o usuário declara ter lido, compreendido e concordado integralmente com estes Termos e com a Política de Privacidade. Caso não concorde com qualquer disposição, deverá cessar imediatamente o uso da Plataforma.</p>
+        `
       },
-
-      en: {
-        htmlLang: "en",
-        title: "Terms of Use | Velvet",
-        pageTitle: "Velvet Platform Terms of Use",
-        lastUpdatedLabel: "Last updated:",
-        lastUpdatedDate: "06/07/2026",
-        introText: "These Terms of Use govern access to and use of the Velvet digital platform, establishing the conditions applicable to browsing, registration, monetization, content publication, and use of the services made available by the Platform.",
-        tocAriaLabel: "Table of contents for the Terms of Use",
-        tocTitle: "Contents",
-        tocItems: [
-          "1. Acceptance of the Terms",
-          "2. Definitions",
-          "3. Purpose",
-          "4. Nature of the Platform (Intermediation)",
-          "5. Service Structure",
-          "6. Registration, Access and Eligibility",
-          "7. Use of the Platform",
-          "8. Obligations of Creators",
-          "9. Obligations of Clients",
-          "10. Intellectual Property",
-          "11. Payments and Monetization",
-          "12. Content Moderation",
-          "13. Liability and Limitation",
-          "14. Data Protection",
-          "15. Nature of Content on the Platform",
-          "16. Suspension and Termination",
-          "17. Changes to the Terms",
-          "18. Governing Law and Venue",
-          "19. Fraud, Chargebacks and Financial Security",
-          "20. Specific Terms for Creators (Monetization)",
-          "21. Content Policy (Guidelines and Restrictions)",
-          "22. International Compliance and Payments",
-          "23. Contact",
-          "24. Final Provisions"
-        ],
-        sections: [
-          {
-            id: "secao-1",
-            title: "1. Acceptance of the Terms",
-            content: `
-              <p>These Terms of Use (“Terms”) govern access to and use of the Velvet digital platform (“Platform”), operated by <strong>Velvet Entertainment Ltda</strong>, CNPJ: 66.615.892/0001-43.</p>
-              <p>Velvet is a digital platform that combines social network and marketplace features, allowing content creators (“Creators”) to make digital content available and interact directly with users (“Clients”).</p>
-              <p>By using the Platform, the user declares that they have read, understood, and fully agreed to these Terms and to the Privacy Policy.</p>
-            `
-          },
-          {
-            id: "secao-2",
-            title: "2. Definitions",
-            content: `
-              <p>For the purposes of these Terms:</p>
-              <ul>
-                <li><strong>User:</strong> any individual or legal entity that accesses or uses the Platform.</li>
-                <li><strong>Creator:</strong> a user who makes content available for monetization.</li>
-                <li><strong>Client:</strong> a user who consumes or purchases content.</li>
-                <li><strong>Account:</strong> an individual registration created by the user to access the services.</li>
-                <li><strong>Content:</strong> any data, information, text, images, videos, or materials inserted into the Platform.</li>
-              </ul>
-            `
-          },
-          {
-            id: "secao-3",
-            title: "3. Purpose",
-            content: `
-              <p>The purpose of the Velvet Platform is to provide digital infrastructure for the publication, sharing, and monetization of content, as well as intermediation between Creators and Clients.</p>
-              <p>Use of the Platform is conditioned upon compliance with these Terms and applicable law.</p>
-            `
-          },
-          {
-            id: "secao-4",
-            title: "4. Nature of the Platform (Intermediation)",
-            content: `
-              <p><strong>4.1.</strong> Velvet acts exclusively as an intermediary platform, connecting Creators and Clients.</p>
-              <p><strong>4.2.</strong> Velvet:</p>
-              <ul>
-                <li>does not produce, edit, or previously control the content made available;</li>
-                <li>is not a party to the direct commercial relationship between Creators and Clients;</li>
-                <li>does not guarantee the quality, legality, or suitability of the content.</li>
-              </ul>
-              <p><strong>4.3.</strong> Transactions carried out on the Platform take place between Creators and Clients, and Velvet is responsible only for technological and financial intermediation.</p>
-            `
-          },
-          {
-            id: "secao-5",
-            title: "5. Service Structure",
-            content: `
-              <p>The Platform offers:</p>
-              <h3 class="item-title">5.1. Social layer</h3>
-              <ul>
-                <li>public Creator profiles;</li>
-                <li>content feed;</li>
-                <li>private messaging system (chat);</li>
-                <li>interaction mechanisms.</li>
-              </ul>
-              <h3 class="item-title">5.2. Monetization layer</h3>
-              <ul>
-                <li>recurring subscriptions (VIP);</li>
-                <li>paid content by access (pay-per-view);</li>
-                <li>direct sale of media through chat.</li>
-              </ul>
-              <h3 class="item-title">5.3. Intermediation layer</h3>
-              <ul>
-                <li>payment processing;</li>
-                <li>provision of technological infrastructure;</li>
-                <li>management of access to content.</li>
-              </ul>
-            `
-          },
-          {
-            id: "secao-6",
-            title: "6. Registration, Access and Eligibility",
-            content: `
-              <p><strong>6.1.</strong> Access to the Platform is restricted to persons over 18 years old.</p>
-              <p><strong>6.2.</strong> To use certain features, the user must register and provide truthful, complete, and updated information.</p>
-              <p><strong>6.3.</strong> The user declares that they:</p>
-              <ul>
-                <li>have legal capacity;</li>
-                <li>do not use a false identity;</li>
-                <li>will keep their login credentials confidential.</li>
-              </ul>
-              <p><strong>6.4.</strong> Creators may be subject to identity verification procedures (KYC).</p>
-              <p><strong>6.5.</strong> The Platform may suspend or cancel accounts in cases of:</p>
-              <ul>
-                <li>false information;</li>
-                <li>misuse;</li>
-                <li>violation of these Terms.</li>
-              </ul>
-            `
-          },
-          {
-            id: "secao-7",
-            title: "7. Use of the Platform",
-            content: `
-              <p>The user undertakes to:</p>
-              <ul>
-                <li>use the Platform lawfully and ethically;</li>
-                <li>not violate third-party rights, including intellectual property;</li>
-                <li>not insert illegal, offensive, or fraudulent content;</li>
-                <li>not attempt to access unauthorized systems or data.</li>
-              </ul>
-            `
-          },
-          {
-            id: "secao-8",
-            title: "8. Obligations of Creators",
-            content: `
-              <p>Creators undertake to:</p>
-              <ul>
-                <li>publish only lawful content;</li>
-                <li>hold all rights to the content;</li>
-                <li>not violate third-party rights;</li>
-                <li>comply with applicable rules, including image rights and data protection.</li>
-              </ul>
-              <p>The following are expressly prohibited:</p>
-              <ul>
-                <li>content involving minors;</li>
-                <li>non-consensual content;</li>
-                <li>illegal material or material that violates fundamental rights.</li>
-              </ul>
-            `
-          },
-          {
-            id: "secao-9",
-            title: "9. Obligations of Clients",
-            content: `
-              <p>Clients undertake to:</p>
-              <ul>
-                <li>not reproduce or redistribute purchased content;</li>
-                <li>not violate copyright;</li>
-                <li>not use the Platform for harassment, fraud, or illegal activities.</li>
-              </ul>
-            `
-          },
-          {
-            id: "secao-10",
-            title: "10. Intellectual Property",
-            content: `
-              <p><strong>10.1.</strong> Content belongs to the Creators.</p>
-              <p><strong>10.2.</strong> The user is fully responsible for the content they upload to the Platform.</p>
-              <p><strong>10.3.</strong> By publishing content, the user grants Velvet a non-exclusive license to:</p>
-              <ul>
-                <li>host;</li>
-                <li>distribute;</li>
-                <li>display the content on the Platform.</li>
-              </ul>
-              <p><strong>10.4.</strong> All rights related to the Platform (software, trademarks, layout, and functionalities) belong to Velvet or its licensors.</p>
-              <p><strong>10.5.</strong> Clients are prohibited from:</p>
-              <ul>
-                <li>copying;</li>
-                <li>recording;</li>
-                <li>redistributing content without authorization.</li>
-              </ul>
-            `
-          },
-          {
-            id: "secao-11",
-            title: "11. Payments and Monetization",
-            content: `
-              <p><strong>11.1.</strong> The Platform provides:</p>
-              <ul>
-                <li>recurring subscriptions;</li>
-                <li>individual content purchases.</li>
-              </ul>
-              <h3 class="item-title">11.2 Subscriptions</h3>
-              <ul>
-                <li>Grant access to the creator's profile, including feed content and chat interaction, as defined by the creator;</li>
-                <li>Feed content is the sole responsibility of the creator and may include adult or non-adult content, exclusive or non-exclusive;</li>
-                <li>Velvet does not guarantee frequency, type, or standard of content;</li>
-                <li>Subscriptions do not include additional paid content unless expressly stated.</li>
-              </ul>
-              <h3 class="item-title">11.3 Diamonds (Virtual Currency)</h3>
-              <ul>
-                <li>Exclusive use within the Platform;</li>
-                <li>They have no monetary value outside Velvet;</li>
-                <li>They are non-transferable and non-redeemable;</li>
-                <li>They are non-refundable, except where legally required.</li>
-              </ul>
-              <p><strong>11.4.</strong> Velvet may:</p>
-              <ul>
-                <li>retain a commission on transactions;</li>
-                <li>intermediate payments through third parties.</li>
-              </ul>
-              <p><strong>11.5.</strong> Velvet does not store users' full card data. Processing is handled by the Platform's payment partners.</p>
-            `
-          },
-          {
-            id: "secao-12",
-            title: "12. Content Moderation",
-            content: `
-              <p><strong>12.1.</strong> Velvet may:</p>
-              <ul>
-                <li>remove content;</li>
-                <li>suspend accounts;</li>
-                <li>block access;</li>
-              </ul>
-              <p>whenever it identifies a violation of these Terms or applicable law.</p>
-              <p><strong>12.2.</strong> Moderation may occur in the following forms:</p>
-              <ul>
-                <li>automated (including the use of artificial intelligence);</li>
-                <li>manual.</li>
-              </ul>
-            `
-          },
-          {
-            id: "secao-13",
-            title: "13. Liability and Limitation",
-            content: `
-              <p><strong>13.1.</strong> Velvet shall not be liable for:</p>
-              <ul>
-                <li>content published by Creators;</li>
-                <li>interactions between users;</li>
-                <li>commercial expectations between Creators and Clients;</li>
-                <li>temporary unavailability of the Platform.</li>
-              </ul>
-              <p><strong>13.2.</strong> The Platform’s liability is limited to its role as an intermediary, under applicable law.</p>
-            `
-          },
-          {
-            id: "secao-14",
-            title: "14. Data Protection",
-            content: `
-              <p><strong>14.1.</strong> The processing of personal data occurs in accordance with the Platform’s Privacy Policy, in compliance with applicable law, including the Brazilian General Data Protection Law (Law No. 13,709/2018) and, when applicable, the GDPR.</p>
-              <p><strong>14.2.</strong> The Platform adopts appropriate security measures to protect information.</p>
-              <p><strong>14.3.</strong> Data may be used for:</p>
-              <ul>
-                <li>operation of the Platform;</li>
-                <li>fraud prevention;</li>
-                <li>service improvement.</li>
-              </ul>
-              <p>More information is available in the Privacy Policy.</p>
-            `
-          },
-          {
-            id: "secao-15",
-            title: "15. Nature of Content on the Platform",
-            content: `
-              <p><strong>15.1.</strong> The Velvet Platform is not intended exclusively for adult content.</p>
-              <p><strong>15.2.</strong> Creators may make available and monetize any types of digital content, including but not limited to educational, artistic, cultural, informational, entertainment, or personal content, provided that such content complies with these Terms and the Platform’s Usage Policies.</p>
-              <p><strong>15.3.</strong> The possible availability of adult content by certain Creators does not characterize the Platform as a service exclusively directed to that type of content.</p>
-              <p><strong>15.4.</strong> All content, regardless of its nature, must comply with:</p>
-              <ul>
-                <li>applicable law;</li>
-                <li>third-party rights;</li>
-                <li>the Platform’s internal guidelines and policies.</li>
-              </ul>
-              <p><strong>15.5.</strong> Velvet reserves the right to remove content that violates these Terms, regardless of its nature.</p>
-            `
-          },
-          {
-            id: "secao-16",
-            title: "16. Suspension and Termination",
-            content: `
-              <p>Velvet may, at any time:</p>
-              <ul>
-                <li>suspend or terminate the user’s access;</li>
-                <li>modify or discontinue functionalities;</li>
-                <li>remove content that violates these Terms.</li>
-              </ul>
-            `
-          },
-          {
-            id: "secao-17",
-            title: "17. Changes to the Terms",
-            content: `
-              <p>These Terms may be updated at any time. Continued use of the Platform after changes implies acceptance of the new conditions.</p>
-            `
-          },
-          {
-            id: "secao-18",
-            title: "18. Governing Law and Venue",
-            content: `
-              <p><strong>18.1.</strong> These Terms shall be governed by the laws of the Federative Republic of Brazil.</p>
-              <p><strong>18.2.</strong> The courts of the district of São Paulo – SP are elected as the competent venue, with waiver of any other, however privileged it may be.</p>
-            `
-          },
-          {
-            id: "secao-19",
-            title: "19. Fraud, Chargebacks and Financial Security",
-            content: `
-              <p><strong>19.1.</strong> Velvet adopts fraud prevention and detection mechanisms and may monitor transactions, behaviors, and usage patterns.</p>
-              <p><strong>19.2.</strong> In case of suspected fraud, financial abuse, or misuse of the Platform, Velvet may, at its sole discretion:</p>
-              <ul>
-                <li>temporarily suspend accounts;</li>
-                <li>block transactions;</li>
-                <li>retain funds;</li>
-                <li>cancel payments;</li>
-                <li>request additional identity verification.</li>
-              </ul>
-              <p><strong>19.3.</strong> The user undertakes not to engage in:</p>
-              <ul>
-                <li>improper chargebacks;</li>
-                <li>fraudulent disputes;</li>
-                <li>use of payment methods without authorization.</li>
-              </ul>
-              <p><strong>19.4.</strong> In case of chargeback or dispute:</p>
-              <ul>
-                <li>Velvet may debit the corresponding amounts from the Creator’s balance;</li>
-                <li>apply administrative fees;</li>
-                <li>suspend or terminate the responsible user’s account.</li>
-              </ul>
-              <p><strong>19.5.</strong> The user acknowledges that abusive disputes may result in civil and/or criminal liability under applicable law.</p>
-            `
-          },
-          {
-            id: "secao-20",
-            title: "20. Specific Terms for Creators (Monetization)",
-            content: `
-              <p><strong>20.1.</strong> Creators may monetize their content through:</p>
-              <ul>
-                <li>recurring subscriptions;</li>
-                <li>one-time sales (pay-per-view);</li>
-                <li>paid content via chat.</li>
-              </ul>
-              <p><strong>20.2.</strong> Velvet will act as a financial intermediary and may:</p>
-              <ul>
-                <li>process payments;</li>
-                <li>retain a commission on transactions (“revenue share”);</li>
-                <li>set minimum withdrawal amounts.</li>
-              </ul>
-              <p><strong>20.3.</strong> The revenue split percentage will be defined by the Platform and may be updated upon prior notice.</p>
-              <p><strong>20.4.</strong> Amounts due to Creators may be:</p>
-              <ul>
-                <li>temporarily retained for fraud prevention;</li>
-                <li>adjusted in case of refunds or chargebacks;</li>
-                <li>blocked in case of violation of these Terms.</li>
-              </ul>
-              <p><strong>20.5.</strong> Withdrawals will be subject to:</p>
-              <ul>
-                <li>identity verification (KYC);</li>
-                <li>compliance with operational requirements;</li>
-                <li>processing deadlines defined by the Platform.</li>
-              </ul>
-              <p><strong>20.6.</strong> The Creator is fully responsible for:</p>
-              <ul>
-                <li>tax obligations;</li>
-                <li>income reporting;</li>
-                <li>compliance with applicable local laws.</li>
-              </ul>
-            `
-          },
-          {
-            id: "secao-21",
-            title: "21. Content Policy (Guidelines and Restrictions)",
-            content: `
-              <h3 class="item-title">21.1. Allowed content</h3>
-              <p>The Platform allows the publication and monetization of content including, but not limited to:</p>
-              <ul>
-                <li>educational content;</li>
-                <li>artistic and cultural content;</li>
-                <li>entertainment;</li>
-                <li>personal content;</li>
-                <li>consensual adult content between persons over 18 years of age (when permitted by applicable law).</li>
-              </ul>
-              <h3 class="item-title">21.2. Prohibited content (zero tolerance)</h3>
-              <p>The publication of content involving the following is expressly prohibited:</p>
-              <ul>
-                <li>minors, directly or indirectly;</li>
-                <li>sexual exploitation, abuse, or violence;</li>
-                <li>non-consensual content (including “revenge porn”);</li>
-                <li>human trafficking or exploitation;</li>
-                <li>illegal activities;</li>
-                <li>hate speech or incitement to violence;</li>
-                <li>fraud or deliberate deception;</li>
-                <li>violation of copyright or image rights.</li>
-              </ul>
-              <h3 class="item-title">21.3. Adult content (if applicable)</h3>
-              <p>If allowed:</p>
-              <ul>
-                <li>it must involve only persons over 18 years old;</li>
-                <li>it must be consensual;</li>
-                <li>it must comply with applicable law;</li>
-                <li>it may not involve coercion, exploitation, or illegality.</li>
-              </ul>
-              <p>Velvet may impose additional restrictions, including:</p>
-              <ul>
-                <li>content classification;</li>
-                <li>access restriction;</li>
-                <li>additional identity verification.</li>
-              </ul>
-              <h3 class="item-title">21.4. Application and enforcement</h3>
-              <p>Velvet may:</p>
-              <ul>
-                <li>remove content;</li>
-                <li>suspend or terminate accounts;</li>
-                <li>report activities to the competent authorities.</li>
-              </ul>
-            `
-          },
-          {
-            id: "secao-22",
-            title: "22. Provision of Financial Services",
-            content: `
-              <p><strong>22.1.</strong> Payment services made available through this Platform are processed by <strong>Stripe</strong>, Velvet's payment technology partner.</p>
-              <p><strong>22.2.</strong> Velvet acts exclusively as a technology integrator and product experience distributor, and is not a financial or payment institution, nor does it perform financial intermediation in its own name.</p>
-              <p><strong>22.3.</strong> The user acknowledges that payments are processed by the partners indicated above, pursuant to their respective policies and applicable regulations.</p>
-              <p><strong>22.4.</strong> The Platform may:</p>
-              <ul>
-                <li>block transactions based on risk;</li>
-                <li>comply with regulatory obligations;</li>
-                <li>apply anti-money laundering (AML) and counter-terrorist financing policies.</li>
-              </ul>
-              <p><strong>22.5.</strong> The user declares that they:</p>
-              <ul>
-                <li>are not located in a sanctioned jurisdiction;</li>
-                <li>are not included on international restriction lists;</li>
-                <li>will not use the Platform for illegal activities.</li>
-              </ul>
-            `
-          },
-          {
-            id: "secao-23",
-            title: "23. Contact",
-            content: `
-              <div class="contact-box">
-                <p><strong>23.1.</strong> The user may contact Velvet through the following channels:</p>
-                <p>Email: <a class="inline-link" href="mailto:contato@velvet.lat">contato@velvet.lat</a></p>
-                <p><strong>23.2.</strong> The Platform may provide additional support channels as necessary.</p>
-              </div>
-            `
-          },
-          {
-            id: "secao-24",
-            title: "24. Final Provisions",
-            content: `
-              <p><strong>24.1.</strong> Any tolerance regarding non-compliance with these Terms shall not imply waiver of rights.</p>
-              <p><strong>24.2.</strong> If any provision of these Terms is considered invalid or unenforceable, the remaining provisions shall remain in full force and effect.</p>
-              <p><strong>24.3.</strong> These Terms constitute the entire agreement between the parties regarding the use of the Platform.</p>
-            `
-          }
-        ],
-        footerTerms: "Terms of Use",
-        footerPrivacy: "Privacy Policy",
-        footerPolicies: "Usage Policy",
-        footerCopy: "© 2026 Velvet. All rights reserved."
+      {
+        id: "secao-2",
+        title: "2. Definições",
+        content: `
+          <p>Para os fins destes Termos:</p>
+          <ul>
+            <li><strong>Usuário:</strong> qualquer pessoa física que acesse ou utilize a Plataforma.</li>
+            <li><strong>Criador:</strong> usuário que disponibiliza conteúdos digitais para monetização.</li>
+            <li><strong>Cliente:</strong> usuário que consome ou adquire conteúdos.</li>
+            <li><strong>Conta:</strong> cadastro individual criado pelo usuário para acesso aos serviços.</li>
+            <li><strong>Conteúdo:</strong> textos, imagens, vídeos, áudios ou quaisquer materiais inseridos na Plataforma.</li>
+            <li><strong>Diamantes:</strong> moeda virtual de uso exclusivo dentro da Plataforma.</li>
+          </ul>
+        `
       },
+      {
+        id: "secao-3",
+        title: "3. Natureza do Conteúdo na Plataforma",
+        content: `
+          <p><strong>3.1.</strong> A Plataforma Velvet não se destina exclusivamente à disponibilização de conteúdo adulto. A Velvet é uma plataforma social que permite a publicação e monetização de conteúdos variados, incluindo:</p>
+          <ul>
+            <li>conteúdo educativo, artístico e cultural;</li>
+            <li>entretenimento e lifestyle;</li>
+            <li>conteúdo pessoal e informativo;</li>
+            <li>conteúdo adulto consensual entre maiores de 18 anos, quando legalmente permitido.</li>
+          </ul>
+          <p><strong>3.2.</strong> A eventual disponibilização de conteúdo adulto por determinados Criadores não caracteriza a Plataforma como serviço voltado exclusivamente a esse tipo de conteúdo.</p>
+          <p><strong>3.3.</strong> A Velvet atua como intermediadora tecnológica e não produz, edita nem controla previamente o conteúdo publicado pelos Criadores. O Criador é o único responsável pelo que publica.</p>
+          <p><strong>3.4.</strong> Todos os conteúdos, independentemente de sua natureza, devem respeitar:</p>
+          <ul>
+            <li>a legislação aplicável;</li>
+            <li>os direitos de terceiros;</li>
+            <li>as diretrizes e políticas internas da Plataforma.</li>
+          </ul>
+          <p><strong>3.5.</strong> A Velvet reserva-se o direito de remover conteúdos que violem estes Termos, independentemente de aviso prévio.</p>
+        `
+      },
+      {
+        id: "secao-4",
+        title: "4. Pagamentos, Assinaturas e Reembolsos",
+        content: `
+          <h3 class="item-title">4.1 Disposições Gerais</h3>
+          <ul>
+            <li>Pagamentos são processados por parceiros certificados (Stripe e outros); a Velvet não armazena dados completos de cartão.</li>
+            <li>O usuário é responsável pela veracidade das informações de pagamento fornecidas.</li>
+            <li>Os preços são cobrados em reais (BRL) e incluem todos os tributos aplicáveis. Para usuários em outros países, a Plataforma poderá exibir um valor estimado na moeda local como referência; o valor efetivamente cobrado é sempre em BRL, e eventuais diferenças cambiais são de responsabilidade do usuário.</li>
+          </ul>
 
-      es: {
-        htmlLang: "es",
-        title: "Términos de Uso | Velvet",
-        pageTitle: "Términos de Uso de la Plataforma Velvet",
-        lastUpdatedLabel: "Última actualización:",
-        lastUpdatedDate: "07/06/2026",
-        introText: "Estos Términos de Uso regulan el acceso y el uso de la plataforma digital Velvet, estableciendo las condiciones aplicables a la navegación, registro, monetización, publicación de contenido y utilización de los servicios ofrecidos por la Plataforma.",
-        tocAriaLabel: "Índice de los Términos de Uso",
-        tocTitle: "Índice",
-        tocItems: [
-          "1. Aceptación de los Términos",
-          "2. Definiciones",
-          "3. Objeto",
-          "4. Naturaleza de la Plataforma (Intermediación)",
-          "5. Estructura de los Servicios",
-          "6. Registro, Acceso y Elegibilidad",
-          "7. Uso de la Plataforma",
-          "8. Obligaciones de los Creadores",
-          "9. Obligaciones de los Clientes",
-          "10. Propiedad Intelectual",
-          "11. Pagos y Monetización",
-          "12. Moderación de Contenido",
-          "13. Responsabilidad y Limitación",
-          "14. Protección de Datos",
-          "15. Naturaleza del Contenido en la Plataforma",
-          "16. Suspensión y Terminación",
-          "17. Modificaciones de los Términos",
-          "18. Legislación Aplicable y Foro",
-          "19. Fraude, Chargebacks y Seguridad Financiera",
-          "20. Términos Específicos para Creadores (Monetización)",
-          "21. Política de Contenido (Directrices y Restricciones)",
-          "22. Cumplimiento Internacional y Pagos",
-          "23. Contacto",
-          "24. Disposiciones Finales"
-        ],
-        sections: [
-          {
-            id: "secao-1",
-            title: "1. Aceptación de los Términos",
-            content: `
-              <p>Estos Términos de Uso (“Términos”) regulan el acceso y el uso de la plataforma digital Velvet (“Plataforma”), operada por <strong>Velvet Entertainment Ltda</strong>, CNPJ: 66.615.892/0001-43.</p>
-              <p>Velvet consiste en una plataforma digital que combina funcionalidades de red social y marketplace, permitiendo a creadores de contenido (“Creadores”) poner a disposición contenidos digitales e interactuar directamente con usuarios (“Clientes”).</p>
-              <p>Al utilizar la Plataforma, el usuario declara haber leído, comprendido y aceptado íntegramente estos Términos y la Política de Privacidad.</p>
-            `
-          },
-          {
-            id: "secao-2",
-            title: "2. Definiciones",
-            content: `
-              <p>Para los fines de estos Términos:</p>
-              <ul>
-                <li><strong>Usuario:</strong> cualquier persona física o jurídica que acceda o utilice la Plataforma.</li>
-                <li><strong>Creador:</strong> usuario que pone a disposición contenidos para monetización.</li>
-                <li><strong>Cliente:</strong> usuario que consume o adquiere contenido.</li>
-                <li><strong>Cuenta:</strong> registro individual creado por el usuario para acceder a los servicios.</li>
-                <li><strong>Contenido:</strong> cualquier dato, información, texto, imagen, video o material insertado en la Plataforma.</li>
-              </ul>
-            `
-          },
-          {
-            id: "secao-3",
-            title: "3. Objeto",
-            content: `
-              <p>La Plataforma Velvet tiene por finalidad disponibilizar infraestructura digital para la publicación, el intercambio y la monetización de contenidos, así como la intermediación entre Creadores y Clientes.</p>
-              <p>El uso de la Plataforma está condicionado al cumplimiento de estos Términos y de la legislación aplicable.</p>
-            `
-          },
-          {
-            id: "secao-4",
-            title: "4. Naturaleza de la Plataforma (Intermediación)",
-            content: `
-              <p><strong>4.1.</strong> Velvet actúa exclusivamente como plataforma intermediaria, conectando Creadores y Clientes.</p>
-              <p><strong>4.2.</strong> Velvet:</p>
-              <ul>
-                <li>no produce, edita ni controla previamente el contenido disponibilizado;</li>
-                <li>no forma parte de la relación comercial directa entre Creadores y Clientes;</li>
-                <li>no garantiza la calidad, legalidad o adecuación de los contenidos.</li>
-              </ul>
-              <p><strong>4.3.</strong> Las transacciones realizadas en la Plataforma ocurren entre Creadores y Clientes, correspondiendo a Velvet únicamente la intermediación tecnológica y financiera.</p>
-            `
-          },
-          {
-            id: "secao-5",
-            title: "5. Estructura de los Servicios",
-            content: `
-              <p>La Plataforma ofrece:</p>
-              <h3 class="item-title">5.1. Capa social</h3>
-              <ul>
-                <li>perfiles públicos de Creadores;</li>
-                <li>feed de contenido;</li>
-                <li>sistema de mensajes privados (chat);</li>
-                <li>mecanismos de interacción.</li>
-              </ul>
-              <h3 class="item-title">5.2. Capa de monetización</h3>
-              <ul>
-                <li>suscripciones recurrentes (VIP);</li>
-                <li>contenidos pagos por acceso (pay-per-view);</li>
-                <li>venta directa de medios por chat.</li>
-              </ul>
-              <h3 class="item-title">5.3. Capa de intermediación</h3>
-              <ul>
-                <li>procesamiento de pagos;</li>
-                <li>disponibilización de infraestructura tecnológica;</li>
-                <li>gestión de acceso al contenido.</li>
-              </ul>
-            `
-          },
-          {
-            id: "secao-6",
-            title: "6. Registro, Acceso y Elegibilidad",
-            content: `
-              <p><strong>6.1.</strong> El acceso a la Plataforma está restringido a mayores de 18 años.</p>
-              <p><strong>6.2.</strong> Para utilizar determinadas funcionalidades, el usuario deberá registrarse, proporcionando información verdadera, completa y actualizada.</p>
-              <p><strong>6.3.</strong> El usuario declara que:</p>
-              <ul>
-                <li>posee capacidad legal;</li>
-                <li>no utiliza identidad falsa;</li>
-                <li>mantendrá la confidencialidad de sus credenciales de acceso.</li>
-              </ul>
-              <p><strong>6.4.</strong> Los Creadores podrán ser sometidos a procedimientos de verificación de identidad (KYC).</p>
-              <p><strong>6.5.</strong> La Plataforma podrá suspender o cancelar cuentas en caso de:</p>
-              <ul>
-                <li>información falsa;</li>
-                <li>uso indebido;</li>
-                <li>violación de estos Términos.</li>
-              </ul>
-            `
-          },
-          {
-            id: "secao-7",
-            title: "7. Uso de la Plataforma",
-            content: `
-              <p>El usuario se compromete a:</p>
-              <ul>
-                <li>utilizar la Plataforma de forma lícita y ética;</li>
-                <li>no violar derechos de terceros, incluida la propiedad intelectual;</li>
-                <li>no insertar contenidos ilícitos, ofensivos o fraudulentos;</li>
-                <li>no intentar acceder a sistemas o datos no autorizados.</li>
-              </ul>
-            `
-          },
-          {
-            id: "secao-8",
-            title: "8. Obligaciones de los Creadores",
-            content: `
-              <p>Los Creadores se comprometen a:</p>
-              <ul>
-                <li>publicar únicamente contenido lícito;</li>
-                <li>poseer todos los derechos sobre el contenido;</li>
-                <li>no violar derechos de terceros;</li>
-                <li>respetar las normas aplicables, incluidos los derechos de imagen y la protección de datos.</li>
-              </ul>
-              <p>Está expresamente prohibido:</p>
-              <ul>
-                <li>contenido que involucre menores;</li>
-                <li>contenido no consensuado;</li>
-                <li>material ilegal o que viole derechos fundamentales.</li>
-              </ul>
-            `
-          },
-          {
-            id: "secao-9",
-            title: "9. Obligaciones de los Clientes",
-            content: `
-              <p>Los Clientes se comprometen a:</p>
-              <ul>
-                <li>no reproducir ni redistribuir contenidos adquiridos;</li>
-                <li>no violar derechos de autor;</li>
-                <li>no utilizar la Plataforma para acoso, fraude o actividades ilícitas.</li>
-              </ul>
-            `
-          },
-          {
-            id: "secao-10",
-            title: "10. Propiedad Intelectual",
-            content: `
-              <p><strong>10.1.</strong> El contenido pertenece a los Creadores.</p>
-              <p><strong>10.2.</strong> El usuario es integralmente responsable por el contenido que inserte en la Plataforma.</p>
-              <p><strong>10.3.</strong> Al publicar contenido, el usuario concede a Velvet una licencia no exclusiva para:</p>
-              <ul>
-                <li>alojar;</li>
-                <li>distribuir;</li>
-                <li>exhibir el contenido en la Plataforma.</li>
-              </ul>
-              <p><strong>10.4.</strong> Todos los derechos relativos a la Plataforma (software, marcas, diseño y funcionalidades) pertenecen a Velvet o a sus licenciantes.</p>
-              <p><strong>10.5.</strong> Está prohibido al Cliente:</p>
-              <ul>
-                <li>copiar;</li>
-                <li>grabar;</li>
-                <li>redistribuir contenido sin autorización.</li>
-              </ul>
-            `
-          },
-          {
-            id: "secao-11",
-            title: "11. Pagos y Monetización",
-            content: `
-              <p><strong>11.1.</strong> La Plataforma disponibiliza:</p>
-              <ul>
-                <li>suscripciones recurrentes;</li>
-                <li>compras individuales de contenido.</li>
-              </ul>
-              <h3 class="item-title">11.2 Suscripciones</h3>
-              <ul>
-                <li>Otorgan acceso al perfil de la creadora, incluyendo contenido del feed e interacción por chat, según lo definido por la creadora;</li>
-                <li>El contenido del feed es responsabilidad exclusiva de la creadora y puede incluir contenido adulto o no adulto, exclusivo o no exclusivo;</li>
-                <li>Velvet no garantiza frecuencia, tipo ni estándar de contenido;</li>
-                <li>Las suscripciones no incluyen contenidos pagos adicionales, salvo indicación expresa.</li>
-              </ul>
-              <h3 class="item-title">11.3 Diamantes (Moneda Virtual)</h3>
-              <ul>
-                <li>Uso exclusivo dentro de la Plataforma;</li>
-                <li>No tienen valor monetario fuera de Velvet;</li>
-                <li>No son transferibles ni canjeables;</li>
-                <li>No son reembolsables, salvo obligación legal.</li>
-              </ul>
-              <p><strong>11.4.</strong> Velvet podrá:</p>
-              <ul>
-                <li>retener comisión sobre transacciones;</li>
-                <li>intermediar pagos por terceros.</li>
-              </ul>
-              <p><strong>11.5.</strong> Velvet no almacena datos completos de tarjeta de los usuarios. El procesamiento es realizado por los socios de pago de la Plataforma.</p>
-            `
-          },
-          {
-            id: "secao-12",
-            title: "12. Moderación de Contenido",
-            content: `
-              <p><strong>12.1.</strong> Velvet podrá:</p>
-              <ul>
-                <li>remover contenidos;</li>
-                <li>suspender cuentas;</li>
-                <li>bloquear accesos;</li>
-              </ul>
-              <p>siempre que identifique violación de estos Términos o de la legislación aplicable.</p>
-              <p><strong>12.2.</strong> La moderación podrá ocurrir de forma:</p>
-              <ul>
-                <li>automatizada (incluyendo uso de inteligencia artificial);</li>
-                <li>manual.</li>
-              </ul>
-            `
-          },
-          {
-            id: "secao-13",
-            title: "13. Responsabilidad y Limitación",
-            content: `
-              <p><strong>13.1.</strong> Velvet no se responsabiliza por:</p>
-              <ul>
-                <li>contenidos publicados por los Creadores;</li>
-                <li>interacciones entre usuarios;</li>
-                <li>expectativas comerciales entre Creadores y Clientes;</li>
-                <li>indisponibilidades temporales de la Plataforma.</li>
-              </ul>
-              <p><strong>13.2.</strong> La responsabilidad de la Plataforma se limita a su actuación como intermediaria, en los términos de la legislación aplicable.</p>
-            `
-          },
-          {
-            id: "secao-14",
-            title: "14. Protección de Datos",
-            content: `
-              <p><strong>14.1.</strong> El tratamiento de datos personales ocurre conforme a la Política de Privacidad de la Plataforma, en conformidad con la legislación aplicable, incluyendo la Ley General de Protección de Datos de Brasil (Ley nº 13.709/2018) y, cuando corresponda, el GDPR.</p>
-              <p><strong>14.2.</strong> La Plataforma adopta medidas de seguridad adecuadas para la protección de la información.</p>
-              <p><strong>14.3.</strong> Los datos podrán ser utilizados para:</p>
-              <ul>
-                <li>operación de la Plataforma;</li>
-                <li>prevención de fraudes;</li>
-                <li>mejora de servicios.</li>
-              </ul>
-              <p>Más información está disponible en la Política de Privacidad.</p>
-            `
-          },
-          {
-            id: "secao-15",
-            title: "15. Naturaleza del Contenido en la Plataforma",
-            content: `
-              <p><strong>15.1.</strong> La Plataforma Velvet no está destinada exclusivamente a la disponibilización de contenido adulto.</p>
-              <p><strong>15.2.</strong> Los Creadores podrán disponibilizar y monetizar cualquier tipo de contenido digital, incluyendo, pero sin limitarse a contenidos educativos, artísticos, culturales, informativos, de entretenimiento o de naturaleza personal, siempre que estén en conformidad con estos Términos y con las Políticas de Uso de la Plataforma.</p>
-              <p><strong>15.3.</strong> La eventual disponibilización de contenido de naturaleza adulta por determinados Creadores no caracteriza a la Plataforma como un servicio orientado exclusivamente a ese tipo de contenido.</p>
-              <p><strong>15.4.</strong> Todos los contenidos, independientemente de su naturaleza, deberán respetar:</p>
-              <ul>
-                <li>la legislación aplicable;</li>
-                <li>los derechos de terceros;</li>
-                <li>las directrices y políticas internas de la Plataforma.</li>
-              </ul>
-              <p><strong>15.5.</strong> Velvet se reserva el derecho de remover contenidos que violen estos Términos, independientemente de su naturaleza.</p>
-            `
-          },
-          {
-            id: "secao-16",
-            title: "16. Suspensión y Terminación",
-            content: `
-              <p>Velvet podrá, en cualquier momento:</p>
-              <ul>
-                <li>suspender o terminar el acceso del usuario;</li>
-                <li>modificar o descontinuar funcionalidades;</li>
-                <li>remover contenidos que violen estos Términos.</li>
-              </ul>
-            `
-          },
-          {
-            id: "secao-17",
-            title: "17. Modificaciones de los Términos",
-            content: `
-              <p>Estos Términos podrán ser actualizados en cualquier momento. El uso continuo de la Plataforma después de las modificaciones implica aceptación de las nuevas condiciones.</p>
-            `
-          },
-          {
-            id: "secao-18",
-            title: "18. Legislación Aplicable y Foro",
-            content: `
-              <p><strong>18.1.</strong> Estos Términos se regirán por las leyes de la República Federativa de Brasil.</p>
-              <p><strong>18.2.</strong> Se elige el foro de la comarca de São Paulo – SP, con renuncia a cualquier otro, por más privilegiado que sea.</p>
-            `
-          },
-          {
-            id: "secao-19",
-            title: "19. Fraude, Chargebacks y Seguridad Financiera",
-            content: `
-              <p><strong>19.1.</strong> Velvet adopta mecanismos de prevención y detección de fraude, pudiendo monitorear transacciones, comportamientos y patrones de uso.</p>
-              <p><strong>19.2.</strong> En caso de sospecha de fraude, abuso financiero o uso indebido de la Plataforma, Velvet podrá, a su exclusivo criterio:</p>
-              <ul>
-                <li>suspender temporalmente cuentas;</li>
-                <li>bloquear transacciones;</li>
-                <li>retener valores;</li>
-                <li>cancelar pagos;</li>
-                <li>solicitar verificación adicional de identidad.</li>
-              </ul>
-              <p><strong>19.3.</strong> El usuario se compromete a no realizar:</p>
-              <ul>
-                <li>chargebacks indebidos;</li>
-                <li>disputas fraudulentas;</li>
-                <li>utilización de medios de pago sin autorización.</li>
-              </ul>
-              <p><strong>19.4.</strong> En caso de chargeback o disputa:</p>
-              <ul>
-                <li>Velvet podrá debitar los valores correspondientes del saldo del Creador;</li>
-                <li>aplicar tasas administrativas;</li>
-                <li>suspender o terminar la cuenta del usuario responsable.</li>
-              </ul>
-              <p><strong>19.5.</strong> El usuario reconoce que las disputas abusivas pueden resultar en responsabilidad civil y/o penal, en los términos de la legislación aplicable.</p>
-            `
-          },
-          {
-            id: "secao-20",
-            title: "20. Términos Específicos para Creadores (Monetización)",
-            content: `
-              <p><strong>20.1.</strong> Los Creadores podrán monetizar sus contenidos por medio de:</p>
-              <ul>
-                <li>suscripciones recurrentes;</li>
-                <li>ventas individuales (pay-per-view);</li>
-                <li>contenidos pagos por chat.</li>
-              </ul>
-              <p><strong>20.2.</strong> Velvet actuará como intermediaria financiera, pudiendo:</p>
-              <ul>
-                <li>procesar pagos;</li>
-                <li>retener comisión sobre las transacciones (“revenue share”);</li>
-                <li>establecer valores mínimos para retiro.</li>
-              </ul>
-              <p><strong>20.3.</strong> El porcentaje de división de ingresos (revenue split) será definido por la Plataforma y podrá ser actualizado mediante comunicación previa.</p>
-              <p><strong>20.4.</strong> Los valores debidos a los Creadores podrán ser:</p>
-              <ul>
-                <li>retenidos temporalmente para prevención de fraude;</li>
-                <li>ajustados en caso de reembolsos o chargebacks;</li>
-                <li>bloqueados en caso de violación de estos Términos.</li>
-              </ul>
-              <p><strong>20.5.</strong> Los retiros estarán sujetos a:</p>
-              <ul>
-                <li>verificación de identidad (KYC);</li>
-                <li>cumplimiento de requisitos operativos;</li>
-                <li>plazos de procesamiento definidos por la Plataforma.</li>
-              </ul>
-              <p><strong>20.6.</strong> El Creador es integralmente responsable por:</p>
-              <ul>
-                <li>obligaciones fiscales;</li>
-                <li>declaración de ingresos;</li>
-                <li>cumplimiento de leyes locales aplicables.</li>
-              </ul>
-            `
-          },
-          {
-            id: "secao-21",
-            title: "21. Política de Contenido (Directrices y Restricciones)",
-            content: `
-              <h3 class="item-title">21.1. Contenidos permitidos</h3>
-              <p>La Plataforma permite la publicación y monetización de contenidos, incluyendo, pero sin limitarse a:</p>
-              <ul>
-                <li>contenido educativo;</li>
-                <li>contenido artístico y cultural;</li>
-                <li>entretenimiento;</li>
-                <li>contenido personal;</li>
-                <li>contenido adulto consensuado entre mayores de edad (cuando esté permitido por la legislación aplicable).</li>
-              </ul>
-              <h3 class="item-title">21.2. Contenidos prohibidos (tolerancia cero)</h3>
-              <p>Está expresamente prohibida la publicación de contenidos que involucren:</p>
-              <ul>
-                <li>menores de edad, directa o indirectamente;</li>
-                <li>explotación sexual, abuso o violencia;</li>
-                <li>contenido no consensuado (incluyendo “revenge porn”);</li>
-                <li>trata de personas o explotación;</li>
-                <li>actividades ilegales;</li>
-                <li>discurso de odio o incitación a la violencia;</li>
-                <li>fraude o engaño deliberado;</li>
-                <li>violación de derechos de autor o de imagen.</li>
-              </ul>
-              <h3 class="item-title">21.3. Contenido adulto (si aplica)</h3>
-              <p>Si está permitido:</p>
-              <ul>
-                <li>debe involucrar exclusivamente mayores de 18 años;</li>
-                <li>debe ser consensuado;</li>
-                <li>debe respetar la legislación aplicable;</li>
-                <li>no puede involucrar coerción, explotación o ilegalidad.</li>
-              </ul>
-              <p>Velvet podrá imponer restricciones adicionales, incluyendo:</p>
-              <ul>
-                <li>clasificación de contenido;</li>
-                <li>restricción de acceso;</li>
-                <li>verificación adicional de identidad.</li>
-              </ul>
-              <h3 class="item-title">21.4. Aplicación y enforcement</h3>
-              <p>Velvet podrá:</p>
-              <ul>
-                <li>remover contenidos;</li>
-                <li>suspender o terminar cuentas;</li>
-                <li>reportar actividades a las autoridades competentes.</li>
-              </ul>
-            `
-          },
-          {
-            id: "secao-22",
-            title: "22. Prestación de Servicios Financieros",
-            content: `
-              <p><strong>22.1.</strong> Los servicios de pago disponibilizados por medio de esta Plataforma son procesados por <strong>Stripe</strong>, socio tecnológico de pagos de Velvet.</p>
-              <p><strong>22.2.</strong> Velvet actúa exclusivamente como integradora tecnológica y distribuidora de la experiencia del producto, no siendo institución financiera o de pago, ni realizando intermediación financiera en nombre propio.</p>
-              <p><strong>22.3.</strong> El usuario declara conocer que los pagos son procesados por los socios indicados anteriormente, conforme sus respectivas políticas y normativas vigentes.</p>
-              <p><strong>22.4.</strong> La Plataforma podrá:</p>
-              <ul>
-                <li>bloquear transacciones con base en riesgo;</li>
-                <li>cumplir obligaciones regulatorias;</li>
-                <li>aplicar políticas de prevención de lavado de dinero (AML) y financiación del terrorismo.</li>
-              </ul>
-              <p><strong>22.5.</strong> El usuario declara que:</p>
-              <ul>
-                <li>no se encuentra en una jurisdicción sancionada;</li>
-                <li>no está incluido en listas de restricción internacional;</li>
-                <li>no utilizará la Plataforma para actividades ilegales.</li>
-              </ul>
-            `
-          },
-          {
-            id: "secao-23",
-            title: "23. Contacto",
-            content: `
-              <div class="contact-box">
-                <p><strong>23.1.</strong> El usuario podrá entrar en contacto con Velvet por medio de los siguientes canales:</p>
-                <p>Correo electrónico: <a class="inline-link" href="mailto:contato@velvet.lat">contato@velvet.lat</a></p>
-                <p><strong>23.2.</strong> La Plataforma podrá disponibilizar canales adicionales de atención cuando sea necesario.</p>
-              </div>
-            `
-          },
-          {
-            id: "secao-24",
-            title: "24. Disposiciones Finales",
-            content: `
-              <p><strong>24.1.</strong> La eventual tolerancia respecto al incumplimiento de estos Términos no implicará renuncia de derechos.</p>
-              <p><strong>24.2.</strong> Si cualquier disposición de estos Términos fuera considerada inválida o inaplicable, las demás permanecerán en pleno vigor.</p>
-              <p><strong>24.3.</strong> Estos Términos constituyen el acuerdo integral entre las partes en relación con el uso de la Plataforma.</p>
-            `
-          },
-        ],
-        footerTerms: "Términos de Uso",
-        footerPrivacy: "Política de Privacidad",
-        footerPolicies: "Política de Utilización",
-        footerCopy: "© 2026 Velvet. Todos los derechos reservados."
+          <h3 class="item-title">4.2 Assinaturas por Cartão de Crédito ou Débito</h3>
+          <p>Assinaturas por cartão têm <strong>renovação automática a cada 30 dias</strong> no mesmo meio de pagamento, enquanto ativas.</p>
+          <ul>
+            <li>O Cliente pode cancelar a renovação automática a qualquer momento nas configurações da conta.</li>
+            <li>Após o cancelamento, o acesso é mantido até o término do período já pago; nenhuma nova cobrança é realizada.</li>
+            <li>O cancelamento não gera perda imediata de acesso nem reembolso proporcional pelo período restante.</li>
+          </ul>
+
+          <h3 class="item-title">4.3 Assinaturas por Pix</h3>
+          <p>Assinaturas por Pix são <strong>não recorrentes</strong>.</p>
+          <ul>
+            <li>O pagamento garante acesso por <strong>30 dias</strong> a partir da confirmação.</li>
+            <li>Ao término dos 30 dias, a assinatura não é renovada automaticamente e o acesso é encerrado.</li>
+            <li>Para continuar, o Cliente deve realizar uma nova contratação e um novo pagamento.</li>
+          </ul>
+
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Forma de pagamento</th><th>Renovação</th><th>Acesso após 30 dias</th></tr></thead>
+              <tbody>
+                <tr><td>Cartão de crédito ou débito</td><td>Automática a cada 30 dias</td><td>Continua; encerra ao fim do período se cancelada</td></tr>
+                <tr><td>Pix</td><td>Não automática</td><td>Encerra; exige nova contratação</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3 class="item-title">4.4 Diamantes (Moeda Virtual)</h3>
+          <ul>
+            <li>Uso exclusivo dentro da Plataforma; sem valor monetário externo.</li>
+            <li>Não são transferíveis, nem resgatáveis em dinheiro.</li>
+            <li>Não são reembolsáveis, salvo obrigação legal expressa.</li>
+          </ul>
+
+          <h3 class="item-title">4.5 Conteúdos Pagos (Premium e Pay-Per-View)</h3>
+          <ul>
+            <li>Conteúdos pagos são liberados imediatamente após confirmação do pagamento.</li>
+            <li>Uma vez desbloqueado, o conteúdo é considerado entregue e consumido.</li>
+            <li>Não há reembolso por insatisfação subjetiva com o conteúdo.</li>
+            <li>O conteúdo é de responsabilidade exclusiva do Criador; a Velvet não garante expectativa ou resultado.</li>
+          </ul>
+
+          <h3 class="item-title">4.6 Direito de Arrependimento</h3>
+          <p>O art. 49 do Código de Defesa do Consumidor (Lei n.º 8.078/1990) assegura o direito de arrependimento em até <strong>7 dias corridos</strong> da contratação.</p>
+          <p><strong>Exceção para conteúdo digital com entrega imediata:</strong> o direito de arrependimento pode não ser aplicável quando, cumulativamente, o usuário: (a) solicitar expressamente o início imediato do acesso; (b) for previamente informado de que perderá esse direito após o acesso ser concedido; e (c) manifestar concordância expressa antes de concluir a compra. Essa confirmação é obtida no momento do pagamento.</p>
+          <p>Caso o usuário não tenha acessado o conteúdo adquirido, poderá exercer o direito de arrependimento no prazo legal entrando em contato em <a class="inline-link" href="mailto:contato@velvet.lat">contato@velvet.lat</a>.</p>
+
+          <h3 class="item-title">4.7 Política de Reembolso</h3>
+          <h4 class="item-title">Reembolso garantido (independe de análise discricionária):</h4>
+          <ul>
+            <li>Cobrança em duplicidade comprovada;</li>
+            <li>Erro técnico ou falha no sistema que impediu o acesso ao serviço contratado;</li>
+            <li>Serviço não disponibilizado após confirmação do pagamento;</li>
+            <li>Exercício tempestivo do direito de arrependimento (art. 49 CDC), quando aplicável.</li>
+          </ul>
+          <h4 class="item-title">Reembolso discricionário (sujeito à análise pela equipe de suporte):</h4>
+          <ul>
+            <li>Problema técnico que impediu parcialmente o acesso;</li>
+            <li>Renovação não intencional contestada imediatamente após a cobrança;</li>
+            <li>Conteúdo diferiu materialmente de sua descrição ou foi apresentado de forma enganosa;</li>
+            <li>Acesso removido por ação de moderação logo após a compra, sem culpa do usuário.</li>
+          </ul>
+          <h4 class="item-title">Sem direito a reembolso:</h4>
+          <ul>
+            <li>Insatisfação subjetiva com o conteúdo do Criador;</li>
+            <li>Conteúdo acessado integralmente sem problema técnico comprovado;</li>
+            <li>Solicitações fraudulentas, abusivas ou reincidentes sem fundamento;</li>
+            <li>Violação dos Termos de Uso pelo usuário.</li>
+          </ul>
+          <p>Reembolsos aprovados são creditados no mesmo meio de pagamento, em até 2 (duas) faturas, conforme a operadora.</p>
+
+          <h3 class="item-title">4.8 Chargebacks e Contestações</h3>
+          <p>Em caso de cobrança que o usuário considere incorreta, deverá <strong>contatar o suporte primeiro</strong> em <a class="inline-link" href="mailto:contato@velvet.lat">contato@velvet.lat</a> antes de acionar a operadora de cartão. A maioria das disputas é resolvida de forma ágil pelo suporte.</p>
+          <p>A abertura de chargebacks sem contato prévio ou de forma abusiva poderá resultar em revisão de conta, suspensão, perda de acesso e adoção de medidas legais cabíveis (art. 71 do CDC e legislação penal aplicável).</p>
+        `
+      },
+      {
+        id: "secao-5",
+        title: "5. Natureza e Objeto da Plataforma",
+        content: `
+          <p><strong>5.1.</strong> A Velvet é uma plataforma digital que combina funcionalidades de rede social e marketplace, permitindo que Criadores disponibilizem conteúdos digitais e interajam diretamente com Clientes.</p>
+          <p><strong>5.2.</strong> A Plataforma tem por finalidade disponibilizar infraestrutura digital para publicação, compartilhamento e monetização de conteúdos, bem como intermediação tecnológica e financeira entre Criadores e Clientes.</p>
+          <p><strong>5.3.</strong> A Velvet atua exclusivamente como intermediadora e:</p>
+          <ul>
+            <li>não produz, edita ou controla previamente o conteúdo disponibilizado;</li>
+            <li>não é parte na relação comercial direta entre Criadores e Clientes;</li>
+            <li>não garante a qualidade, legalidade ou adequação dos conteúdos publicados.</li>
+          </ul>
+          <p><strong>5.4.</strong> A utilização da Plataforma está condicionada ao cumprimento destes Termos e da legislação aplicável.</p>
+        `
+      },
+      {
+        id: "secao-6",
+        title: "6. Estrutura dos Serviços",
+        content: `
+          <p>A Plataforma oferece:</p>
+          <h3 class="item-title">6.1. Camada social</h3>
+          <ul>
+            <li>Perfis públicos de Criadores;</li>
+            <li>feed de conteúdo;</li>
+            <li>sistema de mensagens privadas (chat);</li>
+            <li>mecanismos de interação.</li>
+          </ul>
+          <h3 class="item-title">6.2. Camada de monetização</h3>
+          <ul>
+            <li>Assinaturas recorrentes (VIP);</li>
+            <li>conteúdos pagos por acesso (pay-per-view);</li>
+            <li>venda direta de mídia via chat.</li>
+          </ul>
+          <h3 class="item-title">6.3. Camada de intermediação</h3>
+          <ul>
+            <li>Processamento de pagamentos;</li>
+            <li>disponibilização de infraestrutura tecnológica;</li>
+            <li>gestão de acesso ao conteúdo.</li>
+          </ul>
+        `
+      },
+      {
+        id: "secao-7",
+        title: "7. Cadastro, Elegibilidade e KYC",
+        content: `
+          <p><strong>7.1.</strong> O acesso à Plataforma é restrito a maiores de <strong>18 anos</strong>.</p>
+          <p><strong>7.2.</strong> Para utilizar determinadas funcionalidades, o usuário deverá se cadastrar fornecendo informações verdadeiras, completas e atualizadas. O usuário declara: possuir capacidade legal para contratar; não utilizar identidade falsa; manter a confidencialidade de suas credenciais.</p>
+          <p><strong>7.3. KYC — Criadores (Modelos):</strong> a verificação de identidade é <strong>obrigatória</strong> antes da publicação de qualquer conteúdo. Documentos aceitos: documento oficial com foto (RG, CNH ou Passaporte) e selfie ou vídeo com o documento.</p>
+          <p><strong>7.4. KYC — Clientes:</strong> a Velvet poderá exigir verificação a qualquer momento, especialmente em casos de suspeita de fraude, chargeback, atividade irregular ou exigência legal.</p>
+          <p><strong>7.5.</strong> Os dados coletados no processo de KYC serão tratados conforme a Política de Privacidade, com acesso restrito e medidas de segurança adequadas.</p>
+          <p><strong>7.6.</strong> O descumprimento das obrigações de cadastro e verificação poderá resultar em suspensão ou encerramento da conta, remoção de conteúdo e comunicação às autoridades competentes.</p>
+        `
+      },
+      {
+        id: "secao-8",
+        title: "8. Regras de Conduta",
+        content: `
+          <p>O usuário compromete-se a:</p>
+          <ul>
+            <li>utilizar a Plataforma de forma lícita e ética;</li>
+            <li>não violar direitos de terceiros, incluindo propriedade intelectual;</li>
+            <li>não inserir conteúdos ilícitos, ofensivos ou fraudulentos;</li>
+            <li>não compartilhar conteúdos adquiridos fora da Plataforma sem autorização;</li>
+            <li>não tentar acessar sistemas ou dados não autorizados.</li>
+          </ul>
+          <p>É expressamente proibido:</p>
+          <ul>
+            <li>uso de bots ou automação não autorizada;</li>
+            <li>engenharia reversa da Plataforma;</li>
+            <li>tentativas de invasão ou exploração de vulnerabilidades;</li>
+            <li>qualquer forma de fraude ou abuso financeiro.</li>
+          </ul>
+        `
+      },
+      {
+        id: "secao-9",
+        title: "9. Obrigações dos Criadores",
+        content: `
+          <p>Os Criadores comprometem-se a:</p>
+          <ul>
+            <li>publicar apenas conteúdo lícito e do qual possuam todos os direitos;</li>
+            <li>não violar direitos de imagem, privacidade ou propriedade intelectual de terceiros;</li>
+            <li>respeitar as normas aplicáveis à proteção de dados;</li>
+            <li>cumprir as obrigações fiscais decorrentes de sua monetização.</li>
+          </ul>
+          <p>É expressamente proibido:</p>
+          <ul>
+            <li>conteúdo envolvendo menores de idade, direta ou indiretamente;</li>
+            <li>conteúdo não consensual (incluindo "revenge porn");</li>
+            <li>material ilegal, que explore, explore sexualmente ou viole direitos fundamentais.</li>
+          </ul>
+        `
+      },
+      {
+        id: "secao-10",
+        title: "10. Obrigações dos Clientes",
+        content: `
+          <p>Os Clientes comprometem-se a:</p>
+          <ul>
+            <li>não reproduzir, gravar ou redistribuir conteúdos adquiridos sem autorização;</li>
+            <li>não violar direitos autorais ou de imagem;</li>
+            <li>não utilizar a Plataforma para assédio, fraude ou atividades ilícitas.</li>
+          </ul>
+        `
+      },
+      {
+        id: "secao-11",
+        title: "11. Propriedade Intelectual",
+        content: `
+          <p><strong>11.1.</strong> O conteúdo publicado pertence aos Criadores. O usuário é integralmente responsável pelo conteúdo que inserir na Plataforma.</p>
+          <p><strong>11.2.</strong> Ao publicar conteúdo, o Criador concede à Velvet licença não exclusiva para hospedar, distribuir e exibir esse conteúdo na Plataforma.</p>
+          <p><strong>11.3.</strong> Todos os direitos relativos à Plataforma (software, marcas, layout e funcionalidades) pertencem à Velvet ou a seus licenciadores.</p>
+          <p><strong>11.4.</strong> É proibido ao Cliente copiar, gravar ou redistribuir conteúdos sem autorização expressa do Criador e da Velvet.</p>
+        `
+      },
+      {
+        id: "secao-12",
+        title: "12. Política de Conteúdo",
+        content: `
+          <h3 class="item-title">12.1 Conteúdos permitidos</h3>
+          <p>A Plataforma permite a publicação e monetização de:</p>
+          <ul>
+            <li>conteúdo educativo, artístico e cultural;</li>
+            <li>entretenimento, lifestyle e conteúdo pessoal;</li>
+            <li>conteúdo adulto consensual entre maiores de idade, quando permitido pela legislação aplicável.</li>
+          </ul>
+
+          <h3 class="item-title">12.2 Conteúdos proibidos (tolerância zero)</h3>
+          <p>É expressamente proibida a publicação de conteúdos que envolvam:</p>
+          <ul>
+            <li>menores de idade, direta ou indiretamente;</li>
+            <li>exploração sexual, abuso ou violência;</li>
+            <li>conteúdo não consensual (incluindo "revenge porn");</li>
+            <li>tráfico de pessoas ou qualquer forma de exploração;</li>
+            <li>atividades ilegais ou incitação à violência;</li>
+            <li>discurso de ódio;</li>
+            <li>fraude, engano deliberado ou violação de direitos autorais.</li>
+          </ul>
+
+          <h3 class="item-title">12.3 Conteúdo adulto</h3>
+          <p>Quando permitido, o conteúdo adulto deve:</p>
+          <ul>
+            <li>envolver exclusivamente maiores de 18 anos;</li>
+            <li>ser consensual entre todos os envolvidos;</li>
+            <li>respeitar integralmente a legislação aplicável.</li>
+          </ul>
+          <p>A Velvet poderá impor restrições adicionais, incluindo classificação de conteúdo, restrição de acesso por região e verificação adicional de identidade.</p>
+
+          <h3 class="item-title">12.4 Aplicação</h3>
+          <p>A Velvet poderá remover conteúdos, suspender ou encerrar contas e reportar atividades às autoridades competentes sempre que identificar violação destas diretrizes.</p>
+        `
+      },
+      {
+        id: "secao-13",
+        title: "13. Moderação e Sanções",
+        content: `
+          <p><strong>13.1.</strong> A Velvet poderá, sem aviso prévio quando necessário:</p>
+          <ul>
+            <li>remover conteúdos;</li>
+            <li>suspender ou encerrar contas;</li>
+            <li>bloquear acessos;</li>
+            <li>restringir funcionalidades.</li>
+          </ul>
+          <p><strong>13.2.</strong> A moderação poderá ocorrer de forma automatizada (incluindo uso de inteligência artificial) e manual.</p>
+          <p><strong>13.3. Cooperação com autoridades:</strong> a Velvet poderá cooperar com autoridades competentes em casos de atividades ilegais, fraudes e crimes digitais, fornecendo as informações exigidas por lei.</p>
+        `
+      },
+      {
+        id: "secao-14",
+        title: "14. Fraude, Chargeback e Segurança Financeira",
+        content: `
+          <p><strong>14.1.</strong> A Velvet adota mecanismos automatizados de prevenção e detecção de fraudes, monitorando transações, comportamentos e padrões de uso.</p>
+          <p><strong>14.2.</strong> Em caso de suspeita de fraude ou abuso financeiro, a Velvet poderá:</p>
+          <ul>
+            <li>suspender temporariamente contas;</li>
+            <li>bloquear transações;</li>
+            <li>reter valores;</li>
+            <li>solicitar verificação adicional de identidade.</li>
+          </ul>
+          <p><strong>14.3.</strong> O usuário compromete-se a não realizar chargebacks indevidos, disputas fraudulentas ou utilizar meios de pagamento sem autorização.</p>
+          <p><strong>14.4.</strong> Em caso de chargeback, a Velvet poderá debitar os valores correspondentes do saldo do Criador, aplicar taxas administrativas e suspender ou encerrar a conta do usuário responsável.</p>
+          <p><strong>14.5.</strong> Disputas abusivas podem resultar em responsabilização civil e criminal, nos termos da legislação aplicável.</p>
+        `
+      },
+      {
+        id: "secao-15",
+        title: "15. Termos Específicos para Criadores",
+        content: `
+          <p><strong>15.1.</strong> Os Criadores poderão monetizar seus conteúdos por meio de assinaturas recorrentes, vendas avulsas (pay-per-view) e conteúdos pagos via chat.</p>
+          <p><strong>15.2.</strong> A Velvet atuará como intermediadora financeira, podendo processar pagamentos, reter comissão sobre as transações (<em>revenue share</em>) e estabelecer valores mínimos para saque.</p>
+          <p><strong>15.3.</strong> O percentual de divisão de receitas (<em>revenue split</em>) será definido pela Plataforma e poderá ser atualizado mediante comunicação prévia.</p>
+          <p><strong>15.4.</strong> Os valores devidos aos Criadores poderão ser retidos para prevenção de fraude, ajustados em caso de reembolsos ou chargebacks, ou bloqueados em caso de violação destes Termos.</p>
+          <p><strong>15.5.</strong> Os saques estão sujeitos a verificação de identidade (KYC), cumprimento de requisitos operacionais e prazos de processamento definidos pela Plataforma.</p>
+          <p><strong>15.6.</strong> O Criador é integralmente responsável por suas obrigações fiscais, declaração de rendimentos e cumprimento das leis locais aplicáveis.</p>
+        `
+      },
+      {
+        id: "secao-16",
+        title: "16. Prestação de Serviços Financeiros",
+        content: `
+          <p><strong>16.1.</strong> Os serviços de pagamento disponibilizados por meio desta Plataforma são processados pela <strong>Stripe</strong> e demais parceiros tecnológicos certificados.</p>
+          <p><strong>16.2.</strong> A Velvet atua exclusivamente como integradora tecnológica, não sendo instituição financeira nem realizando intermediação financeira em nome próprio.</p>
+          <p><strong>16.3.</strong> A Plataforma poderá bloquear transações com base em risco, cumprir obrigações regulatórias e aplicar políticas de prevenção à lavagem de dinheiro (AML) e ao financiamento do terrorismo.</p>
+          <p><strong>16.4.</strong> O usuário declara que não está localizado em jurisdição sancionada, não consta em listas de restrição internacional e não utilizará a Plataforma para atividades ilegais.</p>
+        `
+      },
+      {
+        id: "secao-17",
+        title: "17. Responsabilidade e Limitação",
+        content: `
+          <p><strong>17.1.</strong> A Velvet não se responsabiliza por:</p>
+          <ul>
+            <li>conteúdos publicados por Criadores;</li>
+            <li>interações entre usuários;</li>
+            <li>expectativas comerciais entre Criadores e Clientes;</li>
+            <li>indisponibilidades temporárias da Plataforma.</li>
+          </ul>
+          <p><strong>17.2.</strong> A responsabilidade da Velvet limita-se à sua atuação como intermediadora tecnológica, nos termos da legislação aplicável.</p>
+        `
+      },
+      {
+        id: "secao-18",
+        title: "18. Proteção de Dados",
+        content: `
+          <p><strong>18.1.</strong> O tratamento de dados pessoais ocorre conforme a Política de Privacidade da Plataforma, em conformidade com a Lei Geral de Proteção de Dados (Lei n.º 13.709/2018) e, quando aplicável, o GDPR.</p>
+          <p><strong>18.2.</strong> A Plataforma adota medidas de segurança adequadas para proteção das informações dos usuários.</p>
+          <p><strong>18.3.</strong> Os dados poderão ser utilizados para operação da Plataforma, prevenção de fraudes e melhoria de serviços. Mais informações constam na Política de Privacidade.</p>
+        `
+      },
+      {
+        id: "secao-19",
+        title: "19. Suspensão e Encerramento",
+        content: `
+          <p>A Velvet poderá, a qualquer momento:</p>
+          <ul>
+            <li>suspender ou encerrar o acesso do usuário;</li>
+            <li>modificar ou descontinuar funcionalidades;</li>
+            <li>remover conteúdos que violem estes Termos.</li>
+          </ul>
+          <p>O usuário poderá encerrar sua conta a qualquer momento pelos canais de suporte disponibilizados pela Plataforma.</p>
+        `
+      },
+      {
+        id: "secao-20",
+        title: "20. Alterações dos Termos",
+        content: `
+          <p>Estes Termos poderão ser atualizados a qualquer tempo. Alterações relevantes serão comunicadas com antecedência razoável. O uso contínuo da Plataforma após as alterações implica aceitação das novas condições.</p>
+        `
+      },
+      {
+        id: "secao-21",
+        title: "21. Legislação Aplicável e Foro",
+        content: `
+          <p><strong>21.1.</strong> Estes Termos são regidos pelas leis da República Federativa do Brasil.</p>
+          <p><strong>21.2.</strong> Fica eleito o foro da comarca de São Paulo – SP para dirimir quaisquer controvérsias, com renúncia a qualquer outro, por mais privilegiado que seja.</p>
+        `
+      },
+      {
+        id: "secao-22",
+        title: "22. Contato",
+        content: `
+          <div class="contact-box">
+            <p>O usuário poderá entrar em contato com a Velvet pelos seguintes canais:</p>
+            <p>E-mail: <a class="inline-link" href="mailto:contato@velvet.lat">contato@velvet.lat</a></p>
+            <p>A Plataforma poderá disponibilizar canais adicionais de atendimento conforme necessário.</p>
+          </div>
+        `
+      },
+      {
+        id: "secao-23",
+        title: "23. Disposições Finais",
+        content: `
+          <p><strong>23.1.</strong> A eventual tolerância quanto ao descumprimento destes Termos não implicará renúncia de direitos.</p>
+          <p><strong>23.2.</strong> Caso qualquer disposição seja considerada inválida ou inexequível, as demais permanecerão em pleno vigor.</p>
+          <p><strong>23.3.</strong> Estes Termos constituem o acordo integral entre as partes em relação ao uso da Plataforma e devem ser interpretados em conjunto com a Política de Privacidade.</p>
+        `
       }
-    };
+    ]
+  },
 
-    function renderPage(lang) {
-      const t = translations[lang] || translations.pt;
+  en: {
+    htmlLang: "en",
+    pageTitle: "Velvet Platform Terms of Use and Policies",
+    lastUpdatedLabel: "Last updated:",
+    lastUpdatedDate: "09/16/2026",
+    introText: "This document consolidates Velvet's Terms of Use and Usage Policies into a single instrument. Rules on content, payments, KYC, intellectual property, moderation and sanctions are incorporated herein.",
+    legalNote: "These Terms constitute an adhesion contract. By using the Platform, the user declares having read, understood and fully agreed to all provisions herein.",
+    tocTitle: "Contents",
+    tocAriaLabel: "Terms of Use Table of Contents",
+    footerTerms: "Terms & Policies",
+    footerPrivacy: "Privacy Policy",
+    footerCopy: "© 2026 Velvet. All rights reserved.",
+    sections: [
+      {
+        id: "secao-1",
+        title: "1. Acceptance of Terms",
+        content: `
+          <p>These Terms of Use (<strong>"Terms"</strong>) govern access to and use of the Velvet digital platform (<strong>"Platform"</strong>), operated by <strong>Velvet Entertainment Ltda</strong>, CNPJ: 66.615.892/0001-43.</p>
+          <p>By using the Platform, the user declares having read, understood and fully agreed to these Terms and the Privacy Policy. If you do not agree with any provision, you must immediately cease using the Platform.</p>
+        `
+      },
+      {
+        id: "secao-2",
+        title: "2. Definitions",
+        content: `
+          <p>For the purposes of these Terms:</p>
+          <ul>
+            <li><strong>User:</strong> any individual who accesses or uses the Platform.</li>
+            <li><strong>Creator:</strong> user who makes digital content available for monetization.</li>
+            <li><strong>Client:</strong> user who consumes or purchases content.</li>
+            <li><strong>Account:</strong> individual registration created by the user to access services.</li>
+            <li><strong>Content:</strong> texts, images, videos, audio or any materials inserted on the Platform.</li>
+            <li><strong>Diamonds:</strong> virtual currency for exclusive use within the Platform.</li>
+          </ul>
+        `
+      },
+      {
+        id: "secao-3",
+        title: "3. Nature of Content on the Platform",
+        content: `
+          <p><strong>3.1.</strong> The Velvet Platform is not exclusively dedicated to adult content. Velvet is a social platform that allows the publication and monetization of diverse content, including:</p>
+          <ul>
+            <li>educational, artistic and cultural content;</li>
+            <li>entertainment and lifestyle;</li>
+            <li>personal and informational content;</li>
+            <li>consensual adult content between persons over 18, where legally permitted.</li>
+          </ul>
+          <p><strong>3.2.</strong> The fact that some Creators publish adult content does not characterize the Platform as a service exclusively dedicated to that type of content.</p>
+          <p><strong>3.3.</strong> Velvet acts as a technology intermediary and does not produce, edit or pre-screen content published by Creators. Each Creator is solely responsible for what they publish.</p>
+          <p><strong>3.4.</strong> All content, regardless of its nature, must comply with:</p>
+          <ul>
+            <li>applicable law;</li>
+            <li>third-party rights;</li>
+            <li>the Platform's internal guidelines and policies.</li>
+          </ul>
+          <p><strong>3.5.</strong> Velvet reserves the right to remove content that violates these Terms without prior notice.</p>
+        `
+      },
+      {
+        id: "secao-4",
+        title: "4. Payments, Subscriptions and Refunds",
+        content: `
+          <h3 class="item-title">4.1 General Provisions</h3>
+          <ul>
+            <li>Payments are processed by certified partners (Stripe and others); Velvet does not store full card data.</li>
+            <li>The user is responsible for the accuracy of payment information provided.</li>
+            <li>Prices are charged in Brazilian reais (BRL) and include all applicable taxes. For users in other countries, the Platform may display an estimated equivalent in the local currency for reference purposes only; the amount actually charged is always in BRL, and any exchange rate differences are the user's responsibility.</li>
+          </ul>
 
-      document.documentElement.lang = t.htmlLang;
-      document.title = t.title;
+          <h3 class="item-title">4.2 Credit or Debit Card Subscriptions</h3>
+          <p>Card subscriptions renew <strong>automatically every 30 days</strong> on the same payment method while active.</p>
+          <ul>
+            <li>Clients may cancel automatic renewal at any time in their account settings.</li>
+            <li>After cancellation, access is maintained until the end of the paid period; no new charge is made.</li>
+            <li>Cancellation does not result in immediate loss of access or a pro-rata refund for the remaining period.</li>
+          </ul>
 
-      document.getElementById("pageTitle").textContent = t.pageTitle;
-      document.getElementById("lastUpdatedLabel").textContent = t.lastUpdatedLabel;
-      document.getElementById("lastUpdatedDate").textContent = t.lastUpdatedDate;
-      document.getElementById("introText").textContent = t.introText;
+          <h3 class="item-title">4.3 Pix Subscriptions</h3>
+          <p>Pix subscriptions are <strong>non-recurring</strong>.</p>
+          <ul>
+            <li>Payment grants access for <strong>30 days</strong> from confirmation.</li>
+            <li>At the end of 30 days, the subscription does not renew automatically and access is terminated.</li>
+            <li>To continue, the Client must make a new purchase and a new Pix payment.</li>
+          </ul>
 
-      const toc = document.getElementById("toc");
-      const tocTitle = document.getElementById("tocTitle");
-      const tocList = document.getElementById("tocList");
-      toc.setAttribute("aria-label", t.tocAriaLabel);
-      tocTitle.textContent = t.tocTitle;
-      tocList.innerHTML = "";
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Payment method</th><th>Renewal</th><th>Access after 30 days</th></tr></thead>
+              <tbody>
+                <tr><td>Credit or debit card</td><td>Automatic every 30 days</td><td>Continues; ends at period end if cancelled</td></tr>
+                <tr><td>Pix</td><td>Not automatic</td><td>Terminates; new purchase required</td></tr>
+              </tbody>
+            </table>
+          </div>
 
-      t.tocItems.forEach((item, index) => {
-        const li = document.createElement("li");
-        li.innerHTML = `<a href="#secao-${index + 1}">${item}</a>`;
-        tocList.appendChild(li);
-      });
+          <h3 class="item-title">4.4 Diamonds (Virtual Currency)</h3>
+          <ul>
+            <li>For exclusive use within the Platform; no monetary value outside Velvet.</li>
+            <li>Not transferable or redeemable for cash.</li>
+            <li>Non-refundable, except where expressly required by law.</li>
+          </ul>
 
-      const sectionsContainer = document.getElementById("sectionsContainer");
-      sectionsContainer.innerHTML = "";
+          <h3 class="item-title">4.5 Paid Content (Premium and Pay-Per-View)</h3>
+          <ul>
+            <li>Paid content is unlocked immediately upon payment confirmation.</li>
+            <li>Once unlocked, the content is considered delivered and consumed.</li>
+            <li>No refunds are granted for subjective dissatisfaction with the content.</li>
+            <li>Content is the sole responsibility of the Creator; Velvet does not guarantee any particular result or expectation.</li>
+          </ul>
 
-      t.sections.forEach((section, index) => {
-        const sectionEl = document.createElement("section");
-        sectionEl.id = section.id;
-        sectionEl.innerHTML = `
-          <h2 class="section-title">${section.title}</h2>
-          ${section.content}
-        `;
-        sectionsContainer.appendChild(sectionEl);
+          <h3 class="item-title">4.6 Right of Withdrawal</h3>
+          <p>Applicable consumer protection law may grant a right of withdrawal within <strong>7 calendar days</strong> of purchase.</p>
+          <p><strong>Exception for digital content with immediate delivery:</strong> the right of withdrawal may not apply when the user: (a) expressly requests immediate access; (b) is informed in advance that they will lose this right once access is granted; and (c) gives express consent before completing the purchase. This confirmation is obtained at checkout.</p>
+          <p>If the user has not yet accessed the purchased content, they may exercise the right of withdrawal within the legal period by contacting <a class="inline-link" href="mailto:contato@velvet.lat">contato@velvet.lat</a>.</p>
 
-        if (index < t.sections.length - 1) {
-          const hr = document.createElement("hr");
-          hr.className = "divider";
-          sectionsContainer.appendChild(hr);
-        }
-      });
+          <h3 class="item-title">4.7 Refund Policy</h3>
+          <h4 class="item-title">Guaranteed refunds (no discretionary review):</h4>
+          <ul>
+            <li>Proven duplicate charge;</li>
+            <li>Technical error or system failure preventing access to the contracted service;</li>
+            <li>Service not provided after payment confirmation;</li>
+            <li>Timely exercise of the right of withdrawal, where applicable.</li>
+          </ul>
+          <h4 class="item-title">Discretionary refunds (subject to support team review):</h4>
+          <ul>
+            <li>Technical issue that partially prevented access;</li>
+            <li>Unintentional renewal disputed immediately after the charge;</li>
+            <li>Content materially differed from its description or was presented deceptively;</li>
+            <li>Access removed by moderation shortly after purchase, without fault of the user.</li>
+          </ul>
+          <h4 class="item-title">No right to refund:</h4>
+          <ul>
+            <li>Subjective dissatisfaction with a Creator's content;</li>
+            <li>Content fully accessed without any proven technical issue;</li>
+            <li>Fraudulent, abusive or repeated unfounded requests;</li>
+            <li>Violation of these Terms of Use by the user.</li>
+          </ul>
+          <p>Approved refunds are credited to the original payment method within up to 2 billing cycles, depending on the card issuer.</p>
 
-      document.getElementById("footerTerms").textContent = t.footerTerms;
-      document.getElementById("footerPrivacy").textContent = t.footerPrivacy;
-      document.getElementById("footerPolicies").textContent = t.footerPolicies;
-      document.getElementById("footerCopy").textContent = t.footerCopy;
+          <h3 class="item-title">4.8 Chargebacks and Disputes</h3>
+          <p>If a charge seems incorrect, users must <strong>contact support first</strong> at <a class="inline-link" href="mailto:contato@velvet.lat">contato@velvet.lat</a> before opening a dispute with their card issuer. Most issues are resolved quickly through support.</p>
+          <p>Opening chargebacks without prior contact or in an abusive manner may result in account restrictions, suspension, loss of access and legal action under applicable law.</p>
+        `
+      },
+      {
+        id: "secao-5",
+        title: "5. Platform Nature and Purpose",
+        content: `
+          <p><strong>5.1.</strong> Velvet is a digital platform combining social network and marketplace features, allowing Creators to make digital content available and interact directly with Clients.</p>
+          <p><strong>5.2.</strong> The Platform provides digital infrastructure for publishing, sharing and monetizing content, as well as technological and financial intermediation between Creators and Clients.</p>
+          <p><strong>5.3.</strong> Velvet acts exclusively as an intermediary and:</p>
+          <ul>
+            <li>does not produce, edit or pre-screen content;</li>
+            <li>is not a party to the direct commercial relationship between Creators and Clients;</li>
+            <li>does not guarantee the quality, legality or suitability of published content.</li>
+          </ul>
+          <p><strong>5.4.</strong> Use of the Platform is subject to compliance with these Terms and applicable law.</p>
+        `
+      },
+      {
+        id: "secao-6",
+        title: "6. Service Structure",
+        content: `
+          <p>The Platform offers:</p>
+          <h3 class="item-title">6.1. Social layer</h3>
+          <ul>
+            <li>Public Creator profiles;</li>
+            <li>content feed;</li>
+            <li>private messaging (chat);</li>
+            <li>interaction features.</li>
+          </ul>
+          <h3 class="item-title">6.2. Monetization layer</h3>
+          <ul>
+            <li>Recurring subscriptions (VIP);</li>
+            <li>pay-per-view content;</li>
+            <li>direct media sales via chat.</li>
+          </ul>
+          <h3 class="item-title">6.3. Intermediation layer</h3>
+          <ul>
+            <li>Payment processing;</li>
+            <li>technological infrastructure;</li>
+            <li>content access management.</li>
+          </ul>
+        `
+      },
+      {
+        id: "secao-7",
+        title: "7. Registration, Eligibility and KYC",
+        content: `
+          <p><strong>7.1.</strong> Access to the Platform is restricted to persons <strong>18 years of age or older</strong>.</p>
+          <p><strong>7.2.</strong> To use certain features, users must register providing true, complete and up-to-date information. The user declares: having full legal capacity to contract; not using a false identity; maintaining the confidentiality of their credentials.</p>
+          <p><strong>7.3. KYC — Creators (Models):</strong> identity verification is <strong>mandatory</strong> before publishing any content. Accepted documents: government-issued photo ID (national ID, driver's license or passport) and a selfie or video with the document.</p>
+          <p><strong>7.4. KYC — Clients:</strong> Velvet may require verification at any time, particularly in cases of suspected fraud, chargeback, irregular activity or legal requirement.</p>
+          <p><strong>7.5.</strong> Data collected during KYC is handled in accordance with the Privacy Policy, with restricted access and adequate security measures.</p>
+          <p><strong>7.6.</strong> Failure to comply with registration and verification obligations may result in account suspension or termination, content removal and reporting to competent authorities.</p>
+        `
+      },
+      {
+        id: "secao-8",
+        title: "8. Conduct Rules",
+        content: `
+          <p>Users commit to:</p>
+          <ul>
+            <li>using the Platform lawfully and ethically;</li>
+            <li>not violating third-party rights, including intellectual property;</li>
+            <li>not inserting unlawful, offensive or fraudulent content;</li>
+            <li>not sharing acquired content outside the Platform without authorization;</li>
+            <li>not attempting to access unauthorized systems or data.</li>
+          </ul>
+          <p>Expressly prohibited:</p>
+          <ul>
+            <li>use of bots or unauthorized automation;</li>
+            <li>reverse engineering of the Platform;</li>
+            <li>hacking attempts or exploitation of vulnerabilities;</li>
+            <li>any form of financial fraud or abuse.</li>
+          </ul>
+        `
+      },
+      {
+        id: "secao-9",
+        title: "9. Creator Obligations",
+        content: `
+          <p>Creators commit to:</p>
+          <ul>
+            <li>publishing only lawful content for which they hold all rights;</li>
+            <li>not violating third-party image rights, privacy or intellectual property;</li>
+            <li>complying with applicable data protection rules;</li>
+            <li>fulfilling all tax obligations arising from their monetization activities.</li>
+          </ul>
+          <p>Expressly prohibited:</p>
+          <ul>
+            <li>content involving minors, directly or indirectly;</li>
+            <li>non-consensual content (including revenge porn);</li>
+            <li>illegal material or content that sexually exploits or violates fundamental rights.</li>
+          </ul>
+        `
+      },
+      {
+        id: "secao-10",
+        title: "10. Client Obligations",
+        content: `
+          <p>Clients commit to:</p>
+          <ul>
+            <li>not reproducing, recording or redistributing acquired content without authorization;</li>
+            <li>not violating copyright or image rights;</li>
+            <li>not using the Platform for harassment, fraud or unlawful activities.</li>
+          </ul>
+        `
+      },
+      {
+        id: "secao-11",
+        title: "11. Intellectual Property",
+        content: `
+          <p><strong>11.1.</strong> Published content belongs to the Creators. Each user is solely responsible for content they insert on the Platform.</p>
+          <p><strong>11.2.</strong> By publishing content, the Creator grants Velvet a non-exclusive license to host, distribute and display that content on the Platform.</p>
+          <p><strong>11.3.</strong> All rights relating to the Platform (software, trademarks, layout and features) belong to Velvet or its licensors.</p>
+          <p><strong>11.4.</strong> Clients are prohibited from copying, recording or redistributing content without the express authorization of the Creator and Velvet.</p>
+        `
+      },
+      {
+        id: "secao-12",
+        title: "12. Content Policy",
+        content: `
+          <h3 class="item-title">12.1 Permitted content</h3>
+          <p>The Platform allows the publication and monetization of:</p>
+          <ul>
+            <li>educational, artistic and cultural content;</li>
+            <li>entertainment, lifestyle and personal content;</li>
+            <li>consensual adult content between adults, where permitted by applicable law.</li>
+          </ul>
 
-      document.querySelectorAll("[data-lang]").forEach(btn => {
-        btn.classList.toggle("active", btn.dataset.lang === lang);
-      });
+          <h3 class="item-title">12.2 Prohibited content (zero tolerance)</h3>
+          <p>Expressly prohibited:</p>
+          <ul>
+            <li>content involving minors, directly or indirectly;</li>
+            <li>sexual exploitation, abuse or violence;</li>
+            <li>non-consensual content (including revenge porn);</li>
+            <li>human trafficking or any form of exploitation;</li>
+            <li>illegal activities or incitement to violence;</li>
+            <li>hate speech;</li>
+            <li>fraud, deliberate deception or copyright infringement.</li>
+          </ul>
 
-      localStorage.setItem("velvet_lang", lang);
-    }
+          <h3 class="item-title">12.3 Adult content</h3>
+          <p>Where permitted, adult content must:</p>
+          <ul>
+            <li>exclusively involve persons over 18 years of age;</li>
+            <li>be fully consensual;</li>
+            <li>comply with all applicable law.</li>
+          </ul>
+          <p>Velvet may impose additional restrictions, including content classification, regional access restrictions and additional identity verification.</p>
 
-    document.querySelectorAll("[data-lang]").forEach(button => {
-      button.addEventListener("click", () => {
-        renderPage(button.dataset.lang);
-      });
-    });
+          <h3 class="item-title">12.4 Enforcement</h3>
+          <p>Velvet may remove content, suspend or terminate accounts and report activities to competent authorities whenever it identifies violations of these guidelines.</p>
+        `
+      },
+      {
+        id: "secao-13",
+        title: "13. Moderation and Sanctions",
+        content: `
+          <p><strong>13.1.</strong> Velvet may, without prior notice when necessary:</p>
+          <ul>
+            <li>remove content;</li>
+            <li>suspend or terminate accounts;</li>
+            <li>block access;</li>
+            <li>restrict features.</li>
+          </ul>
+          <p><strong>13.2.</strong> Moderation may be automated (including AI) or manual.</p>
+          <p><strong>13.3. Cooperation with authorities:</strong> Velvet may cooperate with competent authorities in cases of illegal activities, fraud and digital crimes, providing information as required by law.</p>
+        `
+      },
+      {
+        id: "secao-14",
+        title: "14. Fraud, Chargebacks and Financial Security",
+        content: `
+          <p><strong>14.1.</strong> Velvet employs automated fraud prevention and detection systems, monitoring transactions, behaviors and usage patterns.</p>
+          <p><strong>14.2.</strong> In cases of suspected fraud or financial abuse, Velvet may:</p>
+          <ul>
+            <li>temporarily suspend accounts;</li>
+            <li>block transactions;</li>
+            <li>withhold funds;</li>
+            <li>request additional identity verification.</li>
+          </ul>
+          <p><strong>14.3.</strong> Users agree not to initiate undue chargebacks, fraudulent disputes or use unauthorized payment methods.</p>
+          <p><strong>14.4.</strong> In case of chargeback, Velvet may debit corresponding amounts from the Creator's balance, apply administrative fees and suspend or terminate the responsible user's account.</p>
+          <p><strong>14.5.</strong> Abusive disputes may result in civil and criminal liability under applicable law.</p>
+        `
+      },
+      {
+        id: "secao-15",
+        title: "15. Creator-Specific Terms",
+        content: `
+          <p><strong>15.1.</strong> Creators may monetize their content through recurring subscriptions, one-off sales (pay-per-view) and paid content via chat.</p>
+          <p><strong>15.2.</strong> Velvet will act as financial intermediary, processing payments, retaining a commission on transactions (revenue share) and establishing minimum withdrawal amounts.</p>
+          <p><strong>15.3.</strong> The revenue split percentage will be defined by the Platform and may be updated with prior notice.</p>
+          <p><strong>15.4.</strong> Amounts owed to Creators may be temporarily withheld for fraud prevention, adjusted for refunds or chargebacks, or blocked for Terms violations.</p>
+          <p><strong>15.5.</strong> Withdrawals are subject to identity verification (KYC), operational requirements and processing timelines set by the Platform.</p>
+          <p><strong>15.6.</strong> Each Creator is solely responsible for their tax obligations, income reporting and compliance with applicable local laws.</p>
+        `
+      },
+      {
+        id: "secao-16",
+        title: "16. Financial Services",
+        content: `
+          <p><strong>16.1.</strong> Payment services available through this Platform are processed by <strong>Stripe</strong> and other certified technology partners.</p>
+          <p><strong>16.2.</strong> Velvet acts exclusively as a technology integrator; it is not a financial institution and does not conduct financial intermediation in its own name.</p>
+          <p><strong>16.3.</strong> The Platform may block risk-based transactions, meet regulatory obligations and apply anti-money laundering (AML) and counter-terrorist financing policies.</p>
+          <p><strong>16.4.</strong> The user declares they are not located in a sanctioned jurisdiction, are not on any international restriction list and will not use the Platform for illegal activities.</p>
+        `
+      },
+      {
+        id: "secao-17",
+        title: "17. Liability and Limitation",
+        content: `
+          <p><strong>17.1.</strong> Velvet is not liable for:</p>
+          <ul>
+            <li>content published by Creators;</li>
+            <li>interactions between users;</li>
+            <li>commercial expectations between Creators and Clients;</li>
+            <li>temporary Platform unavailability.</li>
+          </ul>
+          <p><strong>17.2.</strong> Velvet's liability is limited to its role as a technology intermediary, in accordance with applicable law.</p>
+        `
+      },
+      {
+        id: "secao-18",
+        title: "18. Data Protection",
+        content: `
+          <p><strong>18.1.</strong> Personal data is processed in accordance with the Platform's Privacy Policy and applicable law, including Brazil's LGPD (Law No. 13,709/2018) and, where applicable, the GDPR.</p>
+          <p><strong>18.2.</strong> The Platform adopts adequate security measures to protect user information.</p>
+          <p><strong>18.3.</strong> Data may be used for Platform operation, fraud prevention and service improvement. Further details are in the Privacy Policy.</p>
+        `
+      },
+      {
+        id: "secao-19",
+        title: "19. Suspension and Termination",
+        content: `
+          <p>Velvet may at any time:</p>
+          <ul>
+            <li>suspend or terminate user access;</li>
+            <li>modify or discontinue features;</li>
+            <li>remove content that violates these Terms.</li>
+          </ul>
+          <p>Users may close their account at any time through the support channels provided by the Platform.</p>
+        `
+      },
+      {
+        id: "secao-20",
+        title: "20. Amendments",
+        content: `
+          <p>These Terms may be updated at any time. Material changes will be communicated with reasonable advance notice. Continued use of the Platform after changes implies acceptance of the new conditions.</p>
+        `
+      },
+      {
+        id: "secao-21",
+        title: "21. Governing Law and Jurisdiction",
+        content: `
+          <p><strong>21.1.</strong> These Terms are governed by the laws of the Federative Republic of Brazil.</p>
+          <p><strong>21.2.</strong> The courts of São Paulo – SP are elected as the exclusive forum for any disputes, with waiver of any other jurisdiction, however privileged.</p>
+        `
+      },
+      {
+        id: "secao-22",
+        title: "22. Contact",
+        content: `
+          <div class="contact-box">
+            <p>Users may contact Velvet through the following channels:</p>
+            <p>Email: <a class="inline-link" href="mailto:contato@velvet.lat">contato@velvet.lat</a></p>
+            <p>The Platform may make additional support channels available as needed.</p>
+          </div>
+        `
+      },
+      {
+        id: "secao-23",
+        title: "23. Final Provisions",
+        content: `
+          <p><strong>23.1.</strong> Tolerance of any breach of these Terms does not imply waiver of rights.</p>
+          <p><strong>23.2.</strong> If any provision is found invalid or unenforceable, the remaining provisions remain in full force.</p>
+          <p><strong>23.3.</strong> These Terms constitute the entire agreement between the parties regarding use of the Platform and must be read together with the Privacy Policy.</p>
+        `
+      }
+    ]
+  },
 
-    const savedLang = localStorage.getItem("velvet_lang") || "pt";
-    renderPage(savedLang);
-  </script>
+  es: {
+    htmlLang: "es",
+    pageTitle: "Términos de Uso y Políticas de la Plataforma Velvet",
+    lastUpdatedLabel: "Última actualización:",
+    lastUpdatedDate: "16/09/2026",
+    introText: "Este documento consolida los Términos de Uso y las Políticas de Uso de Velvet en un único instrumento. Las reglas sobre contenido, pagos, KYC, propiedad intelectual, moderación y sanciones se integran en estos Términos.",
+    legalNote: "Estos Términos tienen naturaleza de contrato de adhesión. Al utilizar la Plataforma, el usuario declara haber leído, comprendido y aceptado íntegramente todas las disposiciones aquí contenidas.",
+    tocTitle: "Índice",
+    tocAriaLabel: "Índice de los Términos de Uso",
+    footerTerms: "Términos y Políticas",
+    footerPrivacy: "Política de Privacidad",
+    footerCopy: "© 2026 Velvet. Todos los derechos reservados.",
+    sections: [
+      {
+        id: "secao-1",
+        title: "1. Aceptación de los Términos",
+        content: `
+          <p>Estos Términos de Uso (<strong>"Términos"</strong>) regulan el acceso y el uso de la plataforma digital Velvet (<strong>"Plataforma"</strong>), operada por <strong>Velvet Entertainment Ltda</strong>, CNPJ: 66.615.892/0001-43.</p>
+          <p>Al utilizar la Plataforma, el usuario declara haber leído, comprendido y aceptado íntegramente estos Términos y la Política de Privacidad. Si no está de acuerdo con alguna disposición, deberá cesar inmediatamente el uso de la Plataforma.</p>
+        `
+      },
+      {
+        id: "secao-2",
+        title: "2. Definiciones",
+        content: `
+          <p>Para los efectos de estos Términos:</p>
+          <ul>
+            <li><strong>Usuario:</strong> cualquier persona física que acceda o utilice la Plataforma.</li>
+            <li><strong>Creador:</strong> usuario que pone a disposición contenidos digitales para monetización.</li>
+            <li><strong>Cliente:</strong> usuario que consume o adquiere contenido.</li>
+            <li><strong>Cuenta:</strong> registro individual creado por el usuario para acceder a los servicios.</li>
+            <li><strong>Contenido:</strong> textos, imágenes, videos, audio o cualquier material insertado en la Plataforma.</li>
+            <li><strong>Diamantes:</strong> moneda virtual de uso exclusivo dentro de la Plataforma.</li>
+          </ul>
+        `
+      },
+      {
+        id: "secao-3",
+        title: "3. Naturaleza del Contenido en la Plataforma",
+        content: `
+          <p><strong>3.1.</strong> La Plataforma Velvet no está destinada exclusivamente a contenido para adultos. Velvet es una plataforma social que permite la publicación y monetización de contenidos variados, incluyendo:</p>
+          <ul>
+            <li>contenido educativo, artístico y cultural;</li>
+            <li>entretenimiento y lifestyle;</li>
+            <li>contenido personal e informativo;</li>
+            <li>contenido adulto consensual entre mayores de 18 años, cuando lo permita la legislación aplicable.</li>
+          </ul>
+          <p><strong>3.2.</strong> El hecho de que algunos Creadores publiquen contenido adulto no caracteriza a la Plataforma como un servicio exclusivamente dedicado a ese tipo de contenido.</p>
+          <p><strong>3.3.</strong> Velvet actúa como intermediaria tecnológica y no produce, edita ni controla previamente el contenido publicado por los Creadores. El Creador es el único responsable de lo que publica.</p>
+          <p><strong>3.4.</strong> Todo el contenido, independientemente de su naturaleza, debe cumplir con:</p>
+          <ul>
+            <li>la legislación aplicable;</li>
+            <li>los derechos de terceros;</li>
+            <li>las directrices y políticas internas de la Plataforma.</li>
+          </ul>
+          <p><strong>3.5.</strong> Velvet se reserva el derecho de eliminar contenido que infrinja estos Términos sin previo aviso.</p>
+        `
+      },
+      {
+        id: "secao-4",
+        title: "4. Pagos, Suscripciones y Reembolsos",
+        content: `
+          <h3 class="item-title">4.1 Disposiciones Generales</h3>
+          <ul>
+            <li>Los pagos son procesados por socios certificados (Stripe y otros); Velvet no almacena datos completos de tarjeta.</li>
+            <li>El usuario es responsable de la veracidad de la información de pago proporcionada.</li>
+            <li>Los precios se cobran en reales brasileños (BRL) e incluyen todos los impuestos aplicables. Para usuarios en otros países, la Plataforma podrá mostrar un valor estimado en la moneda local solo como referencia; el importe efectivamente cobrado es siempre en BRL, y cualquier diferencia cambiaria es responsabilidad del usuario.</li>
+          </ul>
+
+          <h3 class="item-title">4.2 Suscripciones con Tarjeta de Crédito o Débito</h3>
+          <p>Las suscripciones con tarjeta se renuevan <strong>automáticamente cada 30 días</strong> en el mismo medio de pago mientras estén activas.</p>
+          <ul>
+            <li>El Cliente puede cancelar la renovación automática en cualquier momento desde la configuración de su cuenta.</li>
+            <li>Tras la cancelación, el acceso se mantiene hasta el final del período ya pagado; no se realiza ningún nuevo cobro.</li>
+            <li>La cancelación no implica la pérdida inmediata del acceso ni un reembolso proporcional por el período restante.</li>
+          </ul>
+
+          <h3 class="item-title">4.3 Suscripciones por Pix</h3>
+          <p>Las suscripciones por Pix son <strong>no recurrentes</strong>.</p>
+          <ul>
+            <li>El pago garantiza acceso por <strong>30 días</strong> desde la confirmación.</li>
+            <li>Al finalizar los 30 días, la suscripción no se renueva automáticamente y el acceso se cierra.</li>
+            <li>Para continuar, el Cliente debe realizar una nueva contratación y un nuevo pago.</li>
+          </ul>
+
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Forma de pago</th><th>Renovación</th><th>Acceso tras 30 días</th></tr></thead>
+              <tbody>
+                <tr><td>Tarjeta de crédito o débito</td><td>Automática cada 30 días</td><td>Continúa; termina al final del período si se cancela</td></tr>
+                <tr><td>Pix</td><td>No automática</td><td>Finaliza; requiere nueva contratación</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3 class="item-title">4.4 Diamantes (Moneda Virtual)</h3>
+          <ul>
+            <li>Uso exclusivo dentro de la Plataforma; sin valor monetario externo.</li>
+            <li>No son transferibles ni canjeables por dinero.</li>
+            <li>No son reembolsables, salvo obligación legal expresa.</li>
+          </ul>
+
+          <h3 class="item-title">4.5 Contenido de Pago (Premium y Pay-Per-View)</h3>
+          <ul>
+            <li>El contenido de pago se desbloquea inmediatamente tras la confirmación del pago.</li>
+            <li>Una vez desbloqueado, el contenido se considera entregado y consumido.</li>
+            <li>No se realizan reembolsos por insatisfacción subjetiva con el contenido.</li>
+            <li>El contenido es responsabilidad exclusiva del Creador; Velvet no garantiza ningún resultado o expectativa.</li>
+          </ul>
+
+          <h3 class="item-title">4.6 Derecho de Desistimiento</h3>
+          <p>La legislación de protección al consumidor aplicable puede conceder un derecho de desistimiento en un plazo de <strong>7 días naturales</strong> desde la contratación.</p>
+          <p><strong>Excepción para contenido digital con entrega inmediata:</strong> el derecho de desistimiento puede no ser aplicable cuando el usuario: (a) solicite expresamente el inicio inmediato del acceso; (b) sea informado previamente de que perderá este derecho una vez concedido el acceso; y (c) dé su consentimiento expreso antes de completar la compra. Esta confirmación se obtiene en el momento del pago.</p>
+          <p>Si el usuario no ha accedido todavía al contenido adquirido, podrá ejercer el derecho de desistimiento dentro del plazo legal contactando a <a class="inline-link" href="mailto:contato@velvet.lat">contato@velvet.lat</a>.</p>
+
+          <h3 class="item-title">4.7 Política de Reembolsos</h3>
+          <h4 class="item-title">Reembolso garantizado (sin revisión discrecional):</h4>
+          <ul>
+            <li>Cobro duplicado comprobado;</li>
+            <li>Error técnico o fallo del sistema que impidió el acceso al servicio contratado;</li>
+            <li>Servicio no prestado tras la confirmación del pago;</li>
+            <li>Ejercicio oportuno del derecho de desistimiento, cuando corresponda.</li>
+          </ul>
+          <h4 class="item-title">Reembolso discrecional (sujeto a análisis del equipo de soporte):</h4>
+          <ul>
+            <li>Problema técnico que impidió parcialmente el acceso;</li>
+            <li>Renovación no intencional impugnada inmediatamente tras el cobro;</li>
+            <li>El contenido difirió materialmente de su descripción o fue presentado de forma engañosa;</li>
+            <li>Acceso eliminado por moderación poco después de la compra, sin culpa del usuario.</li>
+          </ul>
+          <h4 class="item-title">Sin derecho a reembolso:</h4>
+          <ul>
+            <li>Insatisfacción subjetiva con el contenido del Creador;</li>
+            <li>Contenido accedido íntegramente sin problema técnico comprobado;</li>
+            <li>Solicitudes fraudulentas, abusivas o reincidentes sin fundamento;</li>
+            <li>Violación de estos Términos por parte del usuario.</li>
+          </ul>
+          <p>Los reembolsos aprobados se acreditan en el mismo medio de pago original, en hasta 2 ciclos de facturación, según el emisor de la tarjeta.</p>
+
+          <h3 class="item-title">4.8 Contracargos y Disputas</h3>
+          <p>Si un cobro parece incorrecto, el usuario debe <strong>contactar primero al soporte</strong> en <a class="inline-link" href="mailto:contato@velvet.lat">contato@velvet.lat</a> antes de iniciar una disputa con su banco o emisor de tarjeta. La mayoría de los problemas se resuelven rápidamente a través del soporte.</p>
+          <p>Abrir contracargos sin contacto previo o de forma abusiva puede resultar en restricciones de cuenta, suspensión, pérdida de acceso y acciones legales bajo la legislación aplicable.</p>
+        `
+      },
+      {
+        id: "secao-5",
+        title: "5. Naturaleza y Objeto de la Plataforma",
+        content: `
+          <p><strong>5.1.</strong> Velvet es una plataforma digital que combina funcionalidades de red social y marketplace, permitiendo que los Creadores pongan a disposición contenidos digitales e interactúen directamente con los Clientes.</p>
+          <p><strong>5.2.</strong> La Plataforma tiene por objeto proporcionar infraestructura digital para la publicación, el intercambio y la monetización de contenidos, así como la intermediación tecnológica y financiera entre Creadores y Clientes.</p>
+          <p><strong>5.3.</strong> Velvet actúa exclusivamente como intermediaria y:</p>
+          <ul>
+            <li>no produce, edita ni controla previamente el contenido publicado;</li>
+            <li>no es parte en la relación comercial directa entre Creadores y Clientes;</li>
+            <li>no garantiza la calidad, legalidad ni idoneidad del contenido publicado.</li>
+          </ul>
+          <p><strong>5.4.</strong> El uso de la Plataforma está condicionado al cumplimiento de estos Términos y de la legislación aplicable.</p>
+        `
+      },
+      {
+        id: "secao-6",
+        title: "6. Estructura de los Servicios",
+        content: `
+          <p>La Plataforma ofrece:</p>
+          <h3 class="item-title">6.1. Capa social</h3>
+          <ul>
+            <li>Perfiles públicos de Creadores;</li>
+            <li>feed de contenido;</li>
+            <li>mensajes privados (chat);</li>
+            <li>mecanismos de interacción.</li>
+          </ul>
+          <h3 class="item-title">6.2. Capa de monetización</h3>
+          <ul>
+            <li>Suscripciones recurrentes (VIP);</li>
+            <li>contenido de pago por acceso (pay-per-view);</li>
+            <li>venta directa de medios por chat.</li>
+          </ul>
+          <h3 class="item-title">6.3. Capa de intermediación</h3>
+          <ul>
+            <li>Procesamiento de pagos;</li>
+            <li>infraestructura tecnológica;</li>
+            <li>gestión del acceso al contenido.</li>
+          </ul>
+        `
+      },
+      {
+        id: "secao-7",
+        title: "7. Registro, Elegibilidad y KYC",
+        content: `
+          <p><strong>7.1.</strong> El acceso a la Plataforma está restringido a mayores de <strong>18 años</strong>.</p>
+          <p><strong>7.2.</strong> Para utilizar determinadas funcionalidades, el usuario deberá registrarse con información veraz, completa y actualizada. El usuario declara: tener plena capacidad legal para contratar; no utilizar una identidad falsa; mantener la confidencialidad de sus credenciales.</p>
+          <p><strong>7.3. KYC — Creadores (Modelos):</strong> la verificación de identidad es <strong>obligatoria</strong> antes de publicar cualquier contenido. Documentos aceptados: documento oficial con foto (cédula, carnet de conducir o pasaporte) y selfie o video con el documento.</p>
+          <p><strong>7.4. KYC — Clientes:</strong> Velvet podrá exigir verificación en cualquier momento, especialmente en casos de sospecha de fraude, contracargo, actividad irregular o requerimiento legal.</p>
+          <p><strong>7.5.</strong> Los datos recopilados en el proceso de KYC se tratan conforme a la Política de Privacidad, con acceso restringido y medidas de seguridad adecuadas.</p>
+          <p><strong>7.6.</strong> El incumplimiento de las obligaciones de registro y verificación podrá resultar en suspensión o cierre de la cuenta, eliminación de contenido y comunicación a las autoridades competentes.</p>
+        `
+      },
+      {
+        id: "secao-8",
+        title: "8. Reglas de Conducta",
+        content: `
+          <p>El usuario se compromete a:</p>
+          <ul>
+            <li>utilizar la Plataforma de forma legal y ética;</li>
+            <li>no vulnerar derechos de terceros, incluida la propiedad intelectual;</li>
+            <li>no insertar contenido ilícito, ofensivo o fraudulento;</li>
+            <li>no compartir contenido adquirido fuera de la Plataforma sin autorización;</li>
+            <li>no intentar acceder a sistemas o datos no autorizados.</li>
+          </ul>
+          <p>Expresamente prohibido:</p>
+          <ul>
+            <li>uso de bots o automatización no autorizada;</li>
+            <li>ingeniería inversa de la Plataforma;</li>
+            <li>intentos de intrusión o explotación de vulnerabilidades;</li>
+            <li>cualquier forma de fraude o abuso financiero.</li>
+          </ul>
+        `
+      },
+      {
+        id: "secao-9",
+        title: "9. Obligaciones de los Creadores",
+        content: `
+          <p>Los Creadores se comprometen a:</p>
+          <ul>
+            <li>publicar únicamente contenido lícito del que posean todos los derechos;</li>
+            <li>no vulnerar derechos de imagen, privacidad o propiedad intelectual de terceros;</li>
+            <li>cumplir la normativa aplicable en materia de protección de datos;</li>
+            <li>cumplir sus obligaciones fiscales derivadas de su actividad de monetización.</li>
+          </ul>
+          <p>Expresamente prohibido:</p>
+          <ul>
+            <li>contenido que involucre a menores de edad, directa o indirectamente;</li>
+            <li>contenido no consensual (incluido el revenge porn);</li>
+            <li>material ilegal o que explote sexualmente o vulnere derechos fundamentales.</li>
+          </ul>
+        `
+      },
+      {
+        id: "secao-10",
+        title: "10. Obligaciones de los Clientes",
+        content: `
+          <p>Los Clientes se comprometen a:</p>
+          <ul>
+            <li>no reproducir, grabar ni redistribuir el contenido adquirido sin autorización;</li>
+            <li>no vulnerar derechos de autor o de imagen;</li>
+            <li>no utilizar la Plataforma para acoso, fraude o actividades ilícitas.</li>
+          </ul>
+        `
+      },
+      {
+        id: "secao-11",
+        title: "11. Propiedad Intelectual",
+        content: `
+          <p><strong>11.1.</strong> El contenido publicado pertenece a los Creadores. El usuario es íntegramente responsable del contenido que inserte en la Plataforma.</p>
+          <p><strong>11.2.</strong> Al publicar contenido, el Creador concede a Velvet una licencia no exclusiva para alojar, distribuir y mostrar ese contenido en la Plataforma.</p>
+          <p><strong>11.3.</strong> Todos los derechos sobre la Plataforma (software, marcas, diseño y funcionalidades) pertenecen a Velvet o a sus licenciantes.</p>
+          <p><strong>11.4.</strong> Los Clientes tienen prohibido copiar, grabar o redistribuir contenido sin la autorización expresa del Creador y de Velvet.</p>
+        `
+      },
+      {
+        id: "secao-12",
+        title: "12. Política de Contenido",
+        content: `
+          <h3 class="item-title">12.1 Contenido permitido</h3>
+          <p>La Plataforma permite la publicación y monetización de:</p>
+          <ul>
+            <li>contenido educativo, artístico y cultural;</li>
+            <li>entretenimiento, lifestyle y contenido personal;</li>
+            <li>contenido adulto consensual entre mayores de edad, cuando lo permita la legislación aplicable.</li>
+          </ul>
+
+          <h3 class="item-title">12.2 Contenido prohibido (tolerancia cero)</h3>
+          <p>Expresamente prohibido:</p>
+          <ul>
+            <li>contenido que involucre a menores de edad, directa o indirectamente;</li>
+            <li>explotación sexual, abuso o violencia;</li>
+            <li>contenido no consensual (incluido el revenge porn);</li>
+            <li>trata de personas o cualquier forma de explotación;</li>
+            <li>actividades ilegales o incitación a la violencia;</li>
+            <li>discurso de odio;</li>
+            <li>fraude, engaño deliberado o infracción de derechos de autor.</li>
+          </ul>
+
+          <h3 class="item-title">12.3 Contenido adulto</h3>
+          <p>Cuando esté permitido, el contenido adulto debe:</p>
+          <ul>
+            <li>involucrar exclusivamente a mayores de 18 años;</li>
+            <li>ser plenamente consensual;</li>
+            <li>cumplir íntegramente la legislación aplicable.</li>
+          </ul>
+          <p>Velvet podrá imponer restricciones adicionales, incluyendo clasificación de contenido, restricciones de acceso por región y verificación adicional de identidad.</p>
+
+          <h3 class="item-title">12.4 Aplicación</h3>
+          <p>Velvet podrá eliminar contenido, suspender o cerrar cuentas y reportar actividades a las autoridades competentes cuando detecte infracciones de estas directrices.</p>
+        `
+      },
+      {
+        id: "secao-13",
+        title: "13. Moderación y Sanciones",
+        content: `
+          <p><strong>13.1.</strong> Velvet podrá, sin previo aviso cuando sea necesario:</p>
+          <ul>
+            <li>eliminar contenido;</li>
+            <li>suspender o cerrar cuentas;</li>
+            <li>bloquear el acceso;</li>
+            <li>restringir funcionalidades.</li>
+          </ul>
+          <p><strong>13.2.</strong> La moderación podrá realizarse de forma automatizada (incluida la inteligencia artificial) y manual.</p>
+          <p><strong>13.3. Cooperación con autoridades:</strong> Velvet podrá cooperar con las autoridades competentes en casos de actividades ilegales, fraudes y delitos digitales, proporcionando la información exigida por ley.</p>
+        `
+      },
+      {
+        id: "secao-14",
+        title: "14. Fraude, Contracargos y Seguridad Financiera",
+        content: `
+          <p><strong>14.1.</strong> Velvet emplea sistemas automatizados de prevención y detección de fraudes, supervisando transacciones, comportamientos y patrones de uso.</p>
+          <p><strong>14.2.</strong> Ante sospechas de fraude o abuso financiero, Velvet podrá:</p>
+          <ul>
+            <li>suspender cuentas temporalmente;</li>
+            <li>bloquear transacciones;</li>
+            <li>retener fondos;</li>
+            <li>solicitar verificación adicional de identidad.</li>
+          </ul>
+          <p><strong>14.3.</strong> El usuario se compromete a no iniciar contracargos indebidos, disputas fraudulentas ni utilizar medios de pago sin autorización.</p>
+          <p><strong>14.4.</strong> Ante un contracargo, Velvet podrá debitar los importes correspondientes del saldo del Creador, aplicar tasas administrativas y suspender o cerrar la cuenta del usuario responsable.</p>
+          <p><strong>14.5.</strong> Las disputas abusivas pueden conllevar responsabilidad civil y penal conforme a la legislación aplicable.</p>
+        `
+      },
+      {
+        id: "secao-15",
+        title: "15. Términos Específicos para Creadores",
+        content: `
+          <p><strong>15.1.</strong> Los Creadores podrán monetizar su contenido mediante suscripciones recurrentes, ventas individuales (pay-per-view) y contenido de pago por chat.</p>
+          <p><strong>15.2.</strong> Velvet actuará como intermediaria financiera, procesando pagos, reteniendo una comisión sobre las transacciones (revenue share) y estableciendo importes mínimos de retiro.</p>
+          <p><strong>15.3.</strong> El porcentaje de reparto de ingresos (revenue split) será definido por la Plataforma y podrá actualizarse con previo aviso.</p>
+          <p><strong>15.4.</strong> Los importes adeudados a los Creadores podrán retenerse por prevención de fraude, ajustarse por reembolsos o contracargos, o bloquearse por infracciones de estos Términos.</p>
+          <p><strong>15.5.</strong> Los retiros están sujetos a verificación de identidad (KYC), requisitos operativos y plazos de procesamiento establecidos por la Plataforma.</p>
+          <p><strong>15.6.</strong> Cada Creador es íntegramente responsable de sus obligaciones fiscales, declaración de ingresos y cumplimiento de la legislación local aplicable.</p>
+        `
+      },
+      {
+        id: "secao-16",
+        title: "16. Servicios Financieros",
+        content: `
+          <p><strong>16.1.</strong> Los servicios de pago disponibles en esta Plataforma son procesados por <strong>Stripe</strong> y demás socios tecnológicos certificados.</p>
+          <p><strong>16.2.</strong> Velvet actúa exclusivamente como integradora tecnológica; no es una institución financiera ni realiza intermediación financiera en nombre propio.</p>
+          <p><strong>16.3.</strong> La Plataforma podrá bloquear transacciones en función del riesgo, cumplir obligaciones regulatorias y aplicar políticas de prevención del blanqueo de capitales (AML) y de la financiación del terrorismo.</p>
+          <p><strong>16.4.</strong> El usuario declara que no se encuentra en una jurisdicción sancionada, no figura en listas de restricción internacional y no utilizará la Plataforma para actividades ilegales.</p>
+        `
+      },
+      {
+        id: "secao-17",
+        title: "17. Responsabilidad y Limitación",
+        content: `
+          <p><strong>17.1.</strong> Velvet no se hace responsable de:</p>
+          <ul>
+            <li>el contenido publicado por los Creadores;</li>
+            <li>las interacciones entre usuarios;</li>
+            <li>las expectativas comerciales entre Creadores y Clientes;</li>
+            <li>la indisponibilidad temporal de la Plataforma.</li>
+          </ul>
+          <p><strong>17.2.</strong> La responsabilidad de Velvet se limita a su función como intermediaria tecnológica, de conformidad con la legislación aplicable.</p>
+        `
+      },
+      {
+        id: "secao-18",
+        title: "18. Protección de Datos",
+        content: `
+          <p><strong>18.1.</strong> Los datos personales se tratan conforme a la Política de Privacidad de la Plataforma y a la legislación aplicable, incluyendo la LGPD de Brasil (Ley n.º 13.709/2018) y, cuando corresponda, el RGPD.</p>
+          <p><strong>18.2.</strong> La Plataforma adopta medidas de seguridad adecuadas para proteger la información de los usuarios.</p>
+          <p><strong>18.3.</strong> Los datos podrán utilizarse para la operación de la Plataforma, la prevención de fraudes y la mejora de los servicios. Más información en la Política de Privacidad.</p>
+        `
+      },
+      {
+        id: "secao-19",
+        title: "19. Suspensión y Cancelación",
+        content: `
+          <p>Velvet podrá en cualquier momento:</p>
+          <ul>
+            <li>suspender o cancelar el acceso del usuario;</li>
+            <li>modificar o discontinuar funcionalidades;</li>
+            <li>eliminar contenido que infrinja estos Términos.</li>
+          </ul>
+          <p>Los usuarios podrán cerrar su cuenta en cualquier momento a través de los canales de soporte habilitados por la Plataforma.</p>
+        `
+      },
+      {
+        id: "secao-20",
+        title: "20. Modificaciones de los Términos",
+        content: `
+          <p>Estos Términos podrán actualizarse en cualquier momento. Los cambios relevantes se comunicarán con antelación razonable. El uso continuado de la Plataforma tras las modificaciones implica la aceptación de las nuevas condiciones.</p>
+        `
+      },
+      {
+        id: "secao-21",
+        title: "21. Legislación Aplicable y Fuero",
+        content: `
+          <p><strong>21.1.</strong> Estos Términos se rigen por las leyes de la República Federativa de Brasil.</p>
+          <p><strong>21.2.</strong> Se elige el fuero de la ciudad de São Paulo – SP como foro exclusivo para resolver cualquier controversia, con renuncia a cualquier otro fuero, por privilegiado que fuere.</p>
+        `
+      },
+      {
+        id: "secao-22",
+        title: "22. Contacto",
+        content: `
+          <div class="contact-box">
+            <p>El usuario podrá ponerse en contacto con Velvet a través de los siguientes canales:</p>
+            <p>Correo electrónico: <a class="inline-link" href="mailto:contato@velvet.lat">contato@velvet.lat</a></p>
+            <p>La Plataforma podrá habilitar canales adicionales de atención según sea necesario.</p>
+          </div>
+        `
+      },
+      {
+        id: "secao-23",
+        title: "23. Disposiciones Finales",
+        content: `
+          <p><strong>23.1.</strong> La eventual tolerancia ante el incumplimiento de estos Términos no implicará renuncia de derechos.</p>
+          <p><strong>23.2.</strong> Si alguna disposición se declara inválida o inaplicable, las demás permanecerán en plena vigencia.</p>
+          <p><strong>23.3.</strong> Estos Términos constituyen el acuerdo íntegro entre las partes en relación con el uso de la Plataforma y deben interpretarse conjuntamente con la Política de Privacidad.</p>
+        `
+      }
+    ]
+  }
+};
+
+function render(lang) {
+  const d = T[lang];
+  document.documentElement.lang = d.htmlLang;
+  document.getElementById('pageTitle').textContent = d.pageTitle;
+  document.getElementById('lastUpdatedLabel').textContent = d.lastUpdatedLabel;
+  document.getElementById('lastUpdatedDate').textContent = d.lastUpdatedDate;
+  document.getElementById('introText').textContent = d.introText;
+  document.getElementById('legalNote').textContent = d.legalNote;
+  document.getElementById('tocNav').setAttribute('aria-label', d.tocAriaLabel);
+  document.getElementById('tocTitle').textContent = d.tocTitle;
+  document.getElementById('footerTerms').textContent = d.footerTerms;
+  document.getElementById('footerPrivacy').textContent = d.footerPrivacy;
+  document.getElementById('footerCopy').textContent = d.footerCopy;
+
+  const tocList = document.getElementById('tocList');
+  tocList.innerHTML = d.sections.map(s =>
+    `<li><a href="#${s.id}">${s.title}</a></li>`
+  ).join('');
+
+  const container = document.getElementById('sectionsContainer');
+  container.innerHTML = d.sections.map((s, i) => `
+    ${i > 0 ? '<hr class="divider">' : ''}
+    <section id="${s.id}">
+      <h2 class="section-title">${s.title}</h2>
+      ${s.content}
+    </section>
+  `).join('');
+
+  document.querySelectorAll('.lang-bar button').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.lang === lang);
+  });
+
+  try { localStorage.setItem('velvet_terms_lang', lang); } catch(e) {}
+}
+
+document.querySelectorAll('.lang-bar button').forEach(btn => {
+  btn.addEventListener('click', () => render(btn.dataset.lang));
+});
+
+let initLang = 'pt';
+try { initLang = localStorage.getItem('velvet_terms_lang') || 'pt'; } catch(e) {}
+if (!T[initLang]) initLang = 'pt';
+render(initLang);
+</script>
 </body>
 </html>
