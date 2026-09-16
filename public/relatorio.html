@@ -29,12 +29,14 @@
   --bg:     #fbfaff;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
+html { overflow-x: hidden; }
 body {
   background: linear-gradient(180deg, #fbfaff 0%, #f4f2fa 100%);
   color: var(--text);
   font-family: 'Poppins', -apple-system, sans-serif;
   min-height: 100vh;
   padding-top: 64px; /* Velvet fixed header */
+  overflow-x: hidden;
 }
 
 /* ── LAYOUT ─────────────────────────────────── */
@@ -204,17 +206,23 @@ body {
 .chart-card h5 { font-size: .88rem; font-weight: 600; margin-bottom: .9rem; }
 
 /* mobile toggle */
-.mob-toggle { display: none; position: fixed; top: 72px; left: .75rem; z-index: 200; background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: .35rem .6rem; cursor: pointer; color: var(--purple); font-size: 1.1rem; box-shadow: 0 2px 8px rgba(123,44,255,.1); }
+.mob-toggle { display: none; position: fixed; top: 72px; right: .75rem; z-index: 200; background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: .35rem .6rem; cursor: pointer; color: var(--purple); font-size: 1.1rem; box-shadow: 0 2px 8px rgba(123,44,255,.1); }
 .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.25); z-index: 99; }
 .overlay.show { display: block; }
 
 @media (max-width: 768px) {
   .sidebar { transform: translateX(-100%); transition: transform .3s; top: 64px; }
   .sidebar.open { transform: translateX(0); }
-  .main-content { margin-left: 0; padding: .9rem; }
+  .main-content { margin-left: 0; padding: .75rem; }
   .mob-toggle { display: flex; }
   .cards-grid { grid-template-columns: 1fr 1fr; gap: .6rem; }
   .banco-main .bm-amt { font-size: 1.8rem; }
+  .page-header { padding-right: 3rem; }
+  .page-header h1 { font-size: 1.1rem; }
+  .hide-mob { display: none !important; }
+  .dt td, .dt th { padding: .5rem .55rem; font-size: .74rem; }
+  .dt td { white-space: normal; }
+  .bdg { font-size: .65rem; padding: .15rem .4rem; }
 }
 @media (max-width: 420px) {
   .cards-grid { grid-template-columns: 1fr; }
@@ -517,9 +525,9 @@ async function loadPix(ym) {
       <td>${fmtDate(r.created_at)}</td>
       <td><span class="bdg ${r.tipo}">${r.tipo||'—'}</span></td>
       <td style="color:var(--ok);font-weight:600">${fmt(r.valor_modelo)}</td>
-      <td><span class="bdg pix">PIX</span></td>
+      <td class="hide-mob"><span class="bdg pix">PIX</span></td>
       <td>${disp}</td>
-      <td style="color:var(--muted)">#${r.cliente_id}</td>
+      <td class="hide-mob" style="color:var(--muted)">#${r.cliente_id}</td>
     </tr>`;
   }).join('') : `<tr><td colspan="6"><div class="empty-st"><i class="bi bi-inbox"></i><p>Nenhum registro</p></div></td></tr>`;
 
@@ -536,7 +544,7 @@ async function loadPix(ym) {
         <select class="csel" onchange="loadedSections.delete('pix');loadPix(this.value)">${buildMonthOpts(ym)}</select>
       </div>
       <div class="table-resp"><table class="dt">
-        <thead><tr><th>Data</th><th>Tipo</th><th>Valor</th><th>Gateway</th><th>Disponibilidade</th><th>Cliente</th></tr></thead>
+        <thead><tr><th>Data</th><th>Tipo</th><th>Valor</th><th class="hide-mob">Gateway</th><th>Status</th><th class="hide-mob">Cliente</th></tr></thead>
         <tbody>${tbody}</tbody>
       </table></div>
       <div class="tcard-ft"><span class="ft-lbl">Total</span><span class="ft-val" style="color:var(--ok)">${fmt(total)}</span></div>
@@ -571,9 +579,9 @@ async function loadCartao(ym) {
       <td>${fmtDate(r.created_at)}</td>
       <td><span class="bdg ${r.tipo}">${r.tipo||'—'}</span></td>
       <td style="color:var(--purple-light);font-weight:600">${fmt(r.valor_modelo)}</td>
-      <td><span class="bdg stripe">Stripe</span></td>
+      <td class="hide-mob"><span class="bdg stripe">Stripe</span></td>
       <td>${disp}</td>
-      <td style="color:var(--muted)">#${r.cliente_id}</td>
+      <td class="hide-mob" style="color:var(--muted)">#${r.cliente_id}</td>
     </tr>`;
   }).join('') : `<tr><td colspan="6"><div class="empty-st"><i class="bi bi-inbox"></i><p>Nenhum registro</p></div></td></tr>`;
 
@@ -590,7 +598,7 @@ async function loadCartao(ym) {
         <select class="csel" onchange="loadedSections.delete('cartao');loadCartao(this.value)">${buildMonthOpts(ym)}</select>
       </div>
       <div class="table-resp"><table class="dt">
-        <thead><tr><th>Data</th><th>Tipo</th><th>Valor</th><th>Gateway</th><th>Liberação</th><th>Cliente</th></tr></thead>
+        <thead><tr><th>Data</th><th>Tipo</th><th>Valor</th><th class="hide-mob">Gateway</th><th>Liberação</th><th class="hide-mob">Cliente</th></tr></thead>
         <tbody>${tbody}</tbody>
       </table></div>
       <div class="tcard-ft"><span class="ft-lbl">Total</span><span class="ft-val" style="color:var(--purple-light)">${fmt(total)}</span></div>
@@ -644,12 +652,12 @@ async function loadChargebacks(ym) {
     const gw = r.gateway || '—';
     return `<tr>
       <td>${fmtDate(r.created_at)}</td>
-      <td>${fmtDate(r.updated_at)}</td>
-      <td style="color:var(--muted)">#${r.cliente_id}</td>
+      <td class="hide-mob">${fmtDate(r.updated_at)}</td>
+      <td class="hide-mob" style="color:var(--muted)">#${r.cliente_id}</td>
       <td><span class="bdg ${r.tipo}">${r.tipo||'—'}</span></td>
       <td style="color:var(--red);font-weight:600">${fmt(r.valor_modelo)}</td>
-      <td><span class="bdg ${gw.toLowerCase().includes('stripe')?'stripe':'pix'}">${gw}</span></td>
-      <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;color:var(--muted)">${r.chargeback_motivo||'—'}</td>
+      <td class="hide-mob"><span class="bdg ${gw.toLowerCase().includes('stripe')?'stripe':'pix'}">${gw}</span></td>
+      <td class="hide-mob" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;color:var(--muted)">${r.chargeback_motivo||'—'}</td>
     </tr>`;
   }).join('') : `<tr><td colspan="7"><div class="empty-st"><i class="bi bi-shield-check"></i><p>Nenhum chargeback neste período</p></div></td></tr>`;
 
@@ -663,7 +671,7 @@ async function loadChargebacks(ym) {
         <select class="csel" onchange="loadedSections.delete('chargebacks');loadChargebacks(this.value)">${buildMonthOpts(ym)}</select>
       </div>
       <div class="table-resp"><table class="dt">
-        <thead><tr><th>Data Compra</th><th>Reembolso</th><th>Cliente</th><th>Tipo</th><th>Valor</th><th>Gateway</th><th>Motivo</th></tr></thead>
+        <thead><tr><th>Data Compra</th><th class="hide-mob">Reembolso</th><th class="hide-mob">Cliente</th><th>Tipo</th><th>Valor</th><th class="hide-mob">Gateway</th><th class="hide-mob">Motivo</th></tr></thead>
         <tbody>${tbody}</tbody>
       </table></div>
       <div class="tcard-ft"><span class="ft-lbl">Total de reembolsos</span><span class="ft-val" style="color:var(--red)">${fmt(total)}</span></div>
@@ -787,8 +795,8 @@ async function loadAssinantes(ym) {
   }).join('') : `<tr><td colspan="2"><div class="empty-st"><i class="bi bi-people"></i><p>Nenhum assinante neste período</p></div></td></tr>`;
 
   el.innerHTML = `
-    <div class="cards-grid" style="grid-template-columns:1fr 1fr">
-      <div class="sc blue"><div class="sc-icon"><i class="bi bi-people-fill"></i></div><div class="sc-lbl">Ativações no Mês</div><div class="sc-val" style="color:var(--pix)">${total}</div></div>
+    <div class="cards-grid" style="grid-template-columns:1fr;margin-bottom:1rem">
+      <div class="sc blue" style="padding:1.25rem 1.25rem"><div class="sc-icon"><i class="bi bi-people-fill"></i></div><div class="sc-lbl" style="font-size:.8rem">Ativações no Mês</div><div class="sc-val" style="color:var(--pix);font-size:1.6rem">${total}</div></div>
     </div>
     <div class="tcard">
       <div class="tcard-hd">

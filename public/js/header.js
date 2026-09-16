@@ -684,6 +684,7 @@ async function desativarNotificacoes() {
     "/chat.html", "/chatc.html", "/chat.html",
     "/chat-app.html", "/chatc.html", "/paginaChat.html", "/allmessage.html", "/chat-agency.html",
     "/terms.html", "/privacy.html", "/policies.html", "/creatorterms.html", "/about.html",
+    "/relatorio.html",
   ]);
 
   const path = window.location.pathname.replace(/\/+$/, "") || "/";

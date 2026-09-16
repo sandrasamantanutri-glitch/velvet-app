@@ -133,6 +133,7 @@ app.use(helmet({
       fontSrc: [
         "'self'",
         "https://fonts.gstatic.com",
+        "https://cdn.jsdelivr.net",
         "data:"
       ],
       imgSrc: [
