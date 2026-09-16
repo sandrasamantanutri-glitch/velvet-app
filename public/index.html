@@ -695,12 +695,13 @@
       .squiggle { width: 160px; }
     }
 
-    /* ─── MOBILE (≤768px) — nav compacto, todos os links visíveis ─── */
+    /* ─── MOBILE (≤768px) — hamburger, links no menu lateral ─── */
     @media (max-width: 768px) {
       nav { padding: 10px 14px; }
       .nav-logo-img img { height: 34px; }
-      .nav-links { gap: 10px; }
-      .nav-links a { font-size: 11px; }
+      .nav-links { display: none; }
+      .hamburger { display: flex; }
+      .mobile-menu { display: block; }
       .nav-right { gap: 8px; }
       .nav-right .btn { padding: 8px 13px; font-size: 12px; }
 
@@ -766,13 +767,10 @@
       .iphone { width: 190px; height: 390px; border-radius: 34px; }
     }
 
-    /* ─── TINY (<390px) — hambúrguer para telas muito pequenas ─── */
+    /* ─── TINY (<390px) ─── */
     @media (max-width: 389px) {
       nav { padding: 10px 12px; }
       .nav-logo-img img { height: 30px; }
-      .nav-links { display: none; }
-      .hamburger { display: flex; }
-      .mobile-menu { display: block; }
     }
   </style>
 </head>

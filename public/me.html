@@ -105,13 +105,33 @@
     }
 
     .footer-links {
-      margin-top: 48px !important;
-      padding-top: 0;
+      margin-top: 32px !important;
+      padding: 0;
+      list-style: none;
       text-align: center;
+    }
+
+    .footer-links li {
+      display: block;
     }
 
     .footer-links a {
       font-size: 11px !important;
+      display: block;
+      padding: 3px 0;
+    }
+
+    .footer-copy {
+      text-align: center;
+      font-size: 11px;
+      color: #aaa;
+      margin-top: 10px;
+      margin-bottom: 0;
+    }
+
+    footer {
+      width: 100%;
+      text-align: center;
     }
 
     /* Seletor de idioma centralizado abaixo do logo */
@@ -158,15 +178,6 @@
     .footer-linksC a,
     .footer-links a {
       color: #7B2CFF;
-      display: block;
-    }
-
-    .footer-linksC {
-      margin-top: 0;
-    }
-
-    .footer-links {
-      margin-top: 0;
     }
 
     .login-box {
@@ -235,12 +246,12 @@
          <!-- FOOTER -->
           <footer>
             <ul class="footer-links">
-              <a href="https://www.velvet.lat/about.html" target="_blank">Sobre nós</a>
-              <a href="https://www.velvet.lat/terms.html" target="_blank">Políticas e Termos de utilização</a>
-              <a href="https://www.velvet.lat/privacy.html" target="_blank">Políticas de Privacidade</a>
-              <a href="contato.html" target="_blank">Contato</a>
+              <li><a href="https://www.velvet.lat/about.html" target="_blank" data-i18n="about.footerAbout">Sobre nós</a></li>
+              <li><a href="https://www.velvet.lat/terms.html" target="_blank" data-i18n="footer.termos">Termos de Uso</a></li>
+              <li><a href="https://www.velvet.lat/privacy.html" target="_blank" data-i18n="footer.privacidade">Políticas de Privacidade</a></li>
+              <li><a href="contato.html" target="_blank" data-i18n="index.contact">Contato</a></li>
             </ul>
-             <p class="footer-copy" data-i18n="footer.copy">© 2026 Velvet. Todos os direitos reservados.</p>
+            <p class="footer-copy" data-i18n="footer.copy">© 2026 Velvet. Todos os direitos reservados.</p>
             </footer>
           </div>
         </div>
