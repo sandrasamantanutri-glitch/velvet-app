@@ -5,18 +5,47 @@
 */
 (function () {
   const html = `
-  <footer class="footer">
-    <div class="footer-links">
-      <a href="/terms.html" target="_blank" rel="noopener noreferrer" data-i18n="footer.termos">Termos de Uso</a>
-      <a href="/privacy.html" target="_blank" rel="noopener noreferrer" data-i18n="footer.privacidade">Política de Privacidade</a>
-      <a href="/policies.html" data-i18n="footer.politicas">Política de Utilização</a>
-    </div>
-    <div class="footer-copy" data-i18n="footer.copy">© 2026 Velvet. Todos os direitos reservados.</div>
-  </footer>`;
+    <footer class="footer">
+      <ul class="footer-links">
+        <a href="https://www.velvet.lat/about.html"
+           target="_blank"
+           rel="noopener noreferrer"
+           data-i18n="footer.sobre">Sobre nós</a>
+
+        <span class="footer-sep">·</span>
+
+        <a href="https://www.velvet.lat/terms.html"
+           target="_blank"
+           rel="noopener noreferrer"
+           data-i18n="footer.termos">Políticas e Termos de utilização</a>
+
+        <span class="footer-sep">·</span>
+
+        <a href="https://www.velvet.lat/privacy.html"
+           target="_blank"
+           rel="noopener noreferrer"
+           data-i18n="footer.privacidade">Políticas de Privacidade</a>
+
+        <span class="footer-sep">·</span>
+
+        <a href="contato.html"
+           target="_blank"
+           rel="noopener noreferrer"
+           data-i18n="footer.contato">Contato</a>
+      </ul>
+
+      <p class="footer-copy" data-i18n="footer.copy">
+        © 2026 Velvet. Todos os direitos reservados.
+      </p>
+    </footer>
+  `;
 
   function inject() {
     const container = document.getElementById('footer-container');
-    if (container) container.innerHTML = html;
+
+    if (container) {
+      container.innerHTML = html;
+    }
   }
 
   if (document.readyState === 'loading') {

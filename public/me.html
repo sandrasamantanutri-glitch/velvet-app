@@ -233,16 +233,7 @@
           <a href="#" onclick="openForgot(); return false;" data-i18n="index.forgotPassword">Esqueci minha senha</a><br>
         </div>
       </div>
-
-      <div class="footer-links">
-        <a href="/about.html" target="_blank" rel="noopener noreferrer" data-i18n="index.footerAbout">Sobre Nós</a>
-        <a href="/contato.html" target="_blank" rel="noopener noreferrer" data-i18n="index.contact">Contato</a>
-        <a href="/terms.html" target="_blank" rel="noopener noreferrer" data-i18n="index.termsOfUse">Termos de Uso</a>
-        <a href="/policies.html" target="_blank" rel="noopener noreferrer" data-i18n="index.usagePolicies">Políticas de Utilização</a>
-        <a href="/privacy.html" target="_blank" rel="noopener noreferrer" data-i18n="index.privacyPolicies">Políticas de Privacidade</a>
-      </div>
-
-
+       <div id="footer-container"></div>
     </div>
   </main>
 </div>
@@ -435,6 +426,7 @@
 
 <script src="/js/script.js" defer></script>
 
+
 <script>
   function toggleAgeConfirm(e) {
     if (e.target.tagName === 'A') return;
@@ -445,5 +437,7 @@
     box.style.background = cb.checked ? '#f3ecff' : '#fff';
   }
 </script>
+<script src="/js/footer-shared.js"></script>
+
 </body>
 </html>
