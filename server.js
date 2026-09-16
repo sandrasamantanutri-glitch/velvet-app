@@ -7697,6 +7697,59 @@ app.get("/modelo/relatorio", authModelo, (req, res) => {
   );
 });
 
+app.get("/api/modelo/ganhos", authModelo, async (req, res) => {
+  try {
+    const modeloId = req.modelo_id;
+    const mesParam = req.query.mes;
+
+    // Determine year/month in São Paulo timezone
+    const spNow = new Date(Date.now() - 3 * 3600000); // UTC-3 approximation
+    let ano, mes;
+    if (mesParam && /^\d{4}-\d{2}$/.test(mesParam)) {
+      [ano, mes] = mesParam.split('-').map(Number);
+    } else {
+      ano = spNow.getUTCFullYear();
+      mes = spNow.getUTCMonth() + 1;
+    }
+
+    const [txRes, assRes, assHojeRes] = await Promise.all([
+      db.query(`
+        SELECT tipo, valor_modelo, created_at, disponivel_em
+        FROM transacoes_agency
+        WHERE modelo_id = $1
+          AND status = 'pago'
+          AND EXTRACT(YEAR  FROM (created_at AT TIME ZONE 'America/Sao_Paulo')) = $2
+          AND EXTRACT(MONTH FROM (created_at AT TIME ZONE 'America/Sao_Paulo')) = $3
+        ORDER BY created_at DESC
+      `, [modeloId, ano, mes]),
+
+      db.query(`
+        SELECT COUNT(DISTINCT cliente_id) AS total
+        FROM vip_subscriptions
+        WHERE modelo_id = $1 AND ativo = true AND expiration_at > NOW()
+      `, [modeloId]),
+
+      db.query(`
+        SELECT COUNT(*) AS total
+        FROM transacoes_agency
+        WHERE modelo_id = $1
+          AND status = 'pago'
+          AND tipo = 'assinatura'
+          AND (created_at AT TIME ZONE 'America/Sao_Paulo')::date = (NOW() AT TIME ZONE 'America/Sao_Paulo')::date
+      `, [modeloId]),
+    ]);
+
+    res.json({
+      rows:       txRes.rows,
+      assinantes: parseInt(assRes.rows[0]?.total || 0),
+      assHoje:    parseInt(assHojeRes.rows[0]?.total || 0),
+    });
+  } catch (err) {
+    console.error("Erro /api/modelo/ganhos:", err);
+    res.status(500).json({ error: "Erro interno" });
+  }
+});
+
 // ===========================
 // VIPS.HTML - LISTA
 // ===========================

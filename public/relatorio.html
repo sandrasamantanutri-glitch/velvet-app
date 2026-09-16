@@ -6,51 +6,15 @@
 <title>Meus Ganhos | Velvet</title>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+<link href="/css/header.css" rel="stylesheet">
 <link href="/css/relatorio.css" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js"></script>
 <style>
-body { padding-top: 0; font-family: 'Poppins', -apple-system, sans-serif; }
-
-/* LOGIN */
-#loginScreen {
-  min-height: 100vh;
-  display: flex; align-items: center; justify-content: center;
-  background: linear-gradient(180deg, #fbfaff 0%, #f0ebff 100%);
-}
-.login-box {
-  background: #fff; border-radius: 20px; padding: 2rem 1.75rem;
-  width: 100%; max-width: 380px;
-  box-shadow: 0 8px 40px rgba(123,44,255,.15);
-}
-.login-logo { text-align: center; margin-bottom: 1.75rem; }
-.login-logo h2 { font-size: 1.7rem; font-weight: 800; color: var(--purple); }
-.login-logo p { color: var(--text-muted); font-size: 0.875rem; margin-top: 0.2rem; }
-.login-err { display: none; background: #fff5f5; border: 1px solid #fecaca; border-radius: 10px; padding: .7rem 1rem; font-size: .85rem; color: #dc2626; margin-bottom: 1rem; }
-.login-lbl { display: block; font-size: .8rem; font-weight: 600; color: #555; margin-bottom: .35rem; }
-.login-inp {
-  width: 100%; padding: 11px 13px; border-radius: 12px;
-  border: 1.5px solid #e2e0ea; background: #fff;
-  font-family: inherit; font-size: .9rem; color: var(--text);
-  box-sizing: border-box; outline: none; transition: border-color .15s;
-}
-.login-inp:focus { border-color: var(--purple); box-shadow: 0 0 0 3px rgba(123,44,255,.1); }
-.btn-entrar {
-  width: 100%; padding: 12px; border: none; border-radius: 12px;
-  background: var(--purple); color: #fff;
-  font-family: inherit; font-size: .95rem; font-weight: 700; cursor: pointer;
-  transition: background .15s;
-}
-.btn-entrar:hover { background: #6a1fe0; }
-.btn-entrar:disabled { opacity: .6; cursor: not-allowed; }
-
-/* GANHOS */
-#ganhoScreen { display: none; }
 .g-wrap { max-width: 540px; margin: 0 auto; padding-bottom: 80px; }
 
 .g-topo {
   display: flex; align-items: center; gap: 8px;
   padding: 14px 16px 8px;
-  position: sticky; top: 0; z-index: 40;
+  position: sticky; top: 64px; z-index: 40;
   background: linear-gradient(180deg, #fbfaff 85%, transparent 100%);
 }
 .btn-voltar {
@@ -66,7 +30,6 @@ body { padding-top: 0; font-family: 'Poppins', -apple-system, sans-serif; }
 .spin { width: 30px; height: 30px; border: 3px solid #e2d9ff; border-top-color: var(--purple); border-radius: 50%; animation: rot .8s linear infinite; }
 @keyframes rot { to { transform: rotate(360deg); } }
 
-/* Histórico colapsável */
 .hist-header {
   display: flex; align-items: center; justify-content: space-between;
   cursor: pointer; user-select: none;
@@ -79,170 +42,118 @@ body { padding-top: 0; font-family: 'Poppins', -apple-system, sans-serif; }
 </head>
 <body>
 
-<!-- LOGIN -->
-<div id="loginScreen">
-  <div class="login-box">
-    <div class="login-logo">
-      <h2>✦ Velvet</h2>
-      <p>Painel de Ganhos</p>
-    </div>
-    <div class="login-err" id="loginErr"></div>
-    <div style="margin-bottom:.9rem">
-      <label class="login-lbl">E-mail</label>
-      <input type="email" id="loginEmail" class="login-inp" placeholder="seu@email.com" autocomplete="email">
-    </div>
-    <div style="margin-bottom:1.4rem">
-      <label class="login-lbl">Senha</label>
-      <input type="password" id="loginPwd" class="login-inp" placeholder="••••••••" autocomplete="current-password">
-    </div>
-    <button class="btn-entrar" id="btnLogin" onclick="doLogin()">Entrar</button>
-  </div>
-</div>
+<div id="header-container"></div>
 
-<!-- GANHOS -->
-<div id="ganhoScreen">
-  <div class="g-wrap">
-    <div class="g-topo">
-      <a class="btn-voltar" href="/areaUsuario.html"><i class="bi bi-arrow-left"></i></a>
-      <h1 class="g-titulo">Meus Ganhos</h1>
-      <select class="rel-filtro-mes" id="monthSel" onchange="onMonthChange()" style="flex:0 0 auto;width:auto"></select>
-    </div>
-    <div style="padding:0 16px">
-      <div id="ganhoContent">
-        <div class="spin-wrap"><div class="spin"></div></div>
-      </div>
+<div class="g-wrap">
+  <div class="g-topo">
+    <a class="btn-voltar" href="/areaUsuario.html"><i class="bi bi-arrow-left"></i></a>
+    <h1 class="g-titulo">Meus Ganhos</h1>
+    <select class="rel-filtro-mes" id="monthSel" onchange="onMonthChange()" style="flex:0 0 auto;width:auto"></select>
+  </div>
+  <div style="padding:0 16px">
+    <div id="ganhoContent">
+      <div class="spin-wrap"><div class="spin"></div></div>
     </div>
   </div>
 </div>
 
+<script src="/js/header.js"></script>
 <script>
-const SUPA_URL = 'https://jfgjihgolfeejfhqdqax.supabase.co';
-const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpmZ2ppaGdvbGZlZWpmaHFkcWF4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU5OTI1MDIsImV4cCI6MjA5MTU2ODUwMn0.euRDsKeCIgNhAx-8uavtsXF3JqXBfBIdpcPDcRaVyxk';
-const { createClient } = supabase;
-const db = createClient(SUPA_URL, SUPA_KEY);
+const token = localStorage.getItem('token');
+if (!token) { window.location.href = '/'; }
 
-let SESSION = null;
-
-const fmt = v => 'R$ ' + Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmt = v => 'R$ ' + Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const MES  = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 const MESS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
 function currentYM() {
-  const n = new Date();
-  return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}`;
+  const partes = new Intl.DateTimeFormat('sv-SE', {
+    timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit'
+  }).formatToParts(new Date());
+  return `${partes.find(p => p.type === 'year').value}-${partes.find(p => p.type === 'month').value}`;
 }
 
-function buildMonthOptions(sel) {
-  const now = new Date();
+function todaySP() {
+  return new Intl.DateTimeFormat('sv-SE', { timeZone: 'America/Sao_Paulo' }).format(new Date());
+}
+
+function buildMonthOptions(selectedYM) {
   const el = document.getElementById('monthSel');
   el.innerHTML = '';
+  const now = new Date();
+  const cur = currentYM();
+  const [curY, curM] = cur.split('-').map(Number);
   for (let i = 0; i < 12; i++) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const val = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    let m = curM - i, a = curY;
+    if (m <= 0) { m += 12; a -= 1; }
+    const val = `${a}-${String(m).padStart(2, '0')}`;
     const opt = document.createElement('option');
     opt.value = val;
-    opt.textContent = `${MESS[d.getMonth()]}. de ${d.getFullYear()}`;
-    if (val === sel) opt.selected = true;
+    opt.textContent = `${MESS[m-1]}. de ${a}`;
+    if (val === selectedYM) opt.selected = true;
     el.appendChild(opt);
   }
 }
 
-async function rpc(fn, params = {}) {
-  const { data, error } = await db.rpc(fn, { p_token: SESSION.token, ...params });
-  if (error) throw error;
-  if (data?.error) throw new Error(data.error);
-  return data;
+async function fetchGanhos(mesParam) {
+  const url = mesParam ? `/api/modelo/ganhos?mes=${mesParam}` : '/api/modelo/ganhos';
+  const res = await fetch(url, { headers: { Authorization: 'Bearer ' + token } });
+  if (res.status === 401 || res.status === 403) { window.location.href = '/'; return null; }
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  return res.json();
 }
-
-async function doLogin() {
-  const email = document.getElementById('loginEmail').value.trim();
-  const pwd   = document.getElementById('loginPwd').value;
-  const btn   = document.getElementById('btnLogin');
-  const err   = document.getElementById('loginErr');
-  err.style.display = 'none';
-  if (!email || !pwd) { showErr('Preencha e-mail e senha.'); return; }
-  btn.disabled = true; btn.textContent = 'Entrando...';
-  try {
-    const { data, error } = await db.rpc('login_modelo', { p_email: email, p_password: pwd });
-    if (error) throw error;
-    if (data?.error) throw new Error(data.error);
-    SESSION = data;
-    initGanhos();
-  } catch (e) {
-    showErr(e.message || 'Credenciais inválidas.');
-    btn.disabled = false; btn.textContent = 'Entrar';
-  }
-}
-function showErr(msg) { const el = document.getElementById('loginErr'); el.textContent = msg; el.style.display = 'block'; }
-document.getElementById('loginPwd').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
-document.getElementById('loginEmail').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
-
-function initGanhos() {
-  document.getElementById('loginScreen').style.display = 'none';
-  document.getElementById('ganhoScreen').style.display = 'block';
-  const ym = currentYM();
-  buildMonthOptions(ym);
-  loadGanhos(ym);
-}
-
-function onMonthChange() { loadGanhos(document.getElementById('monthSel').value); }
 
 async function loadGanhos(ym) {
   document.getElementById('ganhoContent').innerHTML = '<div class="spin-wrap"><div class="spin"></div></div>';
   try {
-    const [y, m] = ym.split('-').map(Number);
-    const todayStr = new Date().toLocaleDateString('sv', { timeZone: 'America/Sao_Paulo' });
+    const data = await fetchGanhos(ym);
+    if (!data) return;
+
+    const rows = data.rows || [];
     const now = new Date();
+    const today = todaySP();
 
-    const [dpix, dstripe, dgeral] = await Promise.all([
-      rpc('painel_transacoes', { p_ano: y, p_mes: m, p_gateway: 'pix' }),
-      rpc('painel_transacoes', { p_ano: y, p_mes: m, p_gateway: 'stripe' }),
-      rpc('painel_geral'),
-    ]);
-
-    const rows = [...(dpix.rows || []), ...(dstripe.rows || [])];
-
-    const totalMidias      = rows.filter(r => r.tipo === 'midia').reduce((a,r) => a + +r.valor_modelo, 0);
-    const totalAssinaturas = rows.filter(r => r.tipo === 'assinatura').reduce((a,r) => a + +r.valor_modelo, 0);
+    const totalMidias      = rows.filter(r => r.tipo === 'midia').reduce((a, r) => a + +r.valor_modelo, 0);
+    const totalAssinaturas = rows.filter(r => r.tipo === 'assinatura').reduce((a, r) => a + +r.valor_modelo, 0);
     const totalMes         = totalMidias + totalAssinaturas;
 
-    const hojeRows = rows.filter(r => r.created_at?.startsWith(todayStr));
-    const hojeMidias      = hojeRows.filter(r => r.tipo === 'midia').reduce((a,r) => a + +r.valor_modelo, 0);
-    const hojeAssinaturas = hojeRows.filter(r => r.tipo === 'assinatura').reduce((a,r) => a + +r.valor_modelo, 0);
+    const hojeRows = rows.filter(r => r.created_at?.startsWith(today));
+    const hojeMidias      = hojeRows.filter(r => r.tipo === 'midia').reduce((a, r) => a + +r.valor_modelo, 0);
+    const hojeAssinaturas = hojeRows.filter(r => r.tipo === 'assinatura').reduce((a, r) => a + +r.valor_modelo, 0);
 
     const isLib  = r => !r.disponivel_em || new Date(r.disponivel_em) <= now;
     const isPend = r => r.disponivel_em && new Date(r.disponivel_em) > now;
 
-    const libHoje  = hojeRows.filter(isLib).reduce((a,r) => a + +r.valor_modelo, 0);
-    const pendHoje = hojeRows.filter(isPend).reduce((a,r) => a + +r.valor_modelo, 0);
-    const libMes   = rows.filter(isLib).reduce((a,r) => a + +r.valor_modelo, 0);
-    const pendMes  = rows.filter(isPend).reduce((a,r) => a + +r.valor_modelo, 0);
+    const libHoje  = hojeRows.filter(isLib).reduce((a, r) => a + +r.valor_modelo, 0);
+    const pendHoje = hojeRows.filter(isPend).reduce((a, r) => a + +r.valor_modelo, 0);
+    const libMes   = rows.filter(isLib).reduce((a, r) => a + +r.valor_modelo, 0);
+    const pendMes  = rows.filter(isPend).reduce((a, r) => a + +r.valor_modelo, 0);
 
-    const assinantes = dgeral.assinantes || 0;
-    const assHoje    = hojeRows.filter(r => r.tipo === 'assinatura').length;
+    const assinantes = data.assinantes || 0;
+    const assHoje    = data.assHoje || 0;
 
-    const histData = await Promise.all([1,2,3].map(i => {
-      const d = new Date(y, m - 1 - i, 1);
-      const hy = d.getFullYear(), hm = d.getMonth() + 1;
-      const hym = `${hy}-${String(hm).padStart(2,'0')}`;
-      return Promise.all([
-        rpc('painel_transacoes', { p_ano: hy, p_mes: hm, p_gateway: 'pix' }),
-        rpc('painel_transacoes', { p_ano: hy, p_mes: hm, p_gateway: 'stripe' }),
-      ]).then(([hp, hs]) => {
-        const hr = [...(hp.rows || []), ...(hs.rows || [])];
-        return {
-          ym: hym,
-          midias: hr.filter(r => r.tipo === 'midia').reduce((a,r) => a + +r.valor_modelo, 0),
-          assinaturas: hr.filter(r => r.tipo === 'assinatura').reduce((a,r) => a + +r.valor_modelo, 0),
-        };
-      });
+    // Historical: 3 months before ym
+    const [y, m] = ym.split('-').map(Number);
+    const histData = await Promise.all([1, 2, 3].map(async i => {
+      let hm = m - i, hy = y;
+      if (hm <= 0) { hm += 12; hy -= 1; }
+      const hym = `${hy}-${String(hm).padStart(2, '0')}`;
+      const hdata = await fetchGanhos(hym);
+      const hrows = hdata?.rows || [];
+      return {
+        ym: hym,
+        midias:      hrows.filter(r => r.tipo === 'midia').reduce((a, r) => a + +r.valor_modelo, 0),
+        assinaturas: hrows.filter(r => r.tipo === 'assinatura').reduce((a, r) => a + +r.valor_modelo, 0),
+      };
     }));
 
     renderGanhos({ totalMidias, totalAssinaturas, totalMes, hojeMidias, hojeAssinaturas, assinantes, assHoje, libHoje, pendHoje, libMes, pendMes, histData });
-  } catch(e) {
+  } catch (e) {
     document.getElementById('ganhoContent').innerHTML = `<p style="color:#dc2626;text-align:center;padding:2rem">${e.message || 'Erro ao carregar dados.'}</p>`;
   }
 }
+
+function onMonthChange() { loadGanhos(document.getElementById('monthSel').value); }
 
 function renderGanhos({ totalMidias, totalAssinaturas, totalMes, hojeMidias, hojeAssinaturas, assinantes, assHoje, libHoje, pendHoje, libMes, pendMes, histData }) {
   const histHTML = histData.map(h => {
@@ -273,7 +184,6 @@ function renderGanhos({ totalMidias, totalAssinaturas, totalMes, hojeMidias, hoj
   }).join('');
 
   document.getElementById('ganhoContent').innerHTML = `
-
     <div class="hero-card">
       <div class="hero-grid">
         <div>
@@ -348,6 +258,11 @@ function toggleHist(header) {
   const open = body.classList.toggle('open');
   header.classList.toggle('open', open);
 }
+
+// Bootstrap
+const ym = currentYM();
+buildMonthOptions(ym);
+carregarHeader().then(() => loadGanhos(ym));
 </script>
 </body>
 </html>
