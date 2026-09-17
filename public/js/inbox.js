@@ -436,6 +436,7 @@ function rerenderizarInboxCompleta() {
 }
 
 function tocarSomNotificacao() {
+  if (localStorage.getItem("notificacoes_ativas") !== "true") return;
   try {
     // Usa AudioContext para funcionar mesmo sem interação prévia no iOS
     const ctx = new (window.AudioContext || window.webkitAudioContext)();

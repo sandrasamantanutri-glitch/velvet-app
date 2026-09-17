@@ -9687,7 +9687,7 @@ app.post("/api/upload", auth, authModelo, uploadLimiter, uploadB2.array("file", 
       }
 
       const modeloRes = await db.query(
-        `SELECT id, verificada FROM modelos WHERE user_id = $1`,
+        `SELECT id, verificada, nome_exibicao FROM modelos WHERE user_id = $1`,
         [req.user.id]
       );
 
@@ -9700,6 +9700,7 @@ app.post("/api/upload", auth, authModelo, uploadLimiter, uploadB2.array("file", 
       }
 
       const modelo_id = modeloRes.rows[0].id;
+      const nomeModelo = modeloRes.rows[0].nome_exibicao || "Modelo";
 
       const { tipo_conteudo, preco, descricao } = req.body;
       const tipoFinal = tipo_conteudo || "feed";
@@ -9828,6 +9829,33 @@ app.post("/api/upload", auth, authModelo, uploadLimiter, uploadB2.array("file", 
       }
 
       res.json({ success: true });
+
+      // Notificar clientes VIP após resposta (fire-and-forget)
+      if (tipoFinal === "feed" || tipoFinal === "premium") {
+        setImmediate(async () => {
+          try {
+            const vipsRes = await db.query(
+              `SELECT c.user_id
+               FROM vip_subscriptions vs
+               JOIN clientes c ON c.id = vs.cliente_id
+               WHERE vs.modelo_id = $1
+                 AND vs.ativo = true
+                 AND vs.expiration_at > NOW()`,
+              [modelo_id]
+            );
+            if (vipsRes.rowCount === 0) return;
+            const texto = tipoFinal === "feed"
+              ? `${nomeModelo} publicou novos conteúdos no feed, vá conferir!`
+              : `${nomeModelo} publicou um novo conteúdo premium, vá conferir!`;
+            const url = `/perfil.html?id=${modelo_id}`;
+            for (const row of vipsRes.rows) {
+              await notificarNovaMensagem(row.user_id, texto, url, nomeModelo);
+            }
+          } catch (err) {
+            console.error("Erro ao notificar VIPs sobre novo conteúdo:", err);
+          }
+        });
+      }
 
     } catch (err) {
 

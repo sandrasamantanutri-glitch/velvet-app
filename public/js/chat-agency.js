@@ -1296,6 +1296,7 @@ async function logout() {
 // SOM NOTIFICAÇÃO
 // ===========================
 function tocarSomNotificacao() {
+  if (localStorage.getItem("notificacoes_ativas") !== "true") return;
   try {
     const ctx  = new (window.AudioContext || window.webkitAudioContext)();
     const osc  = ctx.createOscillator();
