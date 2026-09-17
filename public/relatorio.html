@@ -653,13 +653,13 @@ async function loadChargebacks(ym) {
   const tbody = rows.length ? rows.map(r => {
     const gw = r.gateway || '—';
     return `<tr>
-      <td>${fmtDate(r.created_at)}</td>
-      <td class="hide-mob">${fmtDate(r.updated_at)}</td>
-      <td class="hide-mob" style="color:var(--muted)">#${r.cliente_id}</td>
+      <td>${r.data_compra_fmt||'—'}</td>
+      <td class="hide-mob">${r.data_fmt||'—'}</td>
+      <td class="hide-mob" style="color:var(--muted)">#${r.cliente_id||'—'}</td>
       <td><span class="bdg ${r.tipo}">${r.tipo||'—'}</span></td>
       <td style="color:var(--red);font-weight:600">${fmt(r.valor_modelo)}</td>
       <td class="hide-mob"><span class="bdg ${gw.toLowerCase().includes('stripe')?'stripe':'pix'}">${gw}</span></td>
-      <td class="hide-mob" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;color:var(--muted)">${r.chargeback_motivo||'—'}</td>
+      <td class="hide-mob" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;color:var(--muted)">${r.motivo||'—'}</td>
     </tr>`;
   }).join('') : `<tr><td colspan="7"><div class="empty-st"><i class="bi bi-shield-check"></i><p>Nenhum chargeback neste período</p></div></td></tr>`;
 
