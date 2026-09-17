@@ -940,9 +940,9 @@ app.post("/api/webhook/ipag", express.raw({ type: "*/*" }), async (req, res) => 
         mensagem:     `tx=${idTx} | ${motivo} | Conteúdo liberado — verifique depois`
       });
       // Continua para liberar o conteúdo normalmente
+    } else {
+      console.log(`✅ iPag API confirmou pagamento: tx=${idTx} status=${statusVerificado} captured=${capturedVerificado}`);
     }
-
-    console.log(`✅ iPag API confirmou pagamento: tx=${idTx} status=${statusVerificado} captured=${capturedVerificado}`);
   }
 
   if (!isPaidEvent && !isFailedEvent) {
@@ -11694,6 +11694,37 @@ if (Number.isNaN(dataAceite.getTime())) {
     console.log("VALORES:");
     console.log("base:", valorAssinatura);
     console.log("centavos:", amount);
+
+    /* =========================
+       REUTILIZAR PIX PENDENTE (evita cobrança dupla)
+    ========================= */
+
+    const pixPendenteVipRes = await client.query(
+      `SELECT pagarme_order_id, copia_cola, qr_code
+       FROM pagamentos_pix
+       WHERE cliente_id = $1 AND modelo_id = $2
+         AND status = 'pendente'
+         AND gateway = 'ipag'
+         AND message_id IS NULL
+         AND criado_em > NOW() - INTERVAL '55 minutes'
+       ORDER BY criado_em DESC
+       LIMIT 1`,
+      [cliente_id, modeloIdNum]
+    );
+
+    if (pixPendenteVipRes.rowCount > 0) {
+      const pend = pixPendenteVipRes.rows[0];
+      await client.query("ROLLBACK");
+      console.log("Reutilizando PIX VIP pendente:", pend.pagarme_order_id);
+      return res.json({
+        qr_code_url:    pend.qr_code,
+        qr_code_base64: null,
+        copia_cola:     pend.copia_cola,
+        expires_at:     null,
+        order_id:       pend.pagarme_order_id,
+        reused:         true
+      });
+    }
 
     /* =========================
        CRIAR PIX IPAG

@@ -26,12 +26,51 @@ let pollingPixInterval = null;
 let pollingCartaoInterval = null;
 let _pixOrderIdAtivo = null;
 
+const PIX_STORAGE_KEY = "velvet_pix_pendente";
+
+function _salvarPixPendente(orderId) {
+  try {
+    localStorage.setItem(PIX_STORAGE_KEY, JSON.stringify({ orderId, ts: Date.now() }));
+  } catch (_) {}
+}
+
+function _limparPixPendente() {
+  try {
+    localStorage.removeItem(PIX_STORAGE_KEY);
+  } catch (_) {}
+}
+
+function _recuperarPixPendente() {
+  try {
+    const raw = localStorage.getItem(PIX_STORAGE_KEY);
+    if (!raw) return null;
+    const { orderId, ts } = JSON.parse(raw);
+    // PIX expira em 60 min; descarta após 58 min para ter margem
+    if (Date.now() - ts > 58 * 60 * 1000) {
+      localStorage.removeItem(PIX_STORAGE_KEY);
+      return null;
+    }
+    return orderId;
+  } catch (_) {
+    return null;
+  }
+}
+
 // Quando o usuário sai para o app bancário e volta, o setInterval pode ter sido
 // pausado/throttled. Este listener garante que o status é re-verificado
 // imediatamente ao retornar ao app.
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible" && _pixOrderIdAtivo && !pollingPixInterval) {
     iniciarVerificacaoPix(_pixOrderIdAtivo);
+  }
+});
+
+// Ao carregar a página, restaura o polling de um PIX pendente que ficou aberto
+// antes de um refresh (ex.: usuário saiu para o banco e recarregou a aba).
+document.addEventListener("DOMContentLoaded", () => {
+  const orderIdSalvo = _recuperarPixPendente();
+  if (orderIdSalvo && !_pixOrderIdAtivo) {
+    iniciarVerificacaoPix(orderIdSalvo);
   }
 });
 
@@ -614,9 +653,17 @@ function atualizarStatusCartao(texto) {
   }
 }
 
-window.fecharPopupPagamento = function () {
+window.fecharPopupPagamento = function (forcar = false) {
   const popup = document.getElementById("popupPagamentoVelvet");
   if (!popup) return;
+
+  // Avisa o usuário se fechar com PIX pendente (pode perder o pagamento)
+  if (!forcar && _pixOrderIdAtivo) {
+    const confirmar = window.confirm(
+      "Você tem um PIX em aberto. Se fechar agora, o pagamento pode ser confirmado depois e o acesso liberado automaticamente.\n\nDeseja fechar mesmo assim?"
+    );
+    if (!confirmar) return;
+  }
 
   try {
     if (typeof pollingPixInterval !== "undefined" && pollingPixInterval) {
@@ -624,6 +671,7 @@ window.fecharPopupPagamento = function () {
       pollingPixInterval = null;
     }
     _pixOrderIdAtivo = null;
+    _limparPixPendente();
 
     if (typeof pollingCartaoInterval !== "undefined" && pollingCartaoInterval) {
       clearInterval(pollingCartaoInterval);
@@ -1580,6 +1628,7 @@ function iniciarVerificacaoPix(orderId) {
   }
 
   _pixOrderIdAtivo = orderId;
+  _salvarPixPendente(orderId);
 
   pollingPixInterval = setInterval(async () => {
     try {
@@ -1599,6 +1648,7 @@ function iniciarVerificacaoPix(orderId) {
         clearInterval(pollingPixInterval);
         pollingPixInterval = null;
         _pixOrderIdAtivo = null;
+        _limparPixPendente();
 
         const confirmId = montarConfirmIdPagamento(tipoAtual, data, orderId);
 
@@ -1683,6 +1733,7 @@ function iniciarVerificacaoPix(orderId) {
         clearInterval(pollingPixInterval);
         pollingPixInterval = null;
         _pixOrderIdAtivo = null;
+        _limparPixPendente();
 
         document.getElementById("pixAguardando")?.classList.add("hidden");
 
@@ -1697,6 +1748,7 @@ function iniciarVerificacaoPix(orderId) {
         clearInterval(pollingPixInterval);
         pollingPixInterval = null;
         _pixOrderIdAtivo = null;
+        _limparPixPendente();
 
         document.getElementById("pixAguardando")?.classList.add("hidden");
 
