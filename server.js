@@ -16614,6 +16614,34 @@ app.post("/api/premium", auth, authModelo, uploadLimiter, uploadB2.array("files"
 
     await client.query("COMMIT");
 
+    // Notificar clientes VIP (fire-and-forget)
+    setImmediate(async () => {
+      try {
+        const nomeRes = await db.query(
+          `SELECT nome_exibicao FROM modelos WHERE id = $1 LIMIT 1`,
+          [modelo_id]
+        );
+        const nomeModelo = nomeRes.rows[0]?.nome_exibicao || "Modelo";
+        const vipsRes = await db.query(
+          `SELECT c.user_id
+           FROM vip_subscriptions vs
+           JOIN clientes c ON c.id = vs.cliente_id
+           WHERE vs.modelo_id = $1
+             AND vs.ativo = true
+             AND vs.expiration_at > NOW()`,
+          [modelo_id]
+        );
+        if (!vipsRes.rowCount) return;
+        const texto = `${nomeModelo} publicou um novo conteúdo premium, vá conferir!`;
+        const url = `/perfil.html?id=${modelo_id}`;
+        for (const row of vipsRes.rows) {
+          await notificarNovaMensagem(row.user_id, texto, url, nomeModelo);
+        }
+      } catch (err) {
+        console.error("Erro ao notificar VIPs sobre novo premium:", err);
+      }
+    });
+
     return res.json({
       ...postRes.rows[0],
       url: primeiraMidia?.url || null,
