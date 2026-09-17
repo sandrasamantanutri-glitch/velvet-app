@@ -1299,8 +1299,10 @@ app.post("/api/webhook/ipag", express.raw({ type: "*/*" }), async (req, res) => 
               primeiraAssinatura: dadosParaEmitir.primeiraAssinatura,
               novaExpiracao:     vipR.rows[0]?.expiration_at
             });
-            const audId = await obterOuCriarAudienceVIP(db, dadosParaEmitir.modelo_id, ci.modelo_nome);
-            await adicionarContatoAudienceVIP(audId, ci.email, ci.nome);
+            if (ci.pref_novidades_criadoras !== false) {
+              const audId = await obterOuCriarAudienceVIP(db, dadosParaEmitir.modelo_id, ci.modelo_nome);
+              await adicionarContatoAudienceVIP(audId, ci.email, ci.nome);
+            }
           } else if (dadosParaEmitir.tipo === 'conteudo') {
             await enviarFaturaConteudo(base);
           }
@@ -2213,8 +2215,10 @@ await client.query(
               primeiraAssinatura: dadosParaEmitir.primeiraAssinatura ?? true,
               novaExpiracao:      vipR.rows[0]?.expiration_at
             });
-            const audId = await obterOuCriarAudienceVIP(db, dadosParaEmitir.modelo_id, ci.modelo_nome);
-            await adicionarContatoAudienceVIP(audId, ci.email, ci.nome);
+            if (ci.pref_novidades_criadoras !== false) {
+              const audId = await obterOuCriarAudienceVIP(db, dadosParaEmitir.modelo_id, ci.modelo_nome);
+              await adicionarContatoAudienceVIP(audId, ci.email, ci.nome);
+            }
           } else if (dadosParaEmitir.tipo === 'conteudo') {
             await enviarFaturaConteudo(base);
           }
@@ -3514,8 +3518,10 @@ if (valorEsperado > 0 && Math.abs(Number(valorPago) - Number(valorEsperado)) > 0
               primeiraAssinatura: dadosParaEmitir.primeiraAssinatura ?? true,
               novaExpiracao:      vipR.rows[0]?.expiration_at
             });
-            const audId = await obterOuCriarAudienceVIP(db, dadosParaEmitir.modelo_id, ci.modelo_nome);
-            await adicionarContatoAudienceVIP(audId, ci.email, ci.nome);
+            if (ci.pref_novidades_criadoras !== false) {
+              const audId = await obterOuCriarAudienceVIP(db, dadosParaEmitir.modelo_id, ci.modelo_nome);
+              await adicionarContatoAudienceVIP(audId, ci.email, ci.nome);
+            }
           } else if (dadosParaEmitir.tipo === 'conteudo') {
             await enviarFaturaConteudo(base);
           } else if (dadosParaEmitir.tipo === 'premium') {
@@ -4241,7 +4247,8 @@ async function buscarDadosEmailPagamento(dbPool, { cliente_id, modelo_id }) {
            COALESCE(cd.nome_completo, c.nome, '') AS nome,
            cd.telefone AS tel_cad,
            TRIM(CONCAT_WS(', ', cd.endereco, cd.cidade, cd.estado, cd.pais)) AS endereco_fmt,
-           m.nome_exibicao AS modelo_nome
+           m.nome_exibicao AS modelo_nome,
+           c.pref_novidades_criadoras
     FROM clientes c
     JOIN users u ON u.id = c.user_id
     LEFT JOIN clientes_dados cd ON cd.cliente_id = c.id
