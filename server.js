@@ -110,7 +110,8 @@ const allowedOrigins = [
   "https://velvet-app-production.up.railway.app",
   "https://velvet-app.onrender.com",
   "https://velvet-chatbox-test.onrender.com",
-  "https://bio.mypagess.workers.dev"
+  "https://bio.mypagess.workers.dev",
+  "http://bio.mypagess.workers.dev"
 ];
 
 app.use(helmet({
@@ -7834,7 +7835,14 @@ app.get("/api/modelo/painel/chargebacks", authModelo, async (req, res) => {
 
     // Chargebacks são registados em transacoes_agency com chargeback_motivo preenchido
     const result = await db.query(`
-      SELECT tipo, valor_modelo, created_at, updated_at, cliente_id, gateway, chargeback_motivo
+      SELECT
+        tipo,
+        valor_modelo,
+        cliente_id,
+        gateway,
+        chargeback_motivo                                                         AS motivo,
+        TO_CHAR(created_at AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY HH24:MI') AS data_compra_fmt,
+        TO_CHAR(updated_at AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY HH24:MI') AS data_fmt
       FROM transacoes_agency
       WHERE modelo_id = $1
         AND chargeback_motivo IS NOT NULL

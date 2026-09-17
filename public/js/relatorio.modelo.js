@@ -397,14 +397,14 @@ async function carregarChargebacks() {
 
   try {
     const [resAtual, resAnt] = await Promise.all([
-      fetch("/api/modelo/chargebacks",             { headers }),
-      fetch(`/api/modelo/chargebacks?mes=${mesAnt}`, { headers })
+      fetch("/api/modelo/painel/chargebacks",             { headers }),
+      fetch(`/api/modelo/painel/chargebacks?mes=${mesAnt}`, { headers })
     ]);
 
     if (!resAtual.ok) { lista.innerHTML = t("relatorio.erro_chargebacks"); return; }
 
-    const dados    = await resAtual.json();
-    const dadosAnt = resAnt.ok ? await resAnt.json() : [];
+    const dados    = (await resAtual.json()).rows ?? [];
+    const dadosAnt = resAnt.ok ? ((await resAnt.json()).rows ?? []) : [];
 
     const valorModeloOf = r => Number(r.valor_modelo ?? r.valor ?? 0);
     const totalMes = dados.reduce((s, r) => s + valorModeloOf(r), 0);
