@@ -11,6 +11,13 @@ const pool = new Pool({
   keepAlive: true
 });
 
+// Garante que todas as conexões usam o schema public (necessário com o pooler do Supabase)
+pool.on("connect", (client) => {
+  client.query("SET search_path = public").catch((err) => {
+    console.error("❌ Erro ao definir search_path:", err.message);
+  });
+});
+
 pool.on("error", (err) => {
   console.error("❌ Erro inesperado no pool PostgreSQL:", err);
 });

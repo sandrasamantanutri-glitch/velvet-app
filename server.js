@@ -7833,22 +7833,21 @@ app.get("/api/modelo/painel/chargebacks", authModelo, async (req, res) => {
       return [sp.getUTCFullYear(), sp.getUTCMonth() + 1];
     })();
 
-    // Chargebacks são registados em transacoes_agency com chargeback_motivo preenchido
     const result = await db.query(`
       SELECT
-        tipo,
-        valor_modelo,
-        cliente_id,
-        gateway,
-        chargeback_motivo                                                         AS motivo,
-        TO_CHAR(created_at AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY HH24:MI') AS data_compra_fmt,
-        TO_CHAR(updated_at AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY HH24:MI') AS data_fmt
-      FROM transacoes_agency
-      WHERE modelo_id = $1
-        AND chargeback_motivo IS NOT NULL
-        AND EXTRACT(YEAR  FROM (created_at AT TIME ZONE 'America/Sao_Paulo')) = $2
-        AND EXTRACT(MONTH FROM (created_at AT TIME ZONE 'America/Sao_Paulo')) = $3
-      ORDER BY created_at DESC
+        cb.id,
+        cb.tipo,
+        cb.gateway,
+        cb.valor_modelo,
+        cb.cliente_id,
+        cb.motivo,
+        TO_CHAR(cb.data     AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY') AS data_compra_fmt,
+        TO_CHAR(cb.criado_em AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY HH24:MI') AS data_fmt
+      FROM chargebacks cb
+      WHERE cb.modelo_id = $1
+        AND EXTRACT(YEAR  FROM cb.criado_em AT TIME ZONE 'America/Sao_Paulo') = $2
+        AND EXTRACT(MONTH FROM cb.criado_em AT TIME ZONE 'America/Sao_Paulo') = $3
+      ORDER BY cb.criado_em DESC
     `, [mid, ano, mes]);
 
     res.json({ rows: result.rows });
@@ -15999,21 +15998,29 @@ app.get("/api/modelo/aceite-termos/status", auth, async (req, res) => {
     }
 
     const { id: modeloId, termos_aceites, termos_versao } = modeloRes.rows[0];
-    const precisaAceitar = !termos_aceites || termos_versao !== VERSAO_TERMOS_ATUAL;
 
-    let aceite = null;
-    if (!precisaAceitar) {
-      const aceiteRes = await db.query(
-        "SELECT aceite_em, versao FROM modelo_aceite_termos WHERE modelo_id = $1 AND versao = $2",
-        [modeloId, VERSAO_TERMOS_ATUAL]
-      );
-      aceite = aceiteRes.rows[0] || null;
+    // Busca o aceite mais recente na tabela de auditoria (qualquer versão)
+    const aceiteRes = await db.query(
+      "SELECT aceite_em, versao FROM modelo_aceite_termos WHERE modelo_id = $1 ORDER BY aceite_em DESC LIMIT 1",
+      [modeloId]
+    );
+    const aceite = aceiteRes.rows[0] || null;
+
+    // Considera aceito se: flag no banco OU há registro auditável de aceite
+    const aceito = !!(termos_aceites || aceite);
+
+    // Se a flag está desatualizada mas há registro auditável, corrige o banco silenciosamente
+    if (!termos_aceites && aceite) {
+      db.query(
+        "UPDATE modelos SET termos_aceites = true, termos_versao = $1 WHERE id = $2",
+        [aceite.versao || VERSAO_TERMOS_ATUAL, modeloId]
+      ).catch(e => console.error("Erro ao corrigir termos_aceites:", e));
     }
 
     res.json({
-      aceito: !precisaAceitar,
+      aceito,
       versao_atual: VERSAO_TERMOS_ATUAL,
-      versao_aceite: termos_versao || null,
+      versao_aceite: termos_versao || aceite?.versao || null,
       aceite_em: aceite?.aceite_em || null
     });
   } catch (err) {
@@ -16060,31 +16067,42 @@ app.post("/api/modelo/aceite-termos", auth, async (req, res) => {
 
     const modeloId = modeloRes.rows[0].id;
 
-    // Registo auditável com UPSERT (garante que re-aceite actualiza o registo)
-    await db.query(`
-      INSERT INTO modelo_aceite_termos (
-        modelo_id, versao,
-        aceite_maioridade, aceite_conteudo, aceite_tributario,
-        aceite_independente, aceite_financeiro,
-        aceite_ip, aceite_user_agent, aceite_em
-      )
-      VALUES ($1, $2, true, true, true, true, true, $3, $4, NOW())
-      ON CONFLICT (modelo_id, versao) DO UPDATE SET
-        aceite_maioridade   = true,
-        aceite_conteudo     = true,
-        aceite_tributario   = true,
-        aceite_independente = true,
-        aceite_financeiro   = true,
-        aceite_ip           = EXCLUDED.aceite_ip,
-        aceite_user_agent   = EXCLUDED.aceite_user_agent,
-        aceite_em           = NOW()
-    `, [modeloId, VERSAO_TERMOS_ATUAL, ip, ua]);
+    const client = await db.connect();
+    try {
+      await client.query("BEGIN");
 
-    // Actualizar atalho na tabela modelos
-    await db.query(
-      "UPDATE modelos SET termos_aceites = true, termos_versao = $1 WHERE id = $2",
-      [VERSAO_TERMOS_ATUAL, modeloId]
-    );
+      // Registo auditável com UPSERT
+      await client.query(`
+        INSERT INTO modelo_aceite_termos (
+          modelo_id, versao,
+          aceite_maioridade, aceite_conteudo, aceite_tributario,
+          aceite_independente, aceite_financeiro,
+          aceite_ip, aceite_user_agent, aceite_em
+        )
+        VALUES ($1, $2, true, true, true, true, true, $3, $4, NOW())
+        ON CONFLICT (modelo_id, versao) DO UPDATE SET
+          aceite_maioridade   = true,
+          aceite_conteudo     = true,
+          aceite_tributario   = true,
+          aceite_independente = true,
+          aceite_financeiro   = true,
+          aceite_ip           = EXCLUDED.aceite_ip,
+          aceite_user_agent   = EXCLUDED.aceite_user_agent,
+          aceite_em           = NOW()
+      `, [modeloId, VERSAO_TERMOS_ATUAL, ip, ua]);
+
+      await client.query(
+        "UPDATE modelos SET termos_aceites = true, termos_versao = $1 WHERE id = $2",
+        [VERSAO_TERMOS_ATUAL, modeloId]
+      );
+
+      await client.query("COMMIT");
+    } catch (dbErr) {
+      await client.query("ROLLBACK").catch(() => {});
+      throw dbErr;
+    } finally {
+      client.release();
+    }
 
     console.log(`[TERMOS] Modelo ${modeloId} aceitou termos v${VERSAO_TERMOS_ATUAL} | IP: ${ip}`);
 
