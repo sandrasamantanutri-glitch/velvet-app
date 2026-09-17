@@ -15331,7 +15331,7 @@ app.post("/api/chat/cliente/marcar-lido/:modelo_id", authCliente, async (req, re
 // CONTRATO DIGITAL — ZapSign
 // ===========================
 
-// Gera o buffer do PDF do contrato de parceria com o texto completo das 16 cláusulas
+// Gera o buffer do PDF do contrato v2.0 (23 seções) para envio ao ZapSign
 function gerarContratoPDFBuffer(dados) {
   // dados: { nome, email, dataHoje }
   return new Promise((resolve, reject) => {
@@ -15341,163 +15341,260 @@ function gerarContratoPDFBuffer(dados) {
     doc.on("end", () => resolve(Buffer.concat(chunks)));
     doc.on("error", reject);
 
-    const L = 60;  // left margin
-    const W = doc.page.width - L * 2; // usable width
+    const L = 60;
+    const W = doc.page.width - L * 2;
 
-    // ── Helpers ──────────────────────────────────────────────────────
-    function titulo(txt) {
-      doc.moveDown(0.6)
+    function secao(txt) {
+      doc.moveDown(0.7)
          .font("Helvetica-Bold").fontSize(10)
+         .text(txt, L, doc.y, { width: W })
+         .font("Helvetica").fontSize(9)
+         .moveDown(0.1);
+    }
+    function sub(txt) {
+      doc.moveDown(0.4)
+         .font("Helvetica-Bold").fontSize(9)
          .text(txt, L, doc.y, { width: W })
          .font("Helvetica").fontSize(9);
     }
     function corpo(txt) {
       doc.font("Helvetica").fontSize(9)
-         .text(txt, L, doc.y, { width: W, lineGap: 2 });
+         .text(txt, L, doc.y, { width: W, lineGap: 2, align: "justify" });
     }
-    function lista(itens) {
-      itens.forEach(it => {
-        doc.font("Helvetica").fontSize(9)
-           .text(`• ${it}`, L + 12, doc.y, { width: W - 12, lineGap: 1 });
-      });
+    function item(txt) {
+      doc.font("Helvetica").fontSize(9)
+         .text(txt, L + 14, doc.y, { width: W - 14, lineGap: 1 });
     }
 
     // ── Cabeçalho ────────────────────────────────────────────────────
-    doc.font("Helvetica-Bold").fontSize(12)
-       .text("CONTRATO DE PARCERIA DIGITAL, INTERMEDIAÇÃO TECNOLÓGICA", L, L, { width: W, align: "center" })
-       .text("E USO DA PLATAFORMA VELVET", L, doc.y, { width: W, align: "center" });
-    doc.moveDown(0.8);
-
-    doc.font("Helvetica").fontSize(9)
-       .text("Pelo presente instrumento particular, de um lado:", L, doc.y, { width: W });
-    doc.moveDown(0.5);
-    doc.font("Helvetica-Bold").fontSize(9)
-       .text("VELVET ENTERTAINMENT LTDA", L, doc.y, { width: W, continued: true })
-       .font("Helvetica")
-       .text(`, pessoa jurídica de direito privado, inscrita no CNPJ sob nº 66.615.892/0001-43, com sede na Rua Cel. José Eusébio, nº 95, Casa 13, Higienópolis, São Paulo/SP, CEP 01.239-030, doravante denominada simplesmente "VELVET";`, { width: W });
-    doc.moveDown(0.5);
-    doc.font("Helvetica").fontSize(9).text("e, de outro lado,", L, doc.y, { width: W });
-    doc.moveDown(0.5);
-    doc.font("Helvetica-Bold").fontSize(9)
-       .text("CRIADORA DE CONTEÚDO / MODELO / INFLUENCER", L, doc.y, { width: W, continued: true })
-       .font("Helvetica")
-       .text(`, pessoa física maior de 18 (dezoito) anos, devidamente cadastrada na plataforma digital Velvet, doravante denominada simplesmente "CRIADORA";`, { width: W });
-    doc.moveDown(0.5);
-    doc.font("Helvetica").fontSize(9)
-       .text("resolvem celebrar o presente CONTRATO DE PARCERIA DIGITAL E INTERMEDIAÇÃO TECNOLÓGICA, mediante as cláusulas e condições abaixo:", L, doc.y, { width: W });
-
-    // ── Cláusulas ─────────────────────────────────────────────────────
-    titulo("CLÁUSULA 1 – OBJETO");
-    corpo("1.1. O presente contrato regula a utilização da plataforma digital Velvet pela CRIADORA para:");
-    lista(["publicação;", "hospedagem;", "monetização;", "comercialização;", "distribuição digital;", "disponibilização de conteúdo online."]);
-    corpo("1.2. A VELVET atua exclusivamente como:");
-    lista(["plataforma tecnológica;", "marketplace digital;", "intermediadora de pagamentos;", "hospedeira de conteúdo;", "facilitadora de monetização digital."]);
-    corpo("1.3. A VELVET NÃO:");
-    lista(["produz conteúdo;", "dirige atividades da CRIADORA;", "mantém controle artístico;", "impõe metas;", "determina horários;", "realiza contratação empregatícia;", "atua como empresária individual da CRIADORA."]);
-    corpo("1.4. A relação entre as partes possui natureza exclusivamente civil, comercial, tecnológica e autônoma.");
-
-    titulo("CLÁUSULA 2 – NATUREZA AUTÔNOMA DA RELAÇÃO");
-    corpo("2.1. A CRIADORA reconhece expressamente que exerce atividade autônoma e independente.");
-    corpo("2.2. O presente contrato não caracteriza: vínculo empregatício, relação trabalhista, sociedade, representação comercial, associação, franquia, mandato ou relação de emprego de qualquer natureza.");
-    corpo("2.3. Não há: subordinação jurídica, pessoalidade obrigatória, controle de jornada, habitualidade dirigida, salário fixo ou exclusividade.");
-    corpo("2.4. A CRIADORA possui liberdade integral para definir horários, escolher conteúdos, atuar em outras plataformas, prestar serviços a terceiros, trabalhar com outras agências e interromper atividades quando desejar.");
-    corpo("2.5. A utilização da plataforma ocorre por livre iniciativa da própria CRIADORA.");
-
-    titulo("CLÁUSULA 3 – COMISSÃO E REPASSES");
-    corpo("3.1. Os valores pagos pelos usuários da plataforma pertencem originariamente à CRIADORA.");
-    corpo("3.2. Pela disponibilização da infraestrutura tecnológica e operacional, a VELVET fará jus à comissão de 20% (vinte por cento) sobre os valores líquidos efetivamente recebidos pela plataforma.");
-    corpo("3.3. O percentual remanescente pertencerá integralmente à CRIADORA.");
-    corpo("3.4. Caso a CRIADORA esteja vinculada a agência parceira, poderá haver retenção adicional de percentual contratualmente ajustado entre a agência e a própria CRIADORA.");
-    corpo("3.5. A VELVET não integra eventual relação contratual privada entre agência, empresária, assessoria, intermediadores externos e a CRIADORA.");
-    corpo("3.6. Os pagamentos observarão: políticas antifraude, disponibilidade bancária, compliance financeiro, regras operacionais da plataforma e prazos internos de processamento.");
-
-    titulo("CLÁUSULA 4 – CLÁUSULA FISCAL E TRIBUTÁRIA");
-    corpo("4.1. A CRIADORA é exclusivamente responsável pelo recolhimento de tributos, obrigações fiscais, declarações tributárias, contribuições previdenciárias e emissão de notas fiscais quando exigidas.");
-    corpo("4.2. A VELVET atua exclusivamente como intermediadora tecnológica e financeira.");
-    corpo("4.3. Os valores transitados pela plataforma incluem quantias pertencentes às CRIADORAS, sendo receita própria da VELVET exclusivamente a comissão de intermediação tecnológica prevista contratualmente.");
-    corpo("4.4. Os valores destinados às CRIADORAS não constituem: salário, folha de pagamento, remuneração trabalhista ou contraprestação empregatícia.");
-    corpo("4.5. Cada parte responderá individualmente perante: Receita Federal, órgãos trabalhistas, autoridades previdenciárias e administrativas, pelas próprias obrigações legais.");
-
-    titulo("CLÁUSULA 5 – OBJETO SOCIAL E ATIVIDADE DA VELVET");
-    corpo("5.1. A CRIADORA reconhece que a VELVET possui como atividade empresarial: portais e provedores de conteúdo na internet, intermediação de serviços e negócios, publicidade digital, tecnologia e desenvolvimento de software.");
-    corpo("5.2. A atuação da VELVET limita-se à disponibilização de: ambiente virtual, infraestrutura tecnológica, sistemas digitais, monetização online e intermediação operacional.");
-
-    titulo("CLÁUSULA 6 – COMPLIANCE DE CONTEÚDO");
-    corpo("6.1. É proibida a publicação de: conteúdo envolvendo menores, violência real, exploração sexual ilegal, pornografia não consensual, tráfico humano, conteúdo criminoso, conteúdo obtido sem autorização, material protegido por direitos autorais sem licença, conteúdo discriminatório e vazamentos íntimos.");
-    corpo("6.2. A CRIADORA declara: ser maior de 18 anos, possuir plena capacidade civil, deter autorização sobre os conteúdos publicados e possuir consentimento de terceiros eventualmente participantes.");
-    corpo("6.3. A CRIADORA responsabiliza-se integralmente pelos conteúdos disponibilizados.");
-
-    titulo("CLÁUSULA 7 – KYC E VERIFICAÇÃO DE IDENTIDADE");
-    corpo("7.1. A CRIADORA deverá fornecer: documento oficial com foto, selfie de verificação, prova de maioridade e informações cadastrais verdadeiras.");
-    corpo("7.2. A VELVET poderá: solicitar documentação complementar, realizar verificações antifraude, suspender contas irregulares e bloquear acessos suspeitos.");
-    corpo("7.3. Os dados serão tratados conforme a Lei Geral de Proteção de Dados e o Marco Civil da Internet.");
-
-    titulo("CLÁUSULA 8 – LICENÇA DE USO DE CONTEÚDO");
-    corpo("8.1. A titularidade dos conteúdos permanece pertencendo exclusivamente à CRIADORA.");
-    corpo("8.2. A CRIADORA concede à VELVET licença não exclusiva, limitada, revogável e temporária para: hospedagem, distribuição interna, exibição na plataforma, reprodução técnica e divulgação operacional.");
-    corpo("8.3. A presente licença não transfere propriedade intelectual à VELVET.");
-
-    titulo("CLÁUSULA 9 – MODERAÇÃO E REMOÇÃO");
-    corpo("9.1. A VELVET poderá remover conteúdos ou suspender contas em caso de: violação legal, descumprimento contratual, risco regulatório, fraude, ordem judicial ou violação das políticas internas.");
-    corpo("9.2. A moderação realizada pela VELVET não caracteriza: direção da atividade, ingerência artística, vínculo trabalhista ou responsabilidade editorial integral.");
-
-    titulo("CLÁUSULA 10 – RESPONSABILIDADE CIVIL");
-    corpo("10.1. A CRIADORA responderá integralmente por: danos a terceiros, violações legais, uso indevido de imagem, infrações autorais e conteúdos ilícitos.");
-    corpo("10.2. A CRIADORA obriga-se a indenizar a VELVET por quaisquer prejuízos, condenações, multas, despesas judiciais e danos reputacionais decorrentes dos conteúdos publicados pela própria CRIADORA.");
-
-    titulo("CLÁUSULA 11 – PROPRIEDADE INTELECTUAL");
-    corpo("11.1. A VELVET permanece titular da plataforma, do software, da marca, da identidade visual e da infraestrutura tecnológica.");
-    corpo("11.2. É vedada qualquer utilização indevida da marca Velvet sem autorização expressa.");
-
-    titulo("CLÁUSULA 12 – PRIVACIDADE E DADOS");
-    corpo("12.1. As partes comprometem-se a observar integralmente a LGPD.");
-    corpo("12.2. Os dados coletados poderão ser utilizados para: autenticação, prevenção à fraude, processamento de pagamentos, segurança da plataforma, cumprimento regulatório e ordens judiciais.");
-
-    titulo("CLÁUSULA 13 – PROVAS DIGITAIS");
-    corpo("13.1. As partes reconhecem validade jurídica de: assinatura eletrônica, aceite digital, logs, registros de IP, geolocalização, autenticação multifator e comprovantes eletrônicos.");
-    corpo("13.2. Os registros digitais poderão ser utilizados como prova judicial e extrajudicial.");
-
-    titulo("CLÁUSULA 14 – RESCISÃO");
-    corpo("14.1. O contrato vigorará por prazo indeterminado.");
-    corpo("14.2. Qualquer das partes poderá rescindir o contrato a qualquer momento.");
-    corpo("14.3. A VELVET poderá rescindir imediatamente em caso de: fraude, atividade ilícita, violação contratual, risco regulatório ou determinação judicial.");
-
-    titulo("CLÁUSULA 15 – INEXISTÊNCIA DE EXCLUSIVIDADE");
-    corpo("15.1. O presente contrato não estabelece exclusividade entre as partes.");
-    corpo("15.2. A CRIADORA poderá utilizar outras plataformas e prestar serviços para terceiros livremente.");
-
-    titulo("CLÁUSULA 16 – FORO");
-    corpo("16.1. Fica eleito o foro da Comarca de São Paulo/SP para resolução de quaisquer controvérsias oriundas deste contrato.");
-
-    // ── Declaração Final ─────────────────────────────────────────────
-    doc.moveDown(0.8);
-    doc.font("Helvetica-Bold").fontSize(10)
-       .text("DECLARAÇÃO FINAL DA CRIADORA", L, doc.y, { width: W, align: "center" });
-    doc.moveDown(0.4);
-    doc.font("Helvetica").fontSize(9)
-       .text("Ao aceitar este contrato, a CRIADORA declara expressamente que:", L, doc.y, { width: W });
+    doc.font("Helvetica-Bold").fontSize(13)
+       .text("TERMOS E CONDIÇÕES PARA CRIADORES DE CONTEÚDO", L, L, { width: W, align: "center" });
+    doc.font("Helvetica-Bold").fontSize(11)
+       .text("PLATAFORMA VELVET", L, doc.y, { width: W, align: "center" });
     doc.moveDown(0.3);
-    lista([
-      "I – atua de forma autônoma e independente;",
-      "II – compreende que a VELVET é apenas plataforma digital e marketplace tecnológico;",
-      "III – reconhece inexistência de vínculo empregatício;",
-      "IV – é maior de 18 anos;",
-      "V – assume responsabilidade integral pelos conteúdos publicados;",
-      "VI – concorda com a comissão de 20% da plataforma;",
-      "VII – responsabiliza-se por suas obrigações fiscais e tributárias;",
-      "VIII – aceita as políticas internas da plataforma."
-    ]);
+    doc.font("Helvetica").fontSize(8)
+       .text(`Versão 2.0  |  ${dados.dataHoje}`, L, doc.y, { width: W, align: "center" });
+    doc.moveDown(0.5);
+    doc.moveTo(L, doc.y).lineTo(L + W, doc.y).stroke();
+    doc.moveDown(0.5);
 
-    // ── Assinaturas ────────────────────────────────────────────────────
+    // ── PREÂMBULO ────────────────────────────────────────────────────
+    doc.font("Helvetica-Bold").fontSize(9)
+       .text("PREÂMBULO", L, doc.y, { width: W });
+    doc.font("Helvetica").fontSize(9).moveDown(0.2);
+    corpo(`Este instrumento ("Contrato" ou "Termos") é celebrado entre a Velvet Entertainment Ltda., CNPJ nº 66.615.892/0001-43, com sede na Rua Cel. José Eusébio, nº 95, Casa 13, Higienópolis, São Paulo/SP ("VELVET" ou "Plataforma") e o(a) usuário(a) que se cadastra como Criador(a) de Conteúdo ("Criador(a)"), regendo integralmente a relação entre as partes para utilização da Plataforma Velvet.`);
+    corpo(`Ao concluir o cadastro, marcar a caixa de aceite eletrônico ou utilizar a Plataforma na qualidade de Criador(a), o(a) usuário(a) manifesta concordância integral, livre e informada com todos os termos aqui estabelecidos, na versão vigente na data do aceite. A Velvet mantém registro eletrônico do aceite, incluindo: identificação do usuário, data e hora, endereço IP, identificador de sessão, versão dos Termos aceita e hash do documento vigente.`);
+
+    // ── 1. DEFINIÇÕES ────────────────────────────────────────────────
+    secao("1. DEFINIÇÕES");
+    item(`"Plataforma": sistema digital Velvet, incluindo aplicativo, website, APIs, ferramentas e infraestrutura correlata, disponibilizada para publicação, monetização e distribuição de conteúdo.`);
+    item(`"Criador(a)": pessoa física maior de 18 anos que, mediante cadastro aprovado, publica, disponibiliza e monetiza Conteúdo na Plataforma.`);
+    item(`"Assinante" ou "Usuário": consumidor que acessa Conteúdo publicado por Criadores mediante pagamento de assinatura, compra avulsa ou outra modalidade disponível.`);
+    item(`"Conteúdo": qualquer material publicado pelo(a) Criador(a), incluindo imagens, fotografias, vídeos, áudios, textos, transmissões ao vivo e demais formatos disponíveis na Plataforma.`);
+    item(`"Participante": qualquer pessoa física que apareça, seja identificável ou participe de qualquer forma em Conteúdo publicado pelo(a) Criador(a), além do(a) próprio(a) Criador(a).`);
+    item(`"Chargeback": contestação de cobrança iniciada pelo titular do meio de pagamento junto à instituição financeira ou bandeira, resultando em reversão potencial de valores.`);
+    item(`"Gateway": empresa processadora de pagamentos utilizada pela Velvet para processamento de transações.`);
+
+    // ── 2. ELEGIBILIDADE E VERIFICAÇÃO ───────────────────────────────
+    secao("2. ELEGIBILIDADE, VERIFICAÇÃO DE IDENTIDADE E MAIORIDADE (KYC)");
+    sub("2.1. Requisitos de Elegibilidade");
+    corpo("O(A) Criador(a) declara e garante, sob as penas da lei, que:");
+    item("a) é pessoa física com capacidade civil plena;");
+    item("b) possui idade igual ou superior a 18 (dezoito) anos na data do cadastro e durante toda a vigência deste Contrato;");
+    item("c) não está impedido(a) por lei, decisão judicial ou regulamentação aplicável de utilizar serviços digitais, publicar conteúdo ou exercer atividade de criador(a) de conteúdo em plataformas digitais;");
+    item("d) atua de forma lícita, em conformidade com a legislação brasileira vigente.");
+    sub("2.2. Verificação de Identidade e Maioridade (KYC)");
+    corpo("O cadastro como Criador(a) na Velvet está condicionado à aprovação mediante processo obrigatório de verificação de identidade (Know Your Customer — KYC), em conformidade com a Lei n.º 15.211/2025, o Decreto n.º 12.880/2026 e demais normas regulatórias vigentes.");
+    corpo("Para aprovação da conta, o(a) Criador(a) deverá, obrigatoriamente:");
+    item("a) fornecer dados completos de identificação, incluindo nome completo, data de nascimento e endereço residencial;");
+    item("b) enviar fotografias nítidas do documento de identidade oficial com foto (frente e verso);");
+    item("c) enviar selfie segurando o próprio documento de identidade, de forma que rosto e documento sejam claramente visíveis e legíveis;");
+    item("d) ter os dados e documentos aprovados pela equipe de verificação da Velvet antes de qualquer atividade de publicação ou monetização.");
+    corpo("A conta somente será ativada após aprovação do KYC. A autodeclaração de maioridade não substitui o processo de verificação documental obrigatório. A Velvet poderá, a qualquer tempo, solicitar atualização de documentos ou revalidação de identidade, sob pena de suspensão ou encerramento da conta.");
+    sub("2.3. Proibição Absoluta de Participação de Menores");
+    corpo("É expressamente vedada, sob qualquer circunstância, a publicação de Conteúdo em que apareça pessoa menor de 18 anos, ainda que apenas parcialmente identificável, haja referência ou alusão à participação de menor, ou seja utilizado figurino, cenário ou linguagem que sugira a participação de menor em contexto sexual. A violação configura falta gravíssima, ensejará encerramento imediato e definitivo da conta, comunicação imediata às autoridades competentes e responsabilização civil e criminal do(a) Criador(a).");
+
+    // ── 3. NATUREZA DA RELAÇÃO ───────────────────────────────────────
+    secao("3. NATUREZA DA RELAÇÃO");
+    corpo("3.1. O(A) Criador(a) atua como prestador(a) de serviços autônomo(a), sem vínculo empregatício, societário, associativo ou de representação comercial que implique subordinação à Velvet.");
+    corpo("3.2. A Velvet não determina horários de publicação, não controla a jornada do(a) Criador(a), não dirige pessoalmente a execução de seu trabalho e não exige exclusividade na prestação de serviços.");
+    corpo("3.3. O(A) Criador(a) é livre para definir seu ritmo, horários, temas e formato de Conteúdo, desde que observadas as disposições deste Contrato e a legislação vigente.");
+
+    // ── 4. CADASTRO, CONTA E SEGURANÇA ──────────────────────────────
+    secao("4. CADASTRO, CONTA E SEGURANÇA");
+    corpo("4.1. O(A) Criador(a) é responsável por:");
+    item("a) fornecer informações cadastrais verdadeiras, completas e atualizadas;");
+    item("b) manter a confidencialidade de suas credenciais de acesso;");
+    item("c) não compartilhar, ceder, vender, alugar ou transferir sua conta a terceiros;");
+    item("d) não permitir acesso de terceiros à sua conta, ainda que temporariamente;");
+    item("e) comunicar à Velvet imediatamente qualquer acesso não autorizado ou suspeita de comprometimento da conta;");
+    item("f) encerrar sessões abertas em dispositivos de terceiros.");
+    corpo("4.2. O(A) Criador(a) é responsável por todas as ações realizadas através de sua conta, independentemente de quem as tenha executado.");
+    sub("4.3. Exceção — Agências Parceiras Autorizadas");
+    corpo("As vedações dos itens 4.1.c) e 4.1.d) não se aplicam quando o(a) Criador(a) optar por ser gerenciado(a) por Agência Parceira formalmente autorizada pela Velvet, observadas as seguintes condições:");
+    item("a) a Agência Parceira deve estar previamente cadastrada, aprovada e autorizada pela Velvet;");
+    item("b) o(a) Criador(a) deve formalizar, junto à Velvet, a autorização de gestão pela respectiva Agência Parceira através do mecanismo disponível na Plataforma;");
+    item("c) mesmo com gestão por Agência Parceira, o(a) Criador(a) permanece titular da conta e mantém responsabilidade integral por todo o Conteúdo publicado;");
+    item("d) a autorização de acesso pela Agência Parceira poderá ser revogada pelo(a) Criador(a) a qualquer tempo, mediante comunicação à Velvet;");
+    item("e) a Velvet não se responsabiliza por atos praticados por Agências Parceiras no gerenciamento de contas de Criadores.");
+    corpo("4.4. A Velvet poderá exigir verificação adicional de identidade a qualquer tempo, incluindo autenticação em dois fatores ou outros mecanismos de segurança.");
+    corpo("4.5. É expressamente proibido: criar conta com identidade de outra pessoa; utilizar fotografias ou dados de terceiros como se fossem próprios; criar múltiplas contas para burlar suspensão; utilizar documentos falsos ou adulterados.");
+
+    // ── 5. CONTEÚDO PUBLICADO ────────────────────────────────────────
+    secao("5. CONTEÚDO PUBLICADO — DECLARAÇÕES E GARANTIAS");
+    corpo("Ao publicar qualquer Conteúdo, o(a) Criador(a) declara e garante que:");
+    item("a) detém todos os direitos necessários sobre o Conteúdo, incluindo direitos autorais, de imagem e de personalidade;");
+    item("b) o Conteúdo não viola direitos de terceiros, incluindo direitos autorais, marcas, privacidade, honra e imagem;");
+    item("c) o Conteúdo não infringe a legislação brasileira ou de jurisdições aplicáveis;");
+    item("d) obteve todos os consentimentos e autorizações necessários de todos os Participantes;");
+    item("e) nenhum Participante é menor de 18 anos;");
+    item("f) possui documentação comprobatória de todos os itens acima e a manterá pelo prazo mínimo de 5 (cinco) anos.");
+
+    // ── 6. CONSENTIMENTO DE PARTICIPANTES ───────────────────────────
+    secao("6. CONSENTIMENTO DE PARTICIPANTES");
+    corpo("6.1. Antes de publicar qualquer Conteúdo que envolva Participante, o(a) Criador(a) é exclusivamente responsável por obter, documentar e manter:");
+    item("a) consentimento livre, prévio, expresso, informado e inequívoco para participação;");
+    item("b) autorização específica para gravação, publicação, monetização e armazenamento digital do Conteúdo;");
+    item("c) autorização para criação de thumbnails, previews e materiais derivados;");
+    item("d) comprovação da maioridade do Participante, mediante documento de identidade com foto;");
+    item("e) identificação suficiente do Participante para comprovação da autorização.");
+    corpo("6.2. A autorização deve ser obtida de forma documentada, preferencialmente por escrito, com data anterior à publicação do Conteúdo. A documentação deve ser conservada pelo prazo mínimo de 5 (cinco) anos e apresentada à Velvet quando solicitado, no prazo de 48 horas.");
+    corpo("6.3. O(A) Criador(a) não poderá, sob nenhuma circunstância, alegar que Participante não autorizou a publicação com a finalidade de afastar sua responsabilidade perante a Velvet ou solicitar indenização da Velvet decorrente de reclamação do Participante.");
+
+    // ── 7. CONTEÚDO PROIBIDO ─────────────────────────────────────────
+    secao("7. CONTEÚDO PROIBIDO");
+    corpo("É expressamente proibida a publicação de Conteúdo que:");
+    item("a) envolva, represente, sugira ou aluda à participação de pessoa menor de 18 anos em contexto sexual ou erótico;");
+    item("b) contenha violência real, não consensual ou praticada sem autorização de todos os envolvidos;");
+    item("c) seja ilegal nos termos da legislação brasileira;");
+    item("d) constitua discurso de ódio, incitação à violência ou discriminação;");
+    item("e) viole direitos autorais, marcas ou demais direitos de propriedade intelectual de terceiros;");
+    item("f) seja obtido mediante fraude, coerção, ameaça ou ausência de consentimento válido;");
+    item("g) identifique ou exponha dados pessoais de terceiros sem autorização;");
+    item("h) simule ou envolva material relacionado a abuso sexual infantil (CSAM), ainda que fictício.");
+
+    // ── 8. RESPONSABILIDADE, MODERAÇÃO E NOTICE & TAKEDOWN ──────────
+    secao("8. RESPONSABILIDADE PELO CONTEÚDO, MODERAÇÃO E NOTICE AND TAKEDOWN");
+    corpo("8.1. O(A) Criador(a) é exclusivamente responsável por todo o Conteúdo que publicar, incluindo sua licitude, veracidade e conformidade com este Contrato e a legislação aplicável.");
+    corpo("8.2. A Velvet poderá adotar mecanismos automatizados ou humanos de análise, moderação, verificação, remoção e bloqueio de Conteúdos e contas, a seu exclusivo critério. A realização ou ausência de análise prévia não constitui garantia de aprovação, licitude ou conformidade do Conteúdo publicado.");
+    corpo("8.3. Diante de denúncia ou suspeita de violação de direitos autorais, publicação de Conteúdo sem consentimento de Participante, participação de menor, ou violação de qualquer disposição deste Contrato, a Velvet poderá, sem aviso prévio: bloquear preventivamente o Conteúdo; solicitar documentação ao(à) Criador(a) no prazo de 48 horas; manter o Conteúdo indisponível durante a análise; fornecer informações às autoridades competentes quando legalmente obrigada; e encerrar a conta em casos de violação grave ou comprovada.");
+
+    // ── 9. LICENÇA DE CONTEÚDO ───────────────────────────────────────
+    secao("9. LICENÇA DE CONTEÚDO");
+    corpo("9.1. O(A) Criador(a) concede à Velvet licença não exclusiva, mundial, irrevogável durante a vigência do Contrato, isenta de royalties adicionais, para:");
+    item("a) reproduzir, armazenar, hospedar, transmitir e disponibilizar o Conteúdo aos Assinantes autorizados;");
+    item("b) criar thumbnails, previews e materiais derivados para funcionamento e divulgação da Plataforma;");
+    item("c) processar tecnicamente o Conteúdo, incluindo compressão, conversão de formato e otimização;");
+    item("d) realizar backup e manutenção de cópias de segurança;");
+    item("e) manter o Conteúdo disponível pelo período necessário para cumprimento de obrigações legais ou resolução de disputas, ainda que após o encerramento da conta.");
+    corpo("9.2. Esta licença não transfere a propriedade intelectual do Conteúdo para a Velvet. O(A) Criador(a) permanece titular dos direitos autorais e demais direitos de propriedade intelectual sobre o Conteúdo que produzir.");
+
+    // ── 10. MONETIZAÇÃO ──────────────────────────────────────────────
+    secao("10. MONETIZAÇÃO E COMISSÃO");
+    corpo("10.1. O(A) Criador(a) poderá monetizar seu Conteúdo através das modalidades disponíveis na Plataforma, incluindo assinaturas recorrentes, conteúdos pagos avulsos, gorjetas e demais mecanismos disponibilizados.");
+    corpo("10.2. A Velvet reterá percentual sobre as receitas geradas, conforme tabela de comissões disponível na Plataforma, sujeita a alteração mediante comunicação prévia.");
+    corpo("10.3. Caso o(a) Criador(a) esteja vinculado(a) a Agência Parceira autorizada, poderá haver retenção adicional ajustada entre a Agência e o(a) próprio(a) Criador(a). A Velvet não integra essa relação contratual privada.");
+
+    // ── 11. PAGAMENTOS, RETENÇÃO E RESERVA FINANCEIRA ───────────────
+    secao("11. PAGAMENTOS, RETENÇÃO E RESERVA FINANCEIRA");
+    corpo("11.1. Os repasses ao(à) Criador(a) seguirão o calendário divulgado na Plataforma, sujeito a processamento pelos Gateways.");
+    corpo("11.2. A Velvet poderá suspender temporariamente repasses quando houver: Chargeback ou contestação de cobrança; suspeita de fraude ou irregularidade; investigação interna ou externa; violação contratual em apuração; obrigação legal ou determinação de autoridade competente; determinação do Gateway em razão de risco de reversão; período de carência para proteção contra reversões.");
+    corpo("11.3. Os valores retidos serão liberados após: resolução definitiva do Chargeback em favor do(a) Criador(a); encerramento da investigação sem irregularidade; ou decurso do período de proteção aplicável.");
+    corpo("11.4. O(A) Criador(a) autoriza expressamente a Velvet a: descontar de repasses futuros valores correspondentes a Chargebacks confirmados; compensar valores devidos com repasses futuros; bloquear temporariamente saldo durante investigação; solicitar devolução de valores identificados como recebidos indevidamente.");
+
+    // ── 12. FRAUDE E CHARGEBACK ──────────────────────────────────────
+    secao("12. FRAUDE E CHARGEBACK");
+    corpo("12.1. Em caso de Chargeback, o(a) Criador(a) poderá ter o valor correspondente deduzido de repasses futuros, além de estar sujeito(a) à suspensão temporária ou definitiva da conta.");
+    corpo("12.2. A taxa de Chargeback será monitorada pela Velvet. Índices considerados elevados conforme parâmetros dos Gateways poderão ensejar restrições operacionais à conta.");
+    corpo("12.3. É vedada qualquer tentativa de manipulação financeira, incluindo acordos para geração artificial de receita, Chargebacks simulados ou qualquer prática que vise fraudar os sistemas de pagamento da Plataforma ou dos Gateways.");
+
+    // ── 13. OBRIGAÇÕES FISCAIS ───────────────────────────────────────
+    secao("13. OBRIGAÇÕES FISCAIS E TRIBUTÁRIAS");
+    corpo("13.1. O(A) Criador(a) é exclusivamente responsável por: apurar e recolher todos os tributos incidentes sobre seus rendimentos; manter CPF ou CNPJ em situação regular; manter dados fiscais atualizados na Plataforma; emitir documentos fiscais exigidos pela legislação; declarar seus rendimentos perante a Receita Federal; e fornecer à Velvet documentação fiscal quando exigida por lei.");
+    corpo("13.2. Esta cláusula não elimina eventuais obrigações tributárias próprias da Velvet decorrentes de sua atividade como intermediária de serviços digitais.");
+
+    // ── 14. PROTEÇÃO DE DADOS PESSOAIS (LGPD) ───────────────────────
+    secao("14. PROTEÇÃO DE DADOS PESSOAIS (LGPD)");
+    corpo("14.1. A Velvet atua como controladora dos dados pessoais dos Assinantes e demais usuários, nos termos da Lei n.º 13.709/2018 (LGPD).");
+    corpo("14.2. O(A) Criador(a) compromete-se a: utilizar dados pessoais de Assinantes exclusivamente para finalidades relacionadas à interação dentro da Plataforma; não coletar, copiar, exportar ou processar dados pessoais de Assinantes fora da Plataforma; não comercializar ou compartilhar dados de Assinantes a terceiros; comunicar à Velvet imediatamente qualquer incidente de segurança.");
+    corpo("14.3. É expressamente vedado ao(à) Criador(a) utilizar, copiar, armazenar, comercializar ou compartilhar dados pessoais, informações de contato ou qualquer informação obtida de Assinantes através da Velvet para qualquer finalidade externa à Plataforma, salvo quando expressamente autorizado pela Velvet ou exigido por determinação legal ou judicial.");
+
+    // ── 15. NÃO UTILIZAÇÃO DOS ASSINANTES FORA DA PLATAFORMA ────────
+    secao("15. NÃO UTILIZAÇÃO DOS ASSINANTES FORA DA PLATAFORMA");
+    corpo("15.1. O(A) Criador(a) não poderá utilizar informações ou contatos obtidos através da Velvet para:");
+    item("a) direcionar, induzir ou solicitar que Assinantes migrem para outra plataforma concorrente;");
+    item("b) solicitar pagamentos diretos de Assinantes em substituição ao sistema de pagamentos da Velvet, incluindo transferências bancárias, PIX, criptomoedas ou qualquer outro meio;");
+    item("c) vender Conteúdo diretamente a Assinantes obtidos pela Velvet fora do ambiente da Plataforma;");
+    item("d) contactar Assinantes para finalidades não relacionadas às interações da Plataforma;");
+    item("e) compartilhar dados de contato de Assinantes com terceiros.");
+    corpo("15.2. Esta restrição aplica-se durante a vigência do Contrato e por 12 (doze) meses após seu encerramento. A violação configura falta grave, podendo ensejar encerramento imediato da conta e responsabilização por perdas e danos sofridos pela Velvet.");
+
+    // ── 16. SUSPENSÃO E ENCERRAMENTO DE CONTA ───────────────────────
+    secao("16. SUSPENSÃO E ENCERRAMENTO DE CONTA");
+    corpo("16.1. A Velvet poderá, conforme a gravidade e necessidade do caso, remover Conteúdo, limitar funcionalidades, suspender temporária ou definitivamente, ou encerrar a conta do(a) Criador(a), inclusive de forma preventiva, nos seguintes casos: suspeita ou confirmação de fraude; Chargeback ou contestação; violação de qualquer disposição deste Contrato; denúncia de direitos autorais; denúncia ou suspeita de ausência de consentimento de Participante; suspeita ou constatação de participação de menor; solicitação de autoridade competente; risco jurídico, regulatório ou reputacional; comportamento abusivo a outros usuários; manipulação financeira; descumprimento de prazo para documentação; taxa de Chargeback elevada; ou qualquer conduta incompatível com a operação da Plataforma.");
+    corpo("16.2. A Velvet comunicará o encerramento definitivo ao(à) Criador(a), salvo quando a comunicação prévia puder comprometer investigação em curso.");
+
+    // ── 17. LIMITAÇÃO DE RESPONSABILIDADE DA VELVET ─────────────────
+    secao("17. LIMITAÇÃO DE RESPONSABILIDADE DA VELVET");
+    corpo("17.1. A Velvet não se responsabiliza por: perda de receita ou expectativa de ganhos do(a) Criador(a); ações, conteúdo ou comportamento de terceiros, incluindo Assinantes; falhas em sistemas externos ou Gateways de pagamento; indisponibilidade temporária da Plataforma por causas técnicas ou de força maior; decisões de redes sociais externas; reprodução não autorizada de Conteúdo por terceiros fora da Plataforma.");
+    corpo("17.2. A Velvet adotará medidas técnicas e administrativas razoáveis de segurança, compatíveis com a natureza da Plataforma. O(A) Criador(a) reconhece que nenhum sistema digital oferece proteção absoluta contra reprodução, captura ou redistribuição não autorizada de Conteúdo por terceiros, sendo esse risco inerente ao ambiente digital.");
+
+    // ── 18. INDENIZAÇÃO ──────────────────────────────────────────────
+    secao("18. INDENIZAÇÃO");
+    corpo("18.1. O(A) Criador(a) deverá indenizar e manter a Velvet, seus administradores, colaboradores, representantes e parceiros indenes de toda e qualquer perda, dano, custo, despesa, condenação, acordo, multa e honorário advocatício decorrente de atos ou omissões imputáveis ao(à) Criador(a), incluindo: violação deste Contrato; violação de direitos de terceiros; ausência ou insuficiência de consentimento de Participante; publicação de Conteúdo ilegal ou que envolva menor de 18 anos; descumprimento de legislação aplicável; fraudes ou irregularidades financeiras.");
+    corpo("18.2. A obrigação de indenização está diretamente vinculada a atos ou omissões imputáveis ao(à) Criador(a), não abrangendo responsabilidades legais próprias da Velvet decorrentes de sua atividade como operadora de Plataforma.");
+
+    // ── 19. CONFIDENCIALIDADE ────────────────────────────────────────
+    secao("19. CONFIDENCIALIDADE");
+    corpo("19.1. O(A) Criador(a) compromete-se a manter em sigilo: informações internas da Velvet a que tenha acesso; dados pessoais e de uso de Assinantes; condições comerciais não públicas deste Contrato; informações técnicas e operacionais da Plataforma. A obrigação de confidencialidade subsiste pelo prazo de 2 (dois) anos após o encerramento do Contrato.");
+
+    // ── 20. DIVULGAÇÃO EXTERNA E MARKETING ──────────────────────────
+    secao("20. DIVULGAÇÃO EXTERNA E POLÍTICA DE MARKETING");
+    corpo("20.1. O(A) Criador(a) é integralmente responsável pela divulgação de seu perfil e Conteúdo fora da Plataforma. A Velvet não possui controle sobre redes sociais ou plataformas externas e não se responsabiliza por banimentos, bloqueios ou restrições impostos por plataformas externas.");
+    corpo("20.2. O(A) Criador(a) não poderá utilizar dados de Assinantes obtidos na Velvet para direcioná-los a canais externos, nos termos da Seção 15. Na divulgação externa, o(a) Criador(a) deve observar as regras de cada plataforma e não praticar condutas enganosas ou abusivas.");
+
+    // ── 21. ALTERAÇÕES DOS TERMOS ────────────────────────────────────
+    secao("21. ALTERAÇÕES DOS TERMOS");
+    corpo("21.1. A Velvet poderá alterar estes Termos para adequação legal, regulatória, técnica, operacional ou comercial. Alterações relevantes serão comunicadas ao(à) Criador(a) por meio adequado com antecedência mínima de 15 (quinze) dias, salvo quando exigidas por lei ou autoridade competente. O uso continuado da Plataforma após a comunicação implica aceite tácito das novas disposições. A Velvet manterá registro das versões anteriores dos Termos associadas ao aceite de cada Criador(a).");
+
+    // ── 22. ACEITE ELETRÔNICO E VERSIONAMENTO ────────────────────────
+    secao("22. ACEITE ELETRÔNICO E VERSIONAMENTO");
+    corpo("22.1. O aceite deste Contrato é formalizado pelo(a) Criador(a) mediante marcação de checkbox de aceite, conclusão do processo de cadastro, ou uso continuado da Plataforma após comunicação de atualização dos Termos.");
+    corpo("22.2. A Velvet manterá registro eletrônico de cada aceite, contendo: identificação do usuário, data e hora, endereço IP, identificador de sessão, versão dos Termos aceita e hash da versão do documento. Esses registros serão mantidos pelo prazo mínimo de 5 (cinco) anos e poderão ser utilizados como prova em qualquer procedimento administrativo ou judicial.");
+
+    // ── 23. DISPOSIÇÕES GERAIS ───────────────────────────────────────
+    secao("23. DISPOSIÇÕES GERAIS");
+    corpo("23.1. Este Contrato é regido pela legislação da República Federativa do Brasil. Fica eleito o foro da Comarca de São Paulo/SP, com renúncia a qualquer outro, para dirimir quaisquer disputas.");
+    corpo("23.2. A eventual invalidade de uma cláusula não afeta as demais disposições deste Contrato.");
+    corpo("23.3. A tolerância da Velvet em relação a eventual descumprimento não implica renúncia ao direito de exigir o cumprimento posterior.");
+    corpo("23.4. Para dúvidas, notificações ou comunicações: contato@velvet.lat");
+
+    // ── Declaração Final da Criadora ─────────────────────────────────
+    doc.moveDown(0.8);
+    doc.moveTo(L, doc.y).lineTo(L + W, doc.y).stroke();
+    doc.moveDown(0.5);
+    doc.font("Helvetica-Bold").fontSize(9)
+       .text("DECLARAÇÃO FINAL DA CRIADORA", L, doc.y, { width: W, align: "center" });
+    doc.moveDown(0.3);
+    doc.font("Helvetica").fontSize(9)
+       .text("Ao assinar este contrato eletronicamente, a CRIADORA declara expressamente que:", L, doc.y, { width: W });
+    doc.moveDown(0.2);
+    item("I – é maior de 18 anos e realizou o processo de verificação KYC obrigatório;");
+    item("II – leu, compreendeu e concorda integralmente com todos os termos aqui estabelecidos;");
+    item("III – atua de forma autônoma e independente, sem vínculo empregatício com a Velvet;");
+    item("IV – assume responsabilidade integral pelos conteúdos que publicar, incluindo obtenção de consentimento de todos os Participantes;");
+    item("V – responsabiliza-se exclusivamente por suas obrigações fiscais e tributárias;");
+    item("VI – reconhece a validade jurídica desta assinatura eletrônica como prova de aceite.");
+
+    // ── Assinaturas ─────────────────────────────────────────────────
     doc.moveDown(1.2);
     doc.font("Helvetica").fontSize(9)
        .text(`São Paulo/SP, ${dados.dataHoje}.`, L, doc.y, { width: W });
-    doc.moveDown(1.2);
+    doc.moveDown(1.4);
 
     const metade = (W - 40) / 2;
     const col2 = L + metade + 40;
 
-    // Velvet lado esquerdo
     doc.font("Helvetica-Bold").fontSize(9)
        .text("VELVET ENTERTAINMENT LTDA", L, doc.y, { width: metade });
     const yAssin = doc.y;
@@ -15505,7 +15602,6 @@ function gerarContratoPDFBuffer(dados) {
        .text("CNPJ: 66.615.892/0001-43", L, doc.y, { width: metade })
        .text("Representante Legal: _________________________", L, doc.y, { width: metade });
 
-    // Criadora lado direito
     doc.font("Helvetica-Bold").fontSize(9)
        .text("CRIADORA / MODELO / INFLUENCER", col2, yAssin, { width: metade });
     doc.font("Helvetica").fontSize(9)
