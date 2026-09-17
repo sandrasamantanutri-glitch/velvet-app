@@ -16015,7 +16015,7 @@ app.post("/api/verificacao", auth, uploadVerificacaoLimiter, uploadVerificacao.f
 // ACEITE DE TERMOS (MODELO)
 // ===========================
 
-const VERSAO_TERMOS_ATUAL = "2026-07-13";
+const VERSAO_TERMOS_ATUAL = "2026-09-17";
 
 // GET /api/modelo/aceite-termos/status
 // Verifica se a modelo já aceitou a versão atual dos termos

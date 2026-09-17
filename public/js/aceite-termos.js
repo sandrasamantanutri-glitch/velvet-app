@@ -13,7 +13,7 @@
 (function () {
   "use strict";
 
-  const VERSAO_TERMOS = "2026-05";
+  const VERSAO_TERMOS = "2026-09-17";
 
   // ── Referências DOM ──────────────────────────────────────────────────────
   const secaoTermos      = document.getElementById("secaoTermos");

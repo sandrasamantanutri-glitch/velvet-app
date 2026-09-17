@@ -1101,104 +1101,83 @@ const termosCompletos = `
     <p style="font-size:12px;color:#666;margin-bottom:8px;">
       Texto vigente referente às versões dos termos aceitas pelo cliente (ver tabela acima).
       Documentos completos:
-      <a href="/terms.html" target="_blank">Termos de Uso</a> ·
-      <a href="/policies.html" target="_blank">Políticas de Utilização</a>
+      <a href="/terms.html" target="_blank">Termos de Uso</a>
     </p>
 
     <div class="termos-completos-box" style="font-size:12px;line-height:1.6;background:#f9f9f9;padding:22px;border-radius:8px;">
 
-      <h4>2. Política de Pagamentos, Assinaturas, Diamantes e Reembolsos</h4>
+      <h4>4. Pagamentos, Assinaturas e Reembolsos</h4>
 
-      <h4>2.1 Disposições Gerais</h4>
+      <h4>4.1 Disposições Gerais</h4>
       <ul>
-        <li>Pagamentos são processados por terceiros certificados;</li>
-        <li>A Velvet não armazena dados completos de cartão de crédito ou débito;</li>
-        <li>O usuário é responsável pela veracidade das informações fornecidas;</li>
-        <li>Os preços são exibidos em reais (BRL) e incluem todos os tributos aplicáveis, conforme exigido pela legislação brasileira.</li>
+        <li>Pagamentos são processados por parceiros certificados (Stripe e outros); a Velvet não armazena dados completos de cartão.</li>
+        <li>O usuário é responsável pela veracidade das informações de pagamento fornecidas.</li>
+        <li>Os preços são cobrados em reais (BRL) e incluem todos os tributos aplicáveis. Para usuários em outros países, a Plataforma poderá exibir um valor estimado na moeda local como referência; o valor efetivamente cobrado é sempre em BRL, e eventuais diferenças cambiais são de responsabilidade do usuário.</li>
       </ul>
 
-      <h4>2.2 Assinaturas</h4>
-
-      <strong>Acesso e Conteúdo</strong>
+      <h4>4.2 Assinaturas por Cartão de Crédito ou Débito</h4>
+      <p>Assinaturas por cartão têm <strong>renovação automática a cada 30 dias</strong> no mesmo meio de pagamento, enquanto ativas.</p>
       <ul>
-        <li>Concedem acesso ao perfil da criadora, incluindo conteúdo do feed e interação via chat, conforme definido pela criadora;</li>
-        <li>O conteúdo do feed é de responsabilidade exclusiva da criadora, podendo variar conforme seu nicho, estilo e proposta, podendo incluir conteúdo adulto ou não, exclusivo ou não exclusivo;</li>
-        <li>A Velvet não garante frequência, tipo ou padrão de conteúdo;</li>
-        <li>As assinaturas não incluem conteúdos pagos adicionais, salvo quando expressamente indicado.</li>
+        <li>O Cliente pode cancelar a renovação automática a qualquer momento nas configurações da conta.</li>
+        <li>Após o cancelamento, o acesso é mantido até o término do período já pago; nenhuma nova cobrança é realizada.</li>
+        <li>O cancelamento não gera perda imediata de acesso nem reembolso proporcional pelo período restante.</li>
       </ul>
 
-      <strong>Renovação Automática</strong>
-      <p>
-        As assinaturas são renovadas automaticamente ao final de cada período de faturamento,
-        salvo cancelamento prévio pelo usuário. Em conformidade com o art. 46 do Código de Defesa
-        do Consumidor (CDC), o usuário será informado com antecedência sobre o valor e a data da
-        próxima renovação. Alterações de preço afetam apenas novas assinaturas, exceto quando a
-        legislação dispuser de forma diversa.
-      </p>
-
-      <strong>Cancelamento pelo Usuário</strong>
+      <h4>4.3 Assinaturas por Pix</h4>
+      <p>Assinaturas por Pix são <strong>não recorrentes</strong>.</p>
       <ul>
-        <li>O usuário pode cancelar sua assinatura a qualquer momento nas configurações da conta;</li>
-        <li>O cancelamento entra em vigor ao final do período de faturamento em curso;</li>
-        <li>O acesso é mantido até o encerramento do período já pago;</li>
-        <li>Não são concedidos reembolsos proporcionais por período não utilizado, salvo os casos previstos na seção 2.7 das Políticas de Utilização.</li>
+        <li>O pagamento garante acesso por <strong>30 dias</strong> a partir da confirmação.</li>
+        <li>Ao término dos 30 dias, a assinatura não é renovada automaticamente e o acesso é encerrado.</li>
+        <li>Para continuar, o Cliente deve realizar uma nova contratação e um novo pagamento.</li>
       </ul>
 
-      <h4>2.3 Diamantes (Moeda Virtual)</h4>
+      <h4>4.4 Diamantes (Moeda Virtual)</h4>
       <ul>
-        <li>Uso exclusivo dentro da Plataforma;</li>
-        <li>Não possuem valor monetário fora da Velvet;</li>
-        <li>Não são transferíveis nem resgatáveis em dinheiro;</li>
+        <li>Uso exclusivo dentro da Plataforma; sem valor monetário externo.</li>
+        <li>Não são transferíveis, nem resgatáveis em dinheiro.</li>
         <li>Não são reembolsáveis, salvo obrigação legal expressa.</li>
       </ul>
 
-      <h4>2.4 Conteúdos Pagos (Premium ou Pay-Per-View no Chat)</h4>
+      <h4>4.5 Conteúdos Pagos (Premium e Pay-Per-View)</h4>
       <ul>
-        <li>Conteúdos pagos são liberados mediante pagamento adicional;</li>
-        <li>Após o desbloqueio, o conteúdo é considerado entregue e consumido;</li>
-        <li>Não há reembolso por insatisfação subjetiva com o conteúdo;</li>
-        <li>O conteúdo é de responsabilidade exclusiva da criadora, podendo variar conforme seu nicho e proposta;</li>
-        <li>A Velvet não garante expectativa ou resultado em relação ao conteúdo adquirido.</li>
+        <li>Conteúdos pagos são liberados imediatamente após confirmação do pagamento.</li>
+        <li>Uma vez desbloqueado, o conteúdo é considerado entregue e consumido.</li>
+        <li>Não há reembolso por insatisfação subjetiva com o conteúdo.</li>
+        <li>O conteúdo é de responsabilidade exclusiva do Criador; a Velvet não garante expectativa ou resultado.</li>
       </ul>
 
-      <h4>2.5 Natureza do Conteúdo Digital</h4>
-      <p>
-        A Velvet disponibiliza acesso a conteúdo digital entregue imediatamente após a confirmação
-        do pagamento, seja pela ativação de uma assinatura ou pela conclusão de uma compra
-        pay-per-view. Em razão da natureza imediata e não restituível do conteúdo digital, as regras
-        de reembolso aplicáveis diferem das previstas para bens físicos, nos termos da legislação
-        brasileira vigente.
-      </p>
+      <h4>4.6 Direito de Arrependimento</h4>
+      <p>O art. 49 do Código de Defesa do Consumidor (Lei n.º 8.078/1990) assegura o direito de arrependimento em até <strong>7 dias corridos</strong> da contratação.</p>
+      <p><strong>Exceção para conteúdo digital com entrega imediata:</strong> o direito de arrependimento pode não ser aplicável quando, cumulativamente, o usuário: (a) solicitar expressamente o início imediato do acesso; (b) for previamente informado de que perderá esse direito após o acesso ser concedido; e (c) manifestar concordância expressa antes de concluir a compra. Essa confirmação é obtida no momento do pagamento.</p>
+      <p>Caso o usuário não tenha acessado o conteúdo adquirido, poderá exercer o direito de arrependimento no prazo legal entrando em contato em <strong>contato@velvet.lat</strong>.</p>
 
-      <h4>2.6 Direito de Arrependimento</h4>
-      <p>
-        O art. 49 do Código de Defesa do Consumidor (Lei nº 8.078/1990) assegura ao consumidor o
-        direito de arrependimento no prazo de 7 (sete) dias corridos, a contar da contratação, nos
-        contratos celebrados fora do estabelecimento comercial, incluindo os realizados pela internet.
-      </p>
-
-      <strong>Exceção para Conteúdo Digital com Entrega Imediata</strong>
-      <p>
-        Nos termos das orientações do SENACON e da interpretação consolidada do CDC para serviços
-        digitais, o direito de arrependimento pode não ser aplicável quando, cumulativamente:
-      </p>
-
+      <h4>4.7 Política de Reembolso</h4>
+      <strong>Reembolso garantido (independe de análise discricionária):</strong>
       <ul>
-        <li>O usuário solicitar expressamente o início imediato do acesso ao conteúdo digital;</li>
-        <li>For previamente informado de que perderá o direito de arrependimento após o acesso ser concedido; e</li>
-        <li>Manifestar concordância expressa com essas condições antes de concluir a compra.</li>
+        <li>Cobrança em duplicidade comprovada;</li>
+        <li>Erro técnico ou falha no sistema que impediu o acesso ao serviço contratado;</li>
+        <li>Serviço não disponibilizado após confirmação do pagamento;</li>
+        <li>Exercício tempestivo do direito de arrependimento (art. 49 CDC), quando aplicável.</li>
       </ul>
-
-      <p>
-        Essa confirmação é obtida no momento do pagamento. O usuário será informado de forma clara
-        e destacada sobre:
-      </p>
-
+      <strong>Reembolso discricionário (sujeito à análise pela equipe de suporte):</strong>
       <ul>
-        <li>A liberação imediata do conteúdo após o pagamento;</li>
-        <li>A natureza digital e não restituível do serviço;</li>
-        <li>A possível perda do direito de arrependimento.</li>
+        <li>Problema técnico que impediu parcialmente o acesso;</li>
+        <li>Renovação não intencional contestada imediatamente após a cobrança;</li>
+        <li>Conteúdo diferiu materialmente de sua descrição ou foi apresentado de forma enganosa;</li>
+        <li>Acesso removido por ação de moderação logo após a compra, sem culpa do usuário.</li>
       </ul>
+      <strong>Sem direito a reembolso:</strong>
+      <ul>
+        <li>Insatisfação subjetiva com o conteúdo do Criador;</li>
+        <li>Conteúdo acessado integralmente sem problema técnico comprovado;</li>
+        <li>Solicitações fraudulentas, abusivas ou reincidentes sem fundamento;</li>
+        <li>Violação dos Termos de Uso pelo usuário.</li>
+      </ul>
+      <p>Reembolsos aprovados são creditados no mesmo meio de pagamento, em até 2 (duas) faturas, conforme a operadora.</p>
+
+      <h4>4.8 Chargebacks e Contestações</h4>
+      <p>Em caso de cobrança que o usuário considere incorreta, deverá <strong>contatar o suporte primeiro</strong> em <strong>contato@velvet.lat</strong> antes de acionar a operadora de cartão. A maioria das disputas é resolvida de forma ágil pelo suporte.</p>
+      <p>A abertura de chargebacks sem contato prévio ou de forma abusiva poderá resultar em revisão de conta, suspensão, perda de acesso e adoção de medidas legais cabíveis (art. 71 do CDC e legislação penal aplicável).</p>
 
     </div>
   </div>

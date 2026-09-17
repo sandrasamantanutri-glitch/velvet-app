@@ -165,7 +165,7 @@ function obterAceitesPagamento() {
     aceitou_politicas: true,
     aceitou_execucao_imediata: true,
     aceite_timestamp: new Date().toISOString(),
-    versao_termos: "2026-07-28"
+    versao_termos: "2026-09-17"
   };
 }
 
