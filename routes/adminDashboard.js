@@ -4848,7 +4848,20 @@ function gerarReciboPDF(p) {
         .text(fmtBRL(totalSacado), 380, saqRowY + 8, { width: 160, align: 'right' });
       doc.fillColor('black');
 
-      cursorY = saqRowY + 34;
+      // Saldo final disponível
+      const saldoFinal = liquido - totalSacado;
+      const sfY = saqRowY + 34;
+      doc.rect(50, sfY, W, 32).fill(saldoFinal > 0 ? '#f0fff4' : '#fff5f5').stroke(saldoFinal > 0 ? '#c3e6cb' : '#fecaca');
+      doc.fontSize(9).font('Helvetica').fillColor('#555').text('Saldo líquido do mês:', 65, sfY + 7);
+      doc.text(fmtBRL(liquido), 380, sfY + 7, { width: 160, align: 'right' });
+      doc.text('Total sacado no mês:', 65, sfY + 19).fillColor('#555');
+      doc.text(`- ${fmtBRL(totalSacado)}`, 380, sfY + 19, { width: 160, align: 'right' });
+      doc.fontSize(11).font('Helvetica-Bold').fillColor(saldoFinal > 0 ? '#27a745' : '#ef4444')
+        .text('SALDO FINAL DISPONÍVEL:', 65, sfY + 32);
+      doc.text(fmtBRL(saldoFinal), 380, sfY + 32, { width: 160, align: 'right' });
+      doc.fillColor('black');
+
+      cursorY = sfY + 54;
     }
 
     // ── Rodapé ──

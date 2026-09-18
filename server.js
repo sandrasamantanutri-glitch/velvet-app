@@ -8032,6 +8032,34 @@ app.post("/api/modelo/sacar", authModelo, async (req, res) => {
   }
 });
 
+// ── Faturamento da modelo (meses fechados) ────────────────────────────────────
+app.get("/api/modelo/faturamento", authModelo, async (req, res) => {
+  try {
+    const mid = req.modelo_id;
+    const { rows } = await db.query(`
+      SELECT
+        id, mes, total_geral, total_midias, total_assinaturas,
+        chargebacks, valor_liquido, status, recibo_pdf_url,
+        TO_CHAR(mes, 'YYYY-MM') AS mes_iso,
+        TO_CHAR(pago_em AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY') AS pago_em_fmt
+      FROM modelo_pagamentos
+      WHERE modelo_id = $1 AND status = 'pago'
+      ORDER BY mes DESC
+    `, [mid]);
+
+    for (const row of rows) {
+      row.recibo_pdf_signed_url = row.recibo_pdf_url
+        ? s3Privado.getSignedUrl('getObject', { Bucket: process.env.R2_BUCKET_PRIVATE, Key: row.recibo_pdf_url, Expires: 300 })
+        : null;
+    }
+
+    res.json({ rows });
+  } catch (err) {
+    console.error("Erro /api/modelo/faturamento:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
 // ── Histórico de saques da modelo ────────────────────────────────────────────
 app.get("/api/modelo/saques", authModelo, async (req, res) => {
   try {
