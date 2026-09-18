@@ -1813,17 +1813,15 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f0f0;padding:20px;col
 
 router.get("/modelo/dados-bancarios", authModelo, async (req, res) => {
   try {
-    const { rows } = await db.query(`
-      SELECT *
-      FROM modelo_dados_bancarios
-      WHERE modelo_id = $1
-    `, [req.modelo_id]);
-
-    if (!rows.length) {
-      return res.json(null);
-    }
-
-    res.json(rows[0]);
+    const mid = req.modelo_id;
+    const [bancRes, saqueRes] = await Promise.all([
+      db.query(`SELECT * FROM modelo_dados_bancarios WHERE modelo_id=$1 ORDER BY criado_em DESC LIMIT 1`, [mid]),
+      db.query(`SELECT id FROM saques WHERE modelo_id=$1 AND status='pendente' LIMIT 1`, [mid]),
+    ]);
+    res.json({
+      dados: bancRes.rows[0] || null,
+      saque_pendente: saqueRes.rows.length > 0,
+    });
   } catch (err) {
     console.error("Erro buscar dados bancários:", err);
     res.status(500).json({ error: "Erro interno" });
