@@ -4349,6 +4349,128 @@ pageLoaders['saques-modelos'] = async function () {
   await renderSaques('pendente');
 };
 
+// ── Sub-tabs de saques ────────────────────────────────────────────────────────
+const _saqTabs = ['pendentes', 'saldo', 'historico'];
+
+window.switchSaqTab = function(tab) {
+  _saqTabs.forEach(t => {
+    const btn   = document.getElementById(`saqTab-${t}`);
+    const panel = document.getElementById(`saqPanel-${t}`);
+    if (!btn || !panel) return;
+    const active = t === tab;
+    panel.style.display = active ? '' : 'none';
+    btn.style.borderBottomColor  = active ? 'var(--purple,#7B2CFF)' : 'transparent';
+    btn.style.color              = active ? 'var(--purple,#7B2CFF)' : 'var(--text-muted,#888)';
+    btn.style.fontWeight         = active ? '700' : '600';
+  });
+  if (tab === 'saldo')    _initSaqSelector('saqSaldoSelector',    loadAdminSaldo);
+  if (tab === 'historico') _initSaqSelector('saqHistoricoSelector', loadAdminHistoricoSaques);
+};
+
+async function _initSaqSelector(selId, cb) {
+  const sel = document.getElementById(selId);
+  if (!sel || sel.options.length > 1) { cb(); return; }
+  const lista = await fetchJSON('/admin/dashboard/modelos-lista').catch(() => []);
+  lista.forEach(m => {
+    const o = document.createElement('option');
+    o.value = m.id; o.textContent = m.nome;
+    sel.appendChild(o);
+  });
+  cb();
+}
+
+window.loadAdminSaldo = async function() {
+  const sel = document.getElementById('saqSaldoSelector');
+  const mid = sel?.value;
+  const el  = document.getElementById('adminSaldoContent');
+  if (!mid) { el.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:24px">Selecione uma modelo acima.</p>'; return; }
+
+  el.innerHTML = '<div class="spin-wrap"><div class="spin"></div></div>';
+  const d = await fetchJSON(`/admin/dashboard/saldo-modelo/${mid}`).catch(() => null);
+  if (!d) { el.innerHTML = '<p style="color:#ef4444">Erro ao carregar saldo.</p>'; return; }
+
+  const money = v => `R$ ${Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px">
+      <div style="background:var(--bg-card,#f9f8ff);border-radius:12px;padding:18px 20px;border:1px solid var(--border)">
+        <div style="font-size:.78rem;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">Ganhos Disponíveis</div>
+        <div style="font-size:1.4rem;font-weight:700;color:var(--text)">${money(d.ganhos_disponiveis)}</div>
+      </div>
+      <div style="background:var(--bg-card,#f9f8ff);border-radius:12px;padding:18px 20px;border:1px solid var(--border)">
+        <div style="font-size:.78rem;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">Pagamentos Fechados</div>
+        <div style="font-size:1.4rem;font-weight:700;color:#ef4444">− ${money(d.pagamentos_fechados)}</div>
+      </div>
+      <div style="background:var(--bg-card,#f9f8ff);border-radius:12px;padding:18px 20px;border:1px solid var(--border)">
+        <div style="font-size:.78rem;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">Saques Comprometidos</div>
+        <div style="font-size:1.4rem;font-weight:700;color:#ef4444">− ${money(d.saques_comprometidos)}</div>
+      </div>
+      <div style="background:linear-gradient(135deg,var(--purple,#7B2CFF),#a855f7);border-radius:12px;padding:18px 20px;border:none">
+        <div style="font-size:.78rem;color:rgba(255,255,255,.8);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">Saldo Disponível</div>
+        <div style="font-size:1.6rem;font-weight:800;color:#fff">${money(d.saldo_disponivel)}</div>
+      </div>
+    </div>
+    <p style="font-size:.75rem;color:var(--text-muted);margin-top:12px;text-align:right">Atualizado em ${new Date().toLocaleTimeString('pt-BR')}</p>
+  `;
+};
+
+window.loadAdminHistoricoSaques = async function() {
+  const sel = document.getElementById('saqHistoricoSelector');
+  const mid = sel?.value;
+  const el  = document.getElementById('adminHistoricoContent');
+  if (!mid) { el.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:24px">Selecione uma modelo acima.</p>'; return; }
+
+  el.innerHTML = '<div class="spin-wrap"><div class="spin"></div></div>';
+  const d = await fetchJSON(`/admin/dashboard/saques-modelo/${mid}`).catch(() => null);
+  if (!d) { el.innerHTML = '<p style="color:#ef4444">Erro ao carregar histórico.</p>'; return; }
+
+  const money = v => `R$ ${Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+  const rows  = d.rows || [];
+
+  const statusBadge = {
+    pendente:    '<span class="badge badge-warning">Pendente</span>',
+    processando: '<span class="badge badge-info">Processando</span>',
+    pago:        '<span class="badge badge-success">Pago</span>',
+    rejeitado:   '<span class="badge badge-danger">Rejeitado</span>',
+  };
+
+  const tbody = rows.length ? rows.map(r => {
+    const taxa     = Number(r.taxa_saque || 0);
+    const recebido = Number(r.valor) - taxa;
+    const taxaCell = taxa > 0
+      ? `<span style="color:#ef4444;font-weight:600">− ${money(taxa)}</span>`
+      : `<span style="color:#16a34a;font-size:.8rem;font-weight:600">Gratuito</span>`;
+    const recebidoCell = taxa > 0
+      ? `<span style="font-weight:700;color:var(--purple,#7B2CFF)">${money(recebido)}</span>`
+      : `<span style="font-weight:600">${money(r.valor)}</span>`;
+    const obs = r.status === 'rejeitado' && r.motivo_rejeicao
+      ? `<span style="color:#ef4444;font-size:.8rem">${r.motivo_rejeicao}</span>`
+      : '—';
+    return `<tr>
+      <td style="font-size:.82rem">${r.solicitado_fmt || '—'}</td>
+      <td style="font-weight:600">${money(r.valor)}</td>
+      <td>${taxaCell}</td>
+      <td>${recebidoCell}</td>
+      <td>${statusBadge[r.status] || r.status}</td>
+      <td style="font-size:.8rem;color:var(--text-muted)">${r.processado_fmt || '—'}</td>
+      <td>${obs}</td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="7" class="empty-row">Nenhum saque encontrado</td></tr>`;
+
+  el.innerHTML = `
+    <p style="font-size:.82rem;color:var(--text-muted);margin-bottom:12px">${rows.length} registro(s)</p>
+    <div class="table-wrapper">
+      <table class="table">
+        <thead><tr>
+          <th>Solicitado em</th><th>Valor</th><th>Taxa</th><th>Recebido</th>
+          <th>Status</th><th>Processado em</th><th>Observação</th>
+        </tr></thead>
+        <tbody>${tbody}</tbody>
+      </table>
+    </div>
+    <p style="font-size:.75rem;color:var(--text-muted);margin-top:12px;text-align:right">Atualizado em ${new Date().toLocaleTimeString('pt-BR')}</p>
+  `;
+};
+
 // ========== 15. PAGAMENTOS A MODELOS ==========
 
 // ── Tab switch pagamentos-modelo ──────────────────────────────────────────────

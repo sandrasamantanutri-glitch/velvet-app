@@ -667,6 +667,7 @@ async function loadMeubanco() {
       <div class="tcard-hd"><h5><i class="bi bi-info-circle me-1" style="color:var(--purple)"></i> Informações de Saque</h5></div>
       <div class="info-row"><span class="ir-lbl">Valor mínimo</span><span class="ir-val">R$ 1,00</span></div>
       <div class="info-row"><span class="ir-lbl">Prazo de processamento</span><span class="ir-val">até 48 horas úteis</span></div>
+      <div class="info-row"><span class="ir-lbl">Valor mínimo</span><span class="ir-val">R$ 100,00</span></div>
       <div class="info-row"><span class="ir-lbl">1º saque do mês</span><span class="ir-val" style="color:#16a34a;font-weight:700">Gratuito</span></div>
       <div class="info-row"><span class="ir-lbl">2º saque em diante</span><span class="ir-val">R$ 5,00 por saque</span></div>
       <div class="info-row"><span class="ir-lbl">Intervalo mínimo</span><span class="ir-val">1 saque por semana (7 dias)</span></div>
@@ -750,6 +751,7 @@ async function confirmarSaque(saldoDisp, taxa = 0) {
 
   erroEl.style.display = 'none';
   if (!valor || valor <= 0) { erroEl.textContent = 'Valor inválido'; erroEl.style.display = 'block'; return; }
+  if (valor < 100) { erroEl.textContent = 'Valor mínimo para saque é R$ 100,00'; erroEl.style.display = 'block'; return; }
   if (valor > saldoDisp + 0.01) { erroEl.textContent = 'Valor maior que o saldo disponível'; erroEl.style.display = 'block'; return; }
 
   btn.disabled = true;
@@ -858,15 +860,12 @@ async function loadSaques() {
     const taxa = Number(r.taxa_saque || 0);
     const recebido = Number(r.valor) - taxa;
 
-    let valorCell;
-    if (taxa > 0) {
-      valorCell = `
-        <div style="font-weight:600">${fmt(r.valor)}</div>
-        <div style="font-size:.75rem;color:#ef4444;margin-top:1px">− ${fmt(taxa)} taxa</div>
-        <div style="font-size:.78rem;font-weight:700;color:var(--purple,#7B2CFF)">= ${fmt(recebido)} recebido</div>`;
-    } else {
-      valorCell = `<span style="font-weight:600">${fmt(r.valor)}</span>`;
-    }
+    const taxaCell = taxa > 0
+      ? `<span style="color:#ef4444;font-weight:600">− ${fmt(taxa)}</span>`
+      : `<span style="color:#16a34a;font-size:.78rem;font-weight:600">Gratuito</span>`;
+    const recebidoCell = taxa > 0
+      ? `<span style="font-weight:700;color:var(--purple,#7B2CFF)">${fmt(recebido)}</span>`
+      : `<span style="font-weight:600">${fmt(r.valor)}</span>`;
 
     let obs = '—';
     if (r.motivo_rejeicao) {
@@ -883,12 +882,14 @@ async function loadSaques() {
     return `
     <tr>
       <td>${r.solicitado_fmt || '—'}</td>
-      <td>${valorCell}</td>
+      <td style="font-weight:600">${fmt(r.valor)}</td>
+      <td>${taxaCell}</td>
+      <td>${recebidoCell}</td>
       <td><span style="color:${statusColor[r.status] || '#888'};font-weight:600">${statusLabel[r.status] || r.status}</span>${cancelBtn}</td>
       <td style="font-size:.8rem;opacity:.7">${r.processado_fmt || '—'}</td>
       <td>${obs}</td>
     </tr>`;
-  }).join('') : `<tr><td colspan="5" style="text-align:center;opacity:.5;padding:24px">Nenhum saque ainda</td></tr>`;
+  }).join('') : `<tr><td colspan="7" style="text-align:center;opacity:.5;padding:24px">Nenhum saque ainda</td></tr>`;
 
   document.getElementById('secSaques').innerHTML = `
     <div class="page-header">
@@ -897,7 +898,7 @@ async function loadSaques() {
     </div>
     <div class="table-resp">
       <table class="dt">
-        <thead><tr><th>Solicitado em</th><th>Valor / Taxa</th><th>Status</th><th>Processado em</th><th>Observação</th></tr></thead>
+        <thead><tr><th>Solicitado em</th><th>Valor</th><th>Taxa</th><th>Recebido</th><th>Status</th><th>Processado em</th><th>Observação</th></tr></thead>
         <tbody>${tbody}</tbody>
       </table>
     </div>

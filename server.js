@@ -7738,8 +7738,8 @@ app.get("/api/modelo/painel/geral", authModelo, async (req, res) => {
       // Saques já pagos + pendentes
       db.query(`
         SELECT
-          COALESCE(SUM(valor) FILTER (WHERE status='pago'),     0) AS saques_pagos,
-          COALESCE(SUM(valor) FILTER (WHERE status='pendente'), 0) AS saques_pendentes
+          COALESCE(SUM(valor + COALESCE(taxa_saque,0)) FILTER (WHERE status='pago'),     0) AS saques_pagos,
+          COALESCE(SUM(valor + COALESCE(taxa_saque,0)) FILTER (WHERE status='pendente'), 0) AS saques_pendentes
         FROM saques WHERE modelo_id=$1
       `, [mid]),
       db.query(`
@@ -7837,11 +7837,11 @@ app.get("/api/modelo/painel/meubanco", authModelo, async (req, res) => {
       db.query(`
         SELECT COALESCE(SUM(total_geral),0) AS pagos FROM modelo_pagamentos WHERE modelo_id=$1 AND status='pago'
       `, [mid]),
-      // Saques já pagos + pendentes
+      // Saques já pagos + pendentes (valor + taxa comprometem o saldo)
       db.query(`
         SELECT
-          COALESCE(SUM(valor) FILTER (WHERE status='pago'),     0) AS saques_pagos,
-          COALESCE(SUM(valor) FILTER (WHERE status='pendente'), 0) AS saques_pendentes
+          COALESCE(SUM(valor + COALESCE(taxa_saque,0)) FILTER (WHERE status='pago'),     0) AS saques_pagos,
+          COALESCE(SUM(valor + COALESCE(taxa_saque,0)) FILTER (WHERE status='pendente'), 0) AS saques_pendentes
         FROM saques WHERE modelo_id=$1
       `, [mid]),
     ]);
@@ -7974,17 +7974,16 @@ app.get("/api/modelo/sacar/info", authModelo, async (req, res) => {
     const qtdMes = Number(mesRes.rows[0].qtd || 0);
     const ultimaSolicitacao = mesRes.rows[0].ultima_solicitacao;
 
-    // TODO: reativar regra dos 7 dias após testes
     let pode_sacar_hoje = true;
     let dias_para_proximo = 0;
-    // if (ultimaSolicitacao) {
-    //   const diffMs   = Date.now() - new Date(ultimaSolicitacao).getTime();
-    //   const diffDias = diffMs / (1000 * 60 * 60 * 24);
-    //   if (diffDias < 7) {
-    //     pode_sacar_hoje   = false;
-    //     dias_para_proximo = Math.ceil(7 - diffDias);
-    //   }
-    // }
+    if (ultimaSolicitacao) {
+      const diffMs   = Date.now() - new Date(ultimaSolicitacao).getTime();
+      const diffDias = diffMs / (1000 * 60 * 60 * 24);
+      if (diffDias < 7) {
+        pode_sacar_hoje   = false;
+        dias_para_proximo = Math.ceil(7 - diffDias);
+      }
+    }
 
     res.json({
       saques_mes_count: qtdMes,
@@ -8008,6 +8007,10 @@ app.post("/api/modelo/sacar", authModelo, async (req, res) => {
 
     if (!valorNum || valorNum <= 0) {
       return res.status(400).json({ erro: "Valor inválido para saque" });
+    }
+
+    if (valorNum < 100) {
+      return res.status(400).json({ erro: "Valor mínimo para saque é R$ 100,00" });
     }
 
     // Verificar dados bancários aprovados
@@ -8036,14 +8039,13 @@ app.post("/api/modelo/sacar", authModelo, async (req, res) => {
     const qtdMes = Number(mesRes.rows[0].qtd || 0);
     const ultimaSolicitacao = mesRes.rows[0].ultima_solicitacao;
 
-    // TODO: reativar regra dos 7 dias após testes
-    // if (ultimaSolicitacao) {
-    //   const diffDias = (Date.now() - new Date(ultimaSolicitacao).getTime()) / (1000 * 60 * 60 * 24);
-    //   if (diffDias < 7) {
-    //     const diasRestantes = Math.ceil(7 - diffDias);
-    //     return res.status(400).json({ erro: `Você só pode solicitar 1 saque por semana. Aguarde ${diasRestantes} dia(s) para o próximo saque.` });
-    //   }
-    // }
+    if (ultimaSolicitacao) {
+      const diffDias = (Date.now() - new Date(ultimaSolicitacao).getTime()) / (1000 * 60 * 60 * 24);
+      if (diffDias < 7) {
+        const diasRestantes = Math.ceil(7 - diffDias);
+        return res.status(400).json({ erro: `Você só pode solicitar 1 saque por semana. Aguarde ${diasRestantes} dia(s) para o próximo saque.` });
+      }
+    }
 
     // Taxa: 1º saque do mês gratuito, a partir do 2º = R$5
     const taxaSaque = qtdMes >= 1 ? 5 : 0;
@@ -8060,7 +8062,7 @@ app.post("/api/modelo/sacar", authModelo, async (req, res) => {
         SELECT COALESCE(SUM(total_geral),0) AS pagos FROM modelo_pagamentos WHERE modelo_id=$1 AND status='pago'
       `, [mid]),
       db.query(`
-        SELECT COALESCE(SUM(valor) FILTER (WHERE status IN ('pago','pendente')), 0) AS saques_comprometidos
+        SELECT COALESCE(SUM(valor + COALESCE(taxa_saque,0)) FILTER (WHERE status IN ('pago','pendente')), 0) AS saques_comprometidos
         FROM saques WHERE modelo_id=$1
       `, [mid]),
     ]);
@@ -8070,7 +8072,7 @@ app.post("/api/modelo/sacar", authModelo, async (req, res) => {
     const saquesComp = Number(saquesRes.rows[0].saques_comprometidos || 0);
     const saldoDisp  = ganhosDisp - pagos - saquesComp;
 
-    if (valorNum > saldoDisp + 0.01) {
+    if (valorNum + taxaSaque > saldoDisp + 0.01) {
       return res.status(400).json({
         erro: `Saldo insuficiente. Saldo disponível: R$ ${saldoDisp.toFixed(2).replace('.', ',')}`
       });

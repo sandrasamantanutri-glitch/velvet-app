@@ -4097,7 +4097,7 @@ router.get("/modelo-pagamentos/calcular", authAdmin, async (req, res) => {
       [modelo_id]
     );
     const saquesRes = await db.query(
-      `SELECT COALESCE(SUM(valor) FILTER (WHERE status IN ('pago','pendente')), 0) AS comprometidos FROM saques WHERE modelo_id = $1`,
+      `SELECT COALESCE(SUM(valor + COALESCE(taxa_saque,0)) FILTER (WHERE status IN ('pago','pendente')), 0) AS comprometidos FROM saques WHERE modelo_id = $1`,
       [modelo_id]
     );
 
@@ -4516,8 +4516,8 @@ router.get("/modelo-pagamentos/saldo/:modelo_id", authAdmin, async (req, res) =>
 
     const saquesRes = await db.query(`
       SELECT
-        COALESCE(SUM(valor) FILTER (WHERE status = 'pago'),     0) AS saques_pagos,
-        COALESCE(SUM(valor) FILTER (WHERE status = 'pendente'), 0) AS saques_pendentes
+        COALESCE(SUM(valor + COALESCE(taxa_saque,0)) FILTER (WHERE status = 'pago'),     0) AS saques_pagos,
+        COALESCE(SUM(valor + COALESCE(taxa_saque,0)) FILTER (WHERE status = 'pendente'), 0) AS saques_pendentes
       FROM saques
       WHERE modelo_id = $1
         AND status IN ('pago', 'pendente')
@@ -7070,6 +7070,58 @@ router.get("/saques/:id", authAdmin, async (req, res) => {
     res.json(row);
   } catch (err) {
     console.error("Erro detalhe saque:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+// Saldo em tempo real de uma modelo (admin)
+router.get("/saldo-modelo/:id", authAdmin, async (req, res) => {
+  try {
+    const modelo_id = Number(req.params.id);
+    const [ganhosRes, pagosRes, saquesRes] = await Promise.all([
+      db.query(`
+        SELECT COALESCE(SUM(valor_modelo), 0) AS ganhos_disponiveis
+        FROM transacoes_agency
+        WHERE modelo_id = $1 AND status = 'pago'
+      `, [modelo_id]),
+      db.query(`
+        SELECT COALESCE(SUM(total_geral), 0) AS pagos
+        FROM modelo_pagamentos WHERE modelo_id = $1 AND status = 'pago'
+      `, [modelo_id]),
+      db.query(`
+        SELECT COALESCE(SUM(valor + COALESCE(taxa_saque,0)) FILTER (WHERE status IN ('pago','pendente')), 0) AS comprometidos
+        FROM saques WHERE modelo_id = $1
+      `, [modelo_id]),
+    ]);
+    const ganhos      = Number(ganhosRes.rows[0].ganhos_disponiveis);
+    const pagos       = Number(pagosRes.rows[0].pagos);
+    const comprometidos = Number(saquesRes.rows[0].comprometidos);
+    const saldo_disponivel = Math.max(0, ganhos - pagos - comprometidos);
+    res.json({ ganhos_disponiveis: ganhos, pagamentos_fechados: pagos, saques_comprometidos: comprometidos, saldo_disponivel });
+  } catch (err) {
+    console.error("Erro saldo-modelo:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+// Histórico de saques de uma modelo (admin)
+router.get("/saques-modelo/:id", authAdmin, async (req, res) => {
+  try {
+    const modelo_id = Number(req.params.id);
+    const { rows } = await db.query(`
+      SELECT
+        id, valor, COALESCE(taxa_saque, 0) AS taxa_saque, status,
+        motivo_rejeicao, saldo_disponivel_no_dia, pgto_tipo,
+        TO_CHAR(solicitado_em AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY HH24:MI') AS solicitado_fmt,
+        TO_CHAR(processado_em AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY HH24:MI') AS processado_fmt
+      FROM saques
+      WHERE modelo_id = $1
+      ORDER BY solicitado_em DESC
+      LIMIT 100
+    `, [modelo_id]);
+    res.json({ rows });
+  } catch (err) {
+    console.error("Erro saques-modelo:", err);
     res.status(500).json({ erro: "Erro interno" });
   }
 });

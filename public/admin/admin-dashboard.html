@@ -1024,9 +1024,55 @@
   <!-- PAGAMENTOS MODELO -->
   <!-- SAQUES DE MODELOS -->
   <section class="page" id="page-saques-modelos">
-    <div class="card">
-      <h3>Saques de Modelos</h3>
-      <div id="saques-modelos-content"><div class="spin-wrap"><div class="spin"></div></div></div>
+    <!-- Sub-tabs -->
+    <div style="display:flex;gap:0;border-bottom:2px solid var(--border,#e8e4f4);margin-bottom:20px">
+      <button id="saqTab-pendentes" onclick="switchSaqTab('pendentes')"
+        style="padding:10px 20px;border:none;background:none;cursor:pointer;font-weight:700;font-size:.9rem;border-bottom:3px solid var(--purple,#7B2CFF);color:var(--purple,#7B2CFF);margin-bottom:-2px">
+        Saques
+      </button>
+      <button id="saqTab-saldo" onclick="switchSaqTab('saldo')"
+        style="padding:10px 20px;border:none;background:none;cursor:pointer;font-weight:600;font-size:.9rem;border-bottom:3px solid transparent;color:var(--text-muted,#888);margin-bottom:-2px">
+        Saldo Modelos
+      </button>
+      <button id="saqTab-historico" onclick="switchSaqTab('historico')"
+        style="padding:10px 20px;border:none;background:none;cursor:pointer;font-weight:600;font-size:.9rem;border-bottom:3px solid transparent;color:var(--text-muted,#888);margin-bottom:-2px">
+        Histórico de Saques
+      </button>
+    </div>
+
+    <!-- Painel: Saques (existente) -->
+    <div id="saqPanel-pendentes">
+      <div class="card">
+        <div id="saques-modelos-content"><div class="spin-wrap"><div class="spin"></div></div></div>
+      </div>
+    </div>
+
+    <!-- Painel: Saldo Modelos -->
+    <div id="saqPanel-saldo" style="display:none">
+      <div class="card">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:20px">
+          <h3 style="margin:0;flex:1">Saldo em Tempo Real</h3>
+          <select id="saqSaldoSelector" class="form-select" style="width:220px;padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:.88rem" onchange="loadAdminSaldo()">
+            <option value="">— Selecione a modelo —</option>
+          </select>
+          <button class="btn btn-ghost btn-sm" onclick="loadAdminSaldo()">↻ Atualizar</button>
+        </div>
+        <div id="adminSaldoContent"></div>
+      </div>
+    </div>
+
+    <!-- Painel: Histórico de Saques por Modelo -->
+    <div id="saqPanel-historico" style="display:none">
+      <div class="card">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:20px">
+          <h3 style="margin:0;flex:1">Histórico de Saques por Modelo</h3>
+          <select id="saqHistoricoSelector" class="form-select" style="width:220px;padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:.88rem" onchange="loadAdminHistoricoSaques()">
+            <option value="">— Selecione a modelo —</option>
+          </select>
+          <button class="btn btn-ghost btn-sm" onclick="loadAdminHistoricoSaques()">↻ Atualizar</button>
+        </div>
+        <div id="adminHistoricoContent"></div>
+      </div>
     </div>
   </section>
 
