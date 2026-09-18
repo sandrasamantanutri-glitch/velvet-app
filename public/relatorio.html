@@ -257,6 +257,8 @@ body {
     flex-shrink: 0;
     min-width: 90px;
   }
+  /* mostrar todas as colunas no card (override hide-mob) */
+  .dt-card tbody td.hide-mob { display: flex !important; }
 }
 @media (max-width: 420px) {
   .cards-grid { grid-template-columns: 1fr; }
@@ -585,12 +587,12 @@ async function loadPix(ym) {
       ? `<span class="bdg-lib"><i class="bi bi-check-circle"></i> Liberado</span>`
       : `<span class="bdg-pend"><i class="bi bi-clock"></i> ${fmtDate(r.disponivel_em)}</span>`;
     return `<tr>
-      <td>${fmtDate(r.created_at)}</td>
-      <td><span class="bdg ${r.tipo}">${r.tipo||'—'}</span></td>
-      <td style="color:var(--ok);font-weight:600">${fmt(r.valor_modelo)}</td>
-      <td class="hide-mob"><span class="bdg pix">PIX</span></td>
-      <td>${disp}</td>
-      <td class="hide-mob" style="color:var(--muted)">#${r.cliente_id}</td>
+      <td data-label="Data">${fmtDate(r.created_at)}</td>
+      <td data-label="Tipo"><span class="bdg ${r.tipo}">${r.tipo||'—'}</span></td>
+      <td data-label="Valor" style="color:var(--ok);font-weight:600">${fmt(r.valor_modelo)}</td>
+      <td data-label="Gateway" class="hide-mob"><span class="bdg pix">PIX</span></td>
+      <td data-label="Status">${disp}</td>
+      <td data-label="Cliente" class="hide-mob" style="color:var(--muted)">#${r.cliente_id}</td>
     </tr>`;
   }).join('') : `<tr><td colspan="6"><div class="empty-st"><i class="bi bi-inbox"></i><p>Nenhum registro</p></div></td></tr>`;
 
@@ -606,7 +608,7 @@ async function loadPix(ym) {
         <h5><i class="bi bi-qr-code-scan me-1" style="color:var(--pix)"></i> Transações PIX</h5>
         <select class="csel" onchange="loadedSections.delete('pix');loadPix(this.value)">${buildMonthOpts(ym)}</select>
       </div>
-      <div class="table-resp"><table class="dt">
+      <div class="table-resp"><table class="dt dt-card">
         <thead><tr><th>Data</th><th>Tipo</th><th>Valor</th><th class="hide-mob">Gateway</th><th>Status</th><th class="hide-mob">Cliente</th></tr></thead>
         <tbody>${tbody}</tbody>
       </table></div>
@@ -639,12 +641,12 @@ async function loadCartao(ym) {
       ? `<span class="bdg-lib"><i class="bi bi-check-circle"></i> Liberado${dispD?' em '+fmtDate(dispD):''}</span>`
       : `<span class="bdg-pend"><i class="bi bi-clock"></i> Libera ${fmtDate(dispD)}</span>`;
     return `<tr>
-      <td>${fmtDate(r.created_at)}</td>
-      <td><span class="bdg ${r.tipo}">${r.tipo||'—'}</span></td>
-      <td style="color:var(--purple-light);font-weight:600">${fmt(r.valor_modelo)}</td>
-      <td class="hide-mob"><span class="bdg stripe">Stripe</span></td>
-      <td>${disp}</td>
-      <td class="hide-mob" style="color:var(--muted)">#${r.cliente_id}</td>
+      <td data-label="Data">${fmtDate(r.created_at)}</td>
+      <td data-label="Tipo"><span class="bdg ${r.tipo}">${r.tipo||'—'}</span></td>
+      <td data-label="Valor" style="color:var(--purple-light);font-weight:600">${fmt(r.valor_modelo)}</td>
+      <td data-label="Gateway" class="hide-mob"><span class="bdg stripe">Stripe</span></td>
+      <td data-label="Liberação">${disp}</td>
+      <td data-label="Cliente" class="hide-mob" style="color:var(--muted)">#${r.cliente_id}</td>
     </tr>`;
   }).join('') : `<tr><td colspan="6"><div class="empty-st"><i class="bi bi-inbox"></i><p>Nenhum registro</p></div></td></tr>`;
 
@@ -660,7 +662,7 @@ async function loadCartao(ym) {
         <h5><i class="bi bi-credit-card-2-front me-1" style="color:var(--purple-light)"></i>Transações Cartão</h5>
         <select class="csel" onchange="loadedSections.delete('cartao');loadCartao(this.value)">${buildMonthOpts(ym)}</select>
       </div>
-      <div class="table-resp"><table class="dt">
+      <div class="table-resp"><table class="dt dt-card">
         <thead><tr><th>Data</th><th>Tipo</th><th>Valor</th><th class="hide-mob">Gateway</th><th>Liberação</th><th class="hide-mob">Cliente</th></tr></thead>
         <tbody>${tbody}</tbody>
       </table></div>
@@ -968,13 +970,13 @@ async function loadChargebacks(ym) {
   const tbody = rows.length ? rows.map(r => {
     const gw = r.gateway || '—';
     return `<tr>
-      <td>${r.data_compra_fmt||'—'}</td>
-      <td class="hide-mob">${r.data_fmt||'—'}</td>
-      <td class="hide-mob" style="color:var(--muted)">#${r.cliente_id||'—'}</td>
-      <td><span class="bdg ${r.tipo}">${r.tipo||'—'}</span></td>
-      <td style="color:var(--red);font-weight:600">${fmt(r.valor_modelo)}</td>
-      <td class="hide-mob"><span class="bdg ${gw.toLowerCase().includes('stripe')?'stripe':'pix'}">${gw}</span></td>
-      <td class="hide-mob" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;color:var(--muted)">${r.motivo||'—'}</td>
+      <td data-label="Data Compra">${r.data_compra_fmt||'—'}</td>
+      <td data-label="Reembolso" class="hide-mob">${r.data_fmt||'—'}</td>
+      <td data-label="Cliente" class="hide-mob" style="color:var(--muted)">#${r.cliente_id||'—'}</td>
+      <td data-label="Tipo"><span class="bdg ${r.tipo}">${r.tipo||'—'}</span></td>
+      <td data-label="Valor" style="color:var(--red);font-weight:600">${fmt(r.valor_modelo)}</td>
+      <td data-label="Gateway" class="hide-mob"><span class="bdg ${gw.toLowerCase().includes('stripe')?'stripe':'pix'}">${gw}</span></td>
+      <td data-label="Motivo" class="hide-mob" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;color:var(--muted)">${r.motivo||'—'}</td>
     </tr>`;
   }).join('') : `<tr><td colspan="7"><div class="empty-st"><i class="bi bi-shield-check"></i><p>Nenhum chargeback neste período</p></div></td></tr>`;
 
@@ -987,7 +989,7 @@ async function loadChargebacks(ym) {
         <h5><i class="bi bi-exclamation-triangle me-1" style="color:var(--red)"></i>Chargebacks</h5>
         <select class="csel" onchange="loadedSections.delete('chargebacks');loadChargebacks(this.value)">${buildMonthOpts(ym)}</select>
       </div>
-      <div class="table-resp"><table class="dt">
+      <div class="table-resp"><table class="dt dt-card">
         <thead><tr><th>Data Compra</th><th class="hide-mob">Reembolso</th><th class="hide-mob">Cliente</th><th>Tipo</th><th>Valor</th><th class="hide-mob">Gateway</th><th class="hide-mob">Motivo</th></tr></thead>
         <tbody>${tbody}</tbody>
       </table></div>
