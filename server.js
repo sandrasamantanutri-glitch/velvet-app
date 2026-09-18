@@ -8107,6 +8107,73 @@ app.get("/api/modelo/saques", authModelo, async (req, res) => {
   }
 });
 
+// ── Dados Bancários da modelo ─────────────────────────────────────────────────
+app.get("/api/modelo/dados-bancarios", authModelo, async (req, res) => {
+  try {
+    const mid = req.modelo_id;
+    const [bancRes, saqueRes] = await Promise.all([
+      db.query(`SELECT * FROM modelo_dados_bancarios WHERE modelo_id=$1 ORDER BY criado_em DESC LIMIT 1`, [mid]),
+      db.query(`SELECT id FROM saques WHERE modelo_id=$1 AND status='pendente' LIMIT 1`, [mid]),
+    ]);
+    res.json({
+      dados: bancRes.rows[0] || null,
+      saque_pendente: saqueRes.rows.length > 0,
+    });
+  } catch (err) {
+    console.error("Erro /api/modelo/dados-bancarios:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+app.post("/api/modelo/dados-bancarios/solicitar", authModelo, async (req, res) => {
+  try {
+    const mid = req.modelo_id;
+
+    const saqueRes = await db.query(
+      `SELECT id FROM saques WHERE modelo_id=$1 AND status='pendente' LIMIT 1`, [mid]
+    );
+    if (saqueRes.rows.length > 0) {
+      return res.status(400).json({ erro: "Não é possível solicitar alteração de dados bancários enquanto houver um saque pendente." });
+    }
+
+    const { motivo_pedido, tipo, pix_tipo, pix_chave, banco, agencia, conta, conta_tipo, titular_nome, titular_documento } = req.body;
+
+    if (!motivo_pedido || !motivo_pedido.trim()) {
+      return res.status(400).json({ erro: "Informe o motivo da solicitação." });
+    }
+
+    const existing = await db.query(
+      `SELECT id, status FROM modelo_dados_bancarios WHERE modelo_id=$1 ORDER BY criado_em DESC LIMIT 1`, [mid]
+    );
+
+    if (existing.rows.length > 0 && (existing.rows[0].status === 'pendente' || existing.rows[0].status === 'alteracao_pendente')) {
+      return res.status(400).json({ erro: "Já existe um pedido de dados bancários em análise. Aguarde a resposta do administrador." });
+    }
+
+    if (existing.rows.length === 0) {
+      await db.query(
+        `INSERT INTO modelo_dados_bancarios
+          (modelo_id, tipo, pix_tipo, pix_chave, banco, agencia, conta, conta_tipo, titular_nome, titular_documento, status, motivo_pedido)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'pendente',$11)`,
+        [mid, tipo, pix_tipo, pix_chave, banco, agencia, conta, conta_tipo, titular_nome, titular_documento, motivo_pedido]
+      );
+    } else {
+      await db.query(
+        `UPDATE modelo_dados_bancarios
+            SET tipo=$2, pix_tipo=$3, pix_chave=$4, banco=$5, agencia=$6, conta=$7, conta_tipo=$8,
+                titular_nome=$9, titular_documento=$10, status='alteracao_pendente', motivo_pedido=$11, atualizado_em=NOW()
+          WHERE modelo_id=$1`,
+        [mid, tipo, pix_tipo, pix_chave, banco, agencia, conta, conta_tipo, titular_nome, titular_documento, motivo_pedido]
+      );
+    }
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("Erro /api/modelo/dados-bancarios/solicitar:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
 app.get("/api/modelo/ganhos", authModelo, async (req, res) => {
   try {
     const modeloId = req.modelo_id;
@@ -17397,3 +17464,6 @@ require("./scripts/cron-backup");
 // Migração: coluna de controle do aviso de expiração
 db.query("ALTER TABLE ofertas ADD COLUMN IF NOT EXISTS aviso_expiracao_enviado BOOLEAN DEFAULT false")
   .catch(err => console.error("Migração aviso_expiracao_enviado:", err.message));
+
+db.query("ALTER TABLE modelo_dados_bancarios ADD COLUMN IF NOT EXISTS motivo_pedido TEXT")
+  .catch(err => console.error("Migração motivo_pedido:", err.message));
