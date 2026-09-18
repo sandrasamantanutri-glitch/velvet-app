@@ -1535,6 +1535,27 @@ canvas {
   }
 }
 
+/* --- Saques: painel saldo/histórico selector responsivo --- */
+@media (max-width: 640px) {
+  #saqPanel-saldo .card > div:first-child,
+  #saqPanel-historico .card > div:first-child {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  #saqSaldoSelector,
+  #saqHistoricoSelector {
+    width: 100% !important;
+  }
+  /* Fechar mês: botões de ação lado a lado em tela pequena */
+  #fechResultado > div:last-of-type {
+    flex-direction: column;
+  }
+  #fechResultado > div:last-of-type .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
 /* --- Telas muito pequenas (≤380px) --- */
 
 @media (max-width: 380px) {
