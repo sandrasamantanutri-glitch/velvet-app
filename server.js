@@ -8060,6 +8060,21 @@ app.get("/api/modelo/faturamento", authModelo, async (req, res) => {
   }
 });
 
+// ── Cancelar saque pendente (pela própria modelo) ────────────────────────────
+app.post("/api/modelo/saques/:id/cancelar", authModelo, async (req, res) => {
+  try {
+    const { rows } = await db.query(
+      `DELETE FROM saques WHERE id=$1 AND modelo_id=$2 AND status='pendente' RETURNING id`,
+      [req.params.id, req.modelo_id]
+    );
+    if (!rows.length) return res.status(404).json({ erro: 'Saque não encontrado ou já processado' });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("Erro cancelar saque:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
 // ── Histórico de saques da modelo ────────────────────────────────────────────
 app.get("/api/modelo/saques", authModelo, async (req, res) => {
   try {

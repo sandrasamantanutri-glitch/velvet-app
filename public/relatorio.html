@@ -804,11 +804,14 @@ async function loadSaques() {
         <i class="bi bi-file-earmark-check"></i> Comprovante
       </a>`;
     }
+    const cancelBtn = r.status === 'pendente'
+      ? `<button onclick="cancelarSaque(${r.id})" style="background:none;border:1px solid #ef4444;color:#ef4444;border-radius:6px;padding:2px 10px;font-size:.78rem;cursor:pointer;margin-left:4px">Cancelar</button>`
+      : '';
     return `
     <tr>
       <td>${r.solicitado_fmt || '—'}</td>
       <td style="font-weight:600">${fmt(r.valor)}</td>
-      <td><span style="color:${statusColor[r.status] || '#888'};font-weight:600">${statusLabel[r.status] || r.status}</span></td>
+      <td><span style="color:${statusColor[r.status] || '#888'};font-weight:600">${statusLabel[r.status] || r.status}</span>${cancelBtn}</td>
       <td style="font-size:.8rem;opacity:.7">${r.processado_fmt || '—'}</td>
       <td>${obs}</td>
     </tr>`;
@@ -826,6 +829,15 @@ async function loadSaques() {
       </table>
     </div>
   `;
+}
+
+async function cancelarSaque(id) {
+  if (!confirm('Cancelar este pedido de saque? O valor volta para o seu saldo disponível.')) return;
+  const r = await api(`/api/modelo/saques/${id}/cancelar`, { method: 'POST' });
+  if (r?.ok) {
+    loadSaques();
+    loadGeral(); // atualiza saldo disponível
+  }
 }
 
 // ── CHARGEBACKS ──────────────────────────────────────────────────────

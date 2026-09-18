@@ -7209,6 +7209,9 @@ router.post("/saques/:id/rejeitar", authAdmin, async (req, res) => {
       } catch (_) {}
     }
 
+    // Remove da lista — saldo já volta automaticamente (query de saldo exclui status fora de pago/pendente)
+    await db.query('DELETE FROM saques WHERE id=$1', [id]);
+
     res.json({ ok: true });
   } catch (err) {
     console.error("Erro rejeitar saque:", err);
