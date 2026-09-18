@@ -4483,9 +4483,10 @@ function recalcularFechamento() {
   if (pagoRowEl) {
     if (saquesMes > 0) {
       pagoRowEl.style.display = 'flex';
-      const saldoDisp = Math.max(0, liquido - saquesMes);
+      // Usa o saldo disponível real calculado pelo servidor (ganhos totais - pagamentos - saques totais)
+      const saldoDisp = _fechCalculo?.saldo_disponivel ?? Math.max(0, liquido - saquesMes);
       if ($('fechValSaldoPago'))      $('fechValSaldoPago').textContent      = `− ${money(saquesMes)}`;
-      if ($('fechValSaldoDisponivel')) $('fechValSaldoDisponivel').textContent = money(saldoDisp);
+      if ($('fechValSaldoDisponivel')) $('fechValSaldoDisponivel').textContent = money(Math.max(0, saldoDisp));
     } else {
       pagoRowEl.style.display = 'none';
     }
