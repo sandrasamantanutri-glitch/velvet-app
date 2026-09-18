@@ -8108,22 +8108,7 @@ app.get("/api/modelo/saques", authModelo, async (req, res) => {
 });
 
 // ── Dados Bancários da modelo ─────────────────────────────────────────────────
-app.get("/api/modelo/dados-bancarios", authModelo, async (req, res) => {
-  try {
-    const mid = req.modelo_id;
-    const [bancRes, saqueRes] = await Promise.all([
-      db.query(`SELECT * FROM modelo_dados_bancarios WHERE modelo_id=$1 ORDER BY criado_em DESC LIMIT 1`, [mid]),
-      db.query(`SELECT id FROM saques WHERE modelo_id=$1 AND status='pendente' LIMIT 1`, [mid]),
-    ]);
-    res.json({
-      dados: bancRes.rows[0] || null,
-      saque_pendente: saqueRes.rows.length > 0,
-    });
-  } catch (err) {
-    console.error("Erro /api/modelo/dados-bancarios:", err);
-    res.status(500).json({ erro: "Erro interno" });
-  }
-});
+// GET /api/modelo/dados-bancarios is handled by servercontent.js router (mounted at /api)
 
 app.post("/api/modelo/dados-bancarios/solicitar", authModelo, async (req, res) => {
   try {
