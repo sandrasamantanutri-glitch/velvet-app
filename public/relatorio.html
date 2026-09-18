@@ -264,24 +264,25 @@ body {
       <a class="nav-item active" onclick="showSection('geral')">
         <i class="bi bi-grid-1x2-fill"></i> Geral
       </a>
-      <div class="nav-label">Financeiro</div>
+      <div class="nav-label">Receitas</div>
       <a class="nav-item" onclick="showSection('pix')">
         <i class="bi bi-qr-code-scan"></i> Ganhos PIX
       </a>
       <a class="nav-item" onclick="showSection('cartao')">
         <i class="bi bi-credit-card-2-front"></i> Ganhos Cartão
       </a>
-      <a class="nav-item" onclick="showSection('meubanco')">
-        <i class="bi bi-bank2"></i> Meu Banco
+      <a class="nav-item" onclick="showSection('chargebacks')">
+        <i class="bi bi-exclamation-triangle"></i> Chargebacks
       </a>
       <a class="nav-item" onclick="showSection('faturamento')">
         <i class="bi bi-receipt"></i> Faturamento
       </a>
-      <a class="nav-item" onclick="showSection('saques')">
-        <i class="bi bi-arrow-up-circle"></i> Saques
+      <div class="nav-label">Saques</div>
+      <a class="nav-item" onclick="showSection('meubanco')">
+        <i class="bi bi-bank2"></i> Solicitar Saque
       </a>
-      <a class="nav-item" onclick="showSection('chargebacks')">
-        <i class="bi bi-exclamation-triangle"></i> Chargebacks
+      <a class="nav-item" onclick="showSection('saques')">
+        <i class="bi bi-arrow-up-circle"></i> Histórico de Saques
       </a>
       <a class="nav-item" onclick="showSection('dadosbancarios')">
         <i class="bi bi-credit-card-2-back"></i> Dados Bancários
@@ -334,7 +335,7 @@ body {
     <!-- MEU BANCO -->
     <div class="section" id="secMeubanco">
       <div class="page-header">
-        <h1>Meu Banco</h1>
+        <h1>Solicitar Saque</h1>
         <p>Saldo disponível e valores aguardando liberação</p>
       </div>
       <div id="meubancoContent"><div class="spin-wrap"><div class="spin"></div></div></div>
@@ -666,7 +667,7 @@ async function loadMeubanco() {
       <div class="tcard-hd"><h5><i class="bi bi-info-circle me-1" style="color:var(--purple)"></i> Informações de Saque</h5></div>
       <div class="info-row"><span class="ir-lbl">Valor mínimo</span><span class="ir-val">R$ 1,00</span></div>
       <div class="info-row"><span class="ir-lbl">Prazo de processamento</span><span class="ir-val">até 48 horas úteis</span></div>
-      <div class="info-row"><span class="ir-lbl">Chave PIX</span><span class="ir-val" style="font-size:.8rem">Cadastrada em Meu Banco</span></div>
+      <div class="info-row"><span class="ir-lbl">Chave PIX</span><span class="ir-val" style="font-size:.8rem">Cadastrada em Dados Bancários</span></div>
     </div>
   `;
 }
