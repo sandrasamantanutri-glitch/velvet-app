@@ -4425,6 +4425,15 @@ function recalcularFechamento() {
   $('fechValCb').textContent          = cb > 0 ? '− ' + money(cb) : '—';
   $('fechCbQtd').textContent          = _fechCalculo?.chargebacks_qtd > 0 ? `(${_fechCalculo.chargebacks_qtd}x)` : '';
   $('fechValLiquido').textContent     = money(liquido);
+
+  const saquesMes    = _fechCalculo?.saques_mes    || 0;
+  const saquesMesQtd = _fechCalculo?.saques_mes_qtd || 0;
+  const rowEl = $('fechSaquesMesRow');
+  if (rowEl) rowEl.style.display = saquesMes > 0 ? '' : 'none';
+  const saquesMesQtdEl = $('fechSaquesMesQtd');
+  if (saquesMesQtdEl) saquesMesQtdEl.textContent = saquesMesQtd > 0 ? `(${saquesMesQtd}x)` : '';
+  const saquesMesEl = $('fechValSaquesMes');
+  if (saquesMesEl) saquesMesEl.textContent = saquesMes > 0 ? money(saquesMes) : '—';
 }
 
 async function previewFechamento() {

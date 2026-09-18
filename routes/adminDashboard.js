@@ -4040,7 +4040,7 @@ router.get("/modelo-pagamentos/calcular", authAdmin, async (req, res) => {
       [modelo_id, mesDate]
     );
 
-    const [midAssinRes, cbRes, saldoGeral, mdbRes] = await Promise.all([
+    const [midAssinRes, cbRes, saldoGeral, mdbRes, saqMesRes] = await Promise.all([
       // Mídias e assinaturas do mês (por data de disponibilidade ou criação)
       db.query(`
         SELECT
@@ -4077,7 +4077,17 @@ router.get("/modelo-pagamentos/calcular", authAdmin, async (req, res) => {
         FROM modelo_dados_bancarios mdb
         WHERE mdb.modelo_id = $1 AND mdb.status = 'aprovado'
         LIMIT 1
-      `, [modelo_id])
+      `, [modelo_id]),
+
+      // Saques pagos no mês
+      db.query(`
+        SELECT COALESCE(SUM(valor), 0) AS total, COUNT(*) AS qtd
+        FROM saques
+        WHERE modelo_id = $1
+          AND status = 'pago'
+          AND EXTRACT(YEAR  FROM processado_em AT TIME ZONE 'America/Sao_Paulo') = $2
+          AND EXTRACT(MONTH FROM processado_em AT TIME ZONE 'America/Sao_Paulo') = $3
+      `, [modelo_id, ano, mesNum])
     ]);
 
     const pagosRes = await db.query(
@@ -4098,6 +4108,8 @@ router.get("/modelo-pagamentos/calcular", authAdmin, async (req, res) => {
     const pagos        = Number(pagosRes.rows[0].pagos);
     const comprometidos = Number(saquesRes.rows[0].comprometidos);
     const saldo_disponivel = ganhosDisp - pagos - comprometidos;
+    const saques_mes   = Number(saqMesRes.rows[0].total);
+    const saques_mes_qtd = Number(saqMesRes.rows[0].qtd);
 
     res.json({
       midias,
@@ -4107,6 +4119,8 @@ router.get("/modelo-pagamentos/calcular", authAdmin, async (req, res) => {
       chargebacks_qtd: Number(cbRes.rows[0].qtd),
       valor_liquido,
       saldo_disponivel,
+      saques_mes,
+      saques_mes_qtd,
       ja_fechado: jaFechadoRes.rows[0] || null,
       dados_bancarios: mdbRes.rows[0] || null
     });
