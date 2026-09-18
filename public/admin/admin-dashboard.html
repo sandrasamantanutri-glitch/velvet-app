@@ -1090,13 +1090,22 @@
                 <span style="color:var(--red,#ef4444)">Chargebacks <span id="fechCbQtd" style="font-size:.78rem"></span></span>
                 <strong id="fechValCb" style="color:var(--red,#ef4444)">—</strong>
               </div>
-              <div id="fechSaquesMesRow" style="display:flex;justify-content:space-between;font-size:.9rem">
-                <span style="color:#6b7280">Saques realizados no mês <span id="fechSaquesMesQtd" style="font-size:.78rem"></span></span>
-                <strong id="fechValSaquesMes" style="color:#6b7280">—</strong>
-              </div>
-              <div style="border-top:2px solid var(--purple);padding-top:8px;display:flex;justify-content:space-between;font-size:1rem">
-                <span style="font-weight:700">Saldo Líquido a Pagar</span>
-                <strong id="fechValLiquido" style="color:var(--purple);font-size:1.05rem">—</strong>
+              <div id="fechSaquesDetalhes" style="display:none;margin-top:4px"></div>
+              <div style="border-top:2px solid var(--purple);padding-top:8px;margin-top:4px">
+                <div style="display:flex;justify-content:space-between;font-size:.92rem;margin-bottom:4px">
+                  <span style="font-weight:700">Saldo Líquido do Mês</span>
+                  <strong id="fechValLiquido" style="color:var(--purple);font-size:1.05rem">—</strong>
+                </div>
+                <div id="fechSaldoLiquidoPagoRow" style="display:none;flex-direction:column;gap:2px;border-top:1px dashed #ddd;padding-top:6px;margin-top:4px">
+                  <div style="display:flex;justify-content:space-between;font-size:.88rem;color:#6b7280">
+                    <span>Saldo líquido pago (saques)</span>
+                    <strong id="fechValSaldoPago" style="color:#6b7280">—</strong>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;font-size:.95rem;margin-top:2px">
+                    <span style="font-weight:700">Saldo Disponível</span>
+                    <strong id="fechValSaldoDisponivel" style="color:#16a34a;font-size:1rem">—</strong>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
