@@ -7738,8 +7738,8 @@ app.get("/api/modelo/painel/geral", authModelo, async (req, res) => {
       // Saques já pagos + pendentes
       db.query(`
         SELECT
-          COALESCE(SUM(valor) FILTER (WHERE status='pago'),     0) AS saques_pagos,
-          COALESCE(SUM(valor) FILTER (WHERE status='pendente'), 0) AS saques_pendentes
+          COALESCE(SUM(valor + COALESCE(taxa_saque,0)) FILTER (WHERE status='pago'),     0) AS saques_pagos,
+          COALESCE(SUM(valor + COALESCE(taxa_saque,0)) FILTER (WHERE status='pendente'), 0) AS saques_pendentes
         FROM saques WHERE modelo_id=$1
       `, [mid]),
       db.query(`
@@ -7837,11 +7837,11 @@ app.get("/api/modelo/painel/meubanco", authModelo, async (req, res) => {
       db.query(`
         SELECT COALESCE(SUM(total_geral),0) AS pagos FROM modelo_pagamentos WHERE modelo_id=$1 AND status='pago'
       `, [mid]),
-      // Saques já pagos + pendentes
+      // Saques já pagos + pendentes (valor + taxa comprometem o saldo)
       db.query(`
         SELECT
-          COALESCE(SUM(valor) FILTER (WHERE status='pago'),     0) AS saques_pagos,
-          COALESCE(SUM(valor) FILTER (WHERE status='pendente'), 0) AS saques_pendentes
+          COALESCE(SUM(valor + COALESCE(taxa_saque,0)) FILTER (WHERE status='pago'),     0) AS saques_pagos,
+          COALESCE(SUM(valor + COALESCE(taxa_saque,0)) FILTER (WHERE status='pendente'), 0) AS saques_pendentes
         FROM saques WHERE modelo_id=$1
       `, [mid]),
     ]);
@@ -8062,7 +8062,7 @@ app.post("/api/modelo/sacar", authModelo, async (req, res) => {
         SELECT COALESCE(SUM(total_geral),0) AS pagos FROM modelo_pagamentos WHERE modelo_id=$1 AND status='pago'
       `, [mid]),
       db.query(`
-        SELECT COALESCE(SUM(valor) FILTER (WHERE status IN ('pago','pendente')), 0) AS saques_comprometidos
+        SELECT COALESCE(SUM(valor + COALESCE(taxa_saque,0)) FILTER (WHERE status IN ('pago','pendente')), 0) AS saques_comprometidos
         FROM saques WHERE modelo_id=$1
       `, [mid]),
     ]);
@@ -8072,7 +8072,7 @@ app.post("/api/modelo/sacar", authModelo, async (req, res) => {
     const saquesComp = Number(saquesRes.rows[0].saques_comprometidos || 0);
     const saldoDisp  = ganhosDisp - pagos - saquesComp;
 
-    if (valorNum > saldoDisp + 0.01) {
+    if (valorNum + taxaSaque > saldoDisp + 0.01) {
       return res.status(400).json({
         erro: `Saldo insuficiente. Saldo disponível: R$ ${saldoDisp.toFixed(2).replace('.', ',')}`
       });

@@ -4097,7 +4097,7 @@ router.get("/modelo-pagamentos/calcular", authAdmin, async (req, res) => {
       [modelo_id]
     );
     const saquesRes = await db.query(
-      `SELECT COALESCE(SUM(valor) FILTER (WHERE status IN ('pago','pendente')), 0) AS comprometidos FROM saques WHERE modelo_id = $1`,
+      `SELECT COALESCE(SUM(valor + COALESCE(taxa_saque,0)) FILTER (WHERE status IN ('pago','pendente')), 0) AS comprometidos FROM saques WHERE modelo_id = $1`,
       [modelo_id]
     );
 
@@ -4516,8 +4516,8 @@ router.get("/modelo-pagamentos/saldo/:modelo_id", authAdmin, async (req, res) =>
 
     const saquesRes = await db.query(`
       SELECT
-        COALESCE(SUM(valor) FILTER (WHERE status = 'pago'),     0) AS saques_pagos,
-        COALESCE(SUM(valor) FILTER (WHERE status = 'pendente'), 0) AS saques_pendentes
+        COALESCE(SUM(valor + COALESCE(taxa_saque,0)) FILTER (WHERE status = 'pago'),     0) AS saques_pagos,
+        COALESCE(SUM(valor + COALESCE(taxa_saque,0)) FILTER (WHERE status = 'pendente'), 0) AS saques_pendentes
       FROM saques
       WHERE modelo_id = $1
         AND status IN ('pago', 'pendente')
