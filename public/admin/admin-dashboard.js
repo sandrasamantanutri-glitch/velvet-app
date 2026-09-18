@@ -4130,37 +4130,37 @@ pageLoaders['saques-modelos'] = async function () {
     const data = await fetchJSON(`/admin/dashboard/saques${qs}`).catch(() => ({ rows: [] }));
     const rows = data.rows || [];
 
+    const nomeModelo = s => s.nome_exibicao || s.modelo_nome || '#' + s.modelo_id;
+
     const tbody = rows.length ? rows.map(s => `
       <tr>
-        <td><strong>${s.modelo_nome || s.nome_exibicao || '#'+s.modelo_id}</strong></td>
+        <td><strong>${nomeModelo(s)}</strong><br><span style="font-size:.75rem;color:var(--text-muted)">${s.modelo_email||''}</span></td>
         <td><strong>${fmtBRL(s.valor)}</strong></td>
-        <td style="font-size:.82rem;color:var(--text-muted)">${s.chave_pix || s.banco || '—'}</td>
+        <td style="font-size:.82rem">${s.chave_pix ? `<span style="font-family:monospace">${s.chave_pix}</span>` : s.banco || '—'}</td>
         <td>${statusBadge[s.status] || `<span class="badge">${s.status}</span>`}</td>
-        <td style="font-size:.82rem;color:var(--text-muted)">${s.solicitado_fmt||'—'}</td>
-        <td style="font-size:.82rem;color:var(--text-muted)">${s.processado_fmt||'—'}</td>
+        <td style="font-size:.8rem;color:var(--text-muted)">${s.solicitado_fmt||'—'}</td>
+        <td style="font-size:.8rem;color:var(--text-muted)">${s.processado_fmt||'—'}</td>
+        <td>
+          ${s.comprovante_signed_url
+            ? `<a href="${s.comprovante_signed_url}" target="_blank" class="btn btn-sm btn-ghost">🧾 Ver</a>`
+            : `<span style="color:var(--text-muted)">—</span>`}
+        </td>
         <td>
           <div style="display:flex;gap:6px;flex-wrap:wrap">
             ${s.status==='pendente' ? `
-              <button class="btn btn-sm btn-primary" onclick="processarSaque(${s.id},'${(s.modelo_nome||s.nome_exibicao||'Modelo').replace(/'/g,"\\'")}',${s.valor})">Processar</button>
-              <button class="btn btn-sm btn-danger"  onclick="rejeitarSaque(${s.id},'${(s.modelo_nome||s.nome_exibicao||'Modelo').replace(/'/g,"\\'")}')">Rejeitar</button>
-            ` : ''}
-            ${s.comprovante_signed_url ? `
-              <a href="${s.comprovante_signed_url}" target="_blank" class="btn btn-sm btn-ghost">Comprovante</a>
-            ` : ''}
-            ${s.recibo_pdf_signed_url ? `
-              <a href="${s.recibo_pdf_signed_url}" target="_blank" class="btn btn-sm btn-ghost">Recibo</a>
-            ` : ''}
-            ${!s.comprovante_signed_url && !s.recibo_pdf_signed_url && s.status!=='pendente' ? '—' : ''}
+              <button class="btn btn-sm btn-primary" onclick="processarSaque(${s.id},'${nomeModelo(s).replace(/'/g,"\\'")}',${s.valor})">Processar</button>
+              <button class="btn btn-sm btn-danger"  onclick="rejeitarSaque(${s.id},'${nomeModelo(s).replace(/'/g,"\\'")}')">Rejeitar</button>
+            ` : '—'}
           </div>
         </td>
       </tr>
-    `).join('') : `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-muted)">Nenhum saque encontrado</td></tr>`;
+    `).join('') : `<tr><td colspan="8" class="empty-row">Nenhum saque encontrado</td></tr>`;
 
     $('saques-modelos-content').innerHTML = `
       <div class="card" style="margin-bottom:0">
         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px">
           <h3 style="flex:1;margin:0">Saques de Modelos</h3>
-          <select id="filtroStatusSaque" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:.88rem;cursor:pointer" onchange="renderSaquesAdmin(this.value)">
+          <select id="filtroStatusSaque" class="form-select" style="width:auto;padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:.88rem;cursor:pointer" onchange="renderSaquesAdmin(this.value)">
             <option value="">Todos os status</option>
             <option value="pendente"    ${filtroStatus==='pendente'   ?'selected':''}>Pendentes</option>
             <option value="pago"        ${filtroStatus==='pago'       ?'selected':''}>Pagos</option>
@@ -4170,11 +4170,11 @@ pageLoaders['saques-modelos'] = async function () {
           <button class="btn btn-ghost btn-sm" onclick="renderSaquesAdmin(document.getElementById('filtroStatusSaque').value)">↻ Atualizar</button>
           <span style="font-size:.82rem;color:var(--text-muted)">${rows.length} registro(s)</span>
         </div>
-        <div class="table-responsive">
-          <table class="data-table">
+        <div class="table-wrapper">
+          <table class="table">
             <thead><tr>
               <th>Modelo</th><th>Valor</th><th>Chave PIX / Banco</th><th>Status</th>
-              <th>Solicitado em</th><th>Processado em</th><th>Ações</th>
+              <th>Solicitado em</th><th>Processado em</th><th>Comprovante</th><th>Ações</th>
             </tr></thead>
             <tbody>${tbody}</tbody>
           </table>
@@ -4349,14 +4349,14 @@ let _fechCalculo = null; // armazena o último cálculo retornado pelo backend
 
 function onFechamentoChange() {
   const btn = $('btnCalcularFechamento');
-  if (btn) btn.disabled = !$('fechModeloId')?.value || !$('fechMes')?.value;
+  if (btn) btn.disabled = !$('fechModeloId')?.value || !$('pgtoFechMes')?.value;
   $('fechResultado').style.display = 'none';
   _fechCalculo = null;
 }
 
 async function calcularFechamento() {
   const modeloId = $('fechModeloId')?.value;
-  const mes      = $('fechMes')?.value; // YYYY-MM
+  const mes      = $('pgtoFechMes')?.value; // YYYY-MM
   if (!modeloId || !mes) return;
 
   const btn = $('btnCalcularFechamento');
@@ -4428,7 +4428,7 @@ function recalcularFechamento() {
 
 async function previewFechamento() {
   const modeloId = $('fechModeloId')?.value;
-  const mes      = $('fechMes')?.value;
+  const mes      = $('pgtoFechMes')?.value;
   if (!modeloId || !mes || !_fechCalculo) { toast('Calcule primeiro os valores', 'warning'); return; }
 
   const midias      = Number($('fechInputMidias')?.value     || 0);
@@ -4462,7 +4462,7 @@ async function previewFechamento() {
 
 async function confirmarFecharMes() {
   const modeloId = $('fechModeloId')?.value;
-  const mes      = $('fechMes')?.value;
+  const mes      = $('pgtoFechMes')?.value;
   if (!modeloId || !mes || !_fechCalculo) { toast('Calcule primeiro os valores', 'warning'); return; }
 
   const midias      = Number($('fechInputMidias')?.value     || 0);
@@ -4509,7 +4509,7 @@ async function confirmarFecharMes() {
     _fechCalculo = null;
     $('fechResultado').style.display = 'none';
     $('fechModeloId').value = '';
-    $('fechMes').value = '';
+    $('pgtoFechMes').value = '';
     $('btnCalcularFechamento').disabled = true;
   } catch (err) {
     const erroEl = $('fechErro');
@@ -4529,7 +4529,7 @@ pageLoaders['pagamentos-modelo'] = async function () {
   const now = new Date();
   const mesAnterior = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const mesVal = `${mesAnterior.getFullYear()}-${String(mesAnterior.getMonth() + 1).padStart(2, '0')}`;
-  if ($('fechMes')) $('fechMes').value = mesVal;
+  if ($('pgtoFechMes')) $('pgtoFechMes').value = mesVal;
 
   // Tab histórico: carregar selects do formato antigo
   await carregarModelosSelect('pgtoModeloFiltro');

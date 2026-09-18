@@ -833,11 +833,13 @@ async function loadSaques() {
 
 async function cancelarSaque(id) {
   if (!confirm('Cancelar este pedido de saque? O valor volta para o seu saldo disponível.')) return;
-  const r = await api(`/api/modelo/saques/${id}/cancelar`, { method: 'POST' });
-  if (r?.ok) {
-    loadSaques();
-    loadGeral(); // atualiza saldo disponível
-  }
+  const res = await fetch(`/api/modelo/saques/${id}/cancelar`, {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + token }
+  });
+  if (!res.ok) { alert('Erro ao cancelar saque'); return; }
+  loadSaques();
+  loadGeral();
 }
 
 // ── CHARGEBACKS ──────────────────────────────────────────────────────
