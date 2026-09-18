@@ -6853,6 +6853,15 @@ router.get("/saques", authAdmin, async (req, res) => {
       params.slice(0, params.length - 2)
     );
 
+    for (const row of rows) {
+      row.comprovante_signed_url = row.comprovante_url
+        ? s3Privado.getSignedUrl('getObject', { Bucket: process.env.R2_BUCKET_PRIVATE, Key: row.comprovante_url, Expires: 300 })
+        : null;
+      row.recibo_pdf_signed_url = row.recibo_pdf_url
+        ? s3Privado.getSignedUrl('getObject', { Bucket: process.env.R2_BUCKET_PRIVATE, Key: row.recibo_pdf_url, Expires: 300 })
+        : null;
+    }
+
     res.json({ rows, total: Number(countRes.rows[0].total) });
   } catch (err) {
     console.error("Erro listar saques:", err);
@@ -6878,7 +6887,14 @@ router.get("/saques/:id", authAdmin, async (req, res) => {
     `, [req.params.id]);
 
     if (!rows.length) return res.status(404).json({ erro: 'Saque não encontrado' });
-    res.json(rows[0]);
+    const row = rows[0];
+    row.comprovante_signed_url = row.comprovante_url
+      ? s3Privado.getSignedUrl('getObject', { Bucket: process.env.R2_BUCKET_PRIVATE, Key: row.comprovante_url, Expires: 300 })
+      : null;
+    row.recibo_pdf_signed_url = row.recibo_pdf_url
+      ? s3Privado.getSignedUrl('getObject', { Bucket: process.env.R2_BUCKET_PRIVATE, Key: row.recibo_pdf_url, Expires: 300 })
+      : null;
+    res.json(row);
   } catch (err) {
     console.error("Erro detalhe saque:", err);
     res.status(500).json({ erro: "Erro interno" });

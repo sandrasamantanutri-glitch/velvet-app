@@ -8042,12 +8042,19 @@ app.get("/api/modelo/saques", authModelo, async (req, res) => {
         saldo_disponivel_no_dia,
         TO_CHAR(solicitado_em AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY HH24:MI') AS solicitado_fmt,
         TO_CHAR(processado_em AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY HH24:MI') AS processado_fmt,
-        chave_pix, pix_tipo, pgto_tipo
+        chave_pix, pix_tipo, pgto_tipo, comprovante_url
       FROM saques
       WHERE modelo_id = $1
       ORDER BY solicitado_em DESC
       LIMIT 50
     `, [mid]);
+
+    for (const row of rows) {
+      row.comprovante_signed_url = row.comprovante_url
+        ? s3Privado.getSignedUrl('getObject', { Bucket: process.env.R2_BUCKET_PRIVATE, Key: row.comprovante_url, Expires: 300 })
+        : null;
+    }
+
     res.json({ rows });
   } catch (err) {
     console.error("Erro /api/modelo/saques:", err);

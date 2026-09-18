@@ -727,15 +727,25 @@ async function loadSaques() {
   const statusLabel = { pendente: '⏳ Pendente', pago: '✓ Pago', rejeitado: '✗ Rejeitado', processando: '🔄 Processando' };
   const statusColor = { pendente: '#f59e0b', pago: '#22c55e', rejeitado: '#ef4444', processando: '#7B2CFF' };
 
-  const tbody = rows.length ? rows.map(r => `
+  const tbody = rows.length ? rows.map(r => {
+    let obs = '—';
+    if (r.motivo_rejeicao) {
+      obs = `<span style="font-size:.8rem;color:#ef4444">${r.motivo_rejeicao}</span>`;
+    } else if (r.comprovante_signed_url) {
+      obs = `<a href="${r.comprovante_signed_url}" target="_blank" rel="noopener"
+        style="color:var(--purple,#7B2CFF);font-size:.82rem;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:4px">
+        <i class="bi bi-file-earmark-check"></i> Comprovante
+      </a>`;
+    }
+    return `
     <tr>
       <td>${r.solicitado_fmt || '—'}</td>
       <td style="font-weight:600">${fmt(r.valor)}</td>
       <td><span style="color:${statusColor[r.status] || '#888'};font-weight:600">${statusLabel[r.status] || r.status}</span></td>
       <td style="font-size:.8rem;opacity:.7">${r.processado_fmt || '—'}</td>
-      ${r.motivo_rejeicao ? `<td style="font-size:.8rem;color:#ef4444">${r.motivo_rejeicao}</td>` : '<td>—</td>'}
-    </tr>
-  `).join('') : `<tr><td colspan="5" style="text-align:center;opacity:.5;padding:24px">Nenhum saque ainda</td></tr>`;
+      <td>${obs}</td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="5" style="text-align:center;opacity:.5;padding:24px">Nenhum saque ainda</td></tr>`;
 
   document.getElementById('secSaques').innerHTML = `
     <div class="page-header">

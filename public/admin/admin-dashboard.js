@@ -4139,14 +4139,19 @@ pageLoaders['saques-modelos'] = async function () {
         <td style="font-size:.82rem;color:var(--text-muted)">${s.solicitado_fmt||'—'}</td>
         <td style="font-size:.82rem;color:var(--text-muted)">${s.processado_fmt||'—'}</td>
         <td>
-          ${s.status==='pendente' ? `
-            <div style="display:flex;gap:6px">
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            ${s.status==='pendente' ? `
               <button class="btn btn-sm btn-primary" onclick="processarSaque(${s.id},'${(s.modelo_nome||s.nome_exibicao||'Modelo').replace(/'/g,"\\'")}',${s.valor})">Processar</button>
               <button class="btn btn-sm btn-danger"  onclick="rejeitarSaque(${s.id},'${(s.modelo_nome||s.nome_exibicao||'Modelo').replace(/'/g,"\\'")}')">Rejeitar</button>
-            </div>
-          ` : s.status==='pago' && s.recibo_pdf_url ? `
-            <button class="btn btn-sm btn-ghost" onclick="verReciboPdf(${s.id})">Ver Recibo</button>
-          ` : '—'}
+            ` : ''}
+            ${s.comprovante_signed_url ? `
+              <a href="${s.comprovante_signed_url}" target="_blank" class="btn btn-sm btn-ghost">Comprovante</a>
+            ` : ''}
+            ${s.recibo_pdf_signed_url ? `
+              <a href="${s.recibo_pdf_signed_url}" target="_blank" class="btn btn-sm btn-ghost">Recibo</a>
+            ` : ''}
+            ${!s.comprovante_signed_url && !s.recibo_pdf_signed_url && s.status!=='pendente' ? '—' : ''}
+          </div>
         </td>
       </tr>
     `).join('') : `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-muted)">Nenhum saque encontrado</td></tr>`;
@@ -4313,8 +4318,10 @@ pageLoaders['saques-modelos'] = async function () {
     const token = localStorage.getItem('admin_token') || localStorage.getItem('token') || '';
     const r = await fetch(`/admin/dashboard/saques/${saqueId}`, { headers: { Authorization: `Bearer ${token}` } });
     const data = await r.json();
-    if (data.recibo_pdf_url) {
-      window.open(data.recibo_pdf_url, '_blank');
+    if (data.recibo_pdf_signed_url) {
+      window.open(data.recibo_pdf_signed_url, '_blank');
+    } else if (data.comprovante_signed_url) {
+      window.open(data.comprovante_signed_url, '_blank');
     } else {
       showToast('Recibo PDF não disponível para este saque.', 'error');
     }
