@@ -8148,6 +8148,20 @@ app.post("/api/modelo/dados-bancarios/solicitar", authModelo, async (req, res) =
       [mid, tipo, pix_tipo, pix_chave, banco, agencia, conta, conta_tipo, titular_nome, titular_documento, newStatus, motivo_pedido]
     );
 
+    const nomeRes = await db.query(
+      `SELECT nome_exibicao, nome FROM modelos WHERE id = $1`, [mid]
+    );
+    const nomeModelo = nomeRes.rows[0]?.nome_exibicao || nomeRes.rows[0]?.nome || `Modelo #${mid}`;
+    const io = req.app.get('io');
+    await criarNotificacaoAdmin(db, io, {
+      tipo: 'dados_bancarios',
+      referencia_id: mid,
+      titulo: newStatus === 'pendente' ? 'Novos dados bancários pendentes' : 'Alteração de dados bancários pendente',
+      mensagem: newStatus === 'pendente'
+        ? `Modelo ${nomeModelo} enviou dados bancários para análise.`
+        : `Modelo ${nomeModelo} solicitou alteração de dados bancários.`,
+    });
+
     res.json({ ok: true });
   } catch (err) {
     console.error("Erro /api/modelo/dados-bancarios/solicitar:", err.message, err.detail || '');
