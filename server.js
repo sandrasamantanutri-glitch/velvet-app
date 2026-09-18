@@ -7761,7 +7761,8 @@ app.get("/api/modelo/painel/geral", authModelo, async (req, res) => {
     const pagos        = parseFloat(pagosRes.rows[0].pagos);
     const saquesPagos  = parseFloat(saquesRes.rows[0].saques_pagos);
     const saqPendentes = parseFloat(saquesRes.rows[0].saques_pendentes);
-    const disponivel   = Math.max(0, bruto - pagos - saquesPagos - saqPendentes);
+    // Chargeback já deduz via mudança de status em transacoes_agency (status='chargeback' sai do bruto)
+    const disponivel   = bruto - pagos - saquesPagos - saqPendentes;
 
     res.json({
       disponivel,
@@ -7850,7 +7851,8 @@ app.get("/api/modelo/painel/meubanco", authModelo, async (req, res) => {
     const pagos         = parseFloat(pagosRes.rows[0].pagos);
     const saquesPagos   = parseFloat(saquesRes.rows[0].saques_pagos);
     const saqPendentes  = parseFloat(saquesRes.rows[0].saques_pendentes);
-    const disponivel    = Math.max(0, bruto - pagos - saquesPagos - saqPendentes);
+    // Chargeback já deduz via mudança de status em transacoes_agency (status='chargeback' sai do bruto)
+    const disponivel    = bruto - pagos - saquesPagos - saqPendentes;
 
     res.json({
       disponivel,
@@ -7974,7 +7976,7 @@ app.post("/api/modelo/sacar", authModelo, async (req, res) => {
     }
     const banc = bancRes.rows[0];
 
-    // Verificar saldo disponível (descontando pagamentos e saques já existentes)
+    // Verificar saldo disponível (descontando pagamentos e saques; chargeback já deduz via status em transacoes_agency)
     const [ganhosRes, pagosRes, saquesRes] = await Promise.all([
       db.query(`
         SELECT COALESCE(SUM(valor_modelo) FILTER (
@@ -8032,6 +8034,49 @@ app.post("/api/modelo/sacar", authModelo, async (req, res) => {
   }
 });
 
+// ── Faturamento da modelo (meses fechados) ────────────────────────────────────
+app.get("/api/modelo/faturamento", authModelo, async (req, res) => {
+  try {
+    const mid = req.modelo_id;
+    const { rows } = await db.query(`
+      SELECT
+        id, mes, total_geral, total_midias, total_assinaturas,
+        chargebacks, valor_liquido, status, recibo_pdf_url,
+        TO_CHAR(mes, 'YYYY-MM') AS mes_iso,
+        TO_CHAR(pago_em AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY') AS pago_em_fmt
+      FROM modelo_pagamentos
+      WHERE modelo_id = $1 AND status = 'pago'
+      ORDER BY mes DESC
+    `, [mid]);
+
+    for (const row of rows) {
+      row.recibo_pdf_signed_url = row.recibo_pdf_url
+        ? s3Privado.getSignedUrl('getObject', { Bucket: process.env.R2_BUCKET_PRIVATE, Key: row.recibo_pdf_url, Expires: 300 })
+        : null;
+    }
+
+    res.json({ rows });
+  } catch (err) {
+    console.error("Erro /api/modelo/faturamento:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+// ── Cancelar saque pendente (pela própria modelo) ────────────────────────────
+app.post("/api/modelo/saques/:id/cancelar", authModelo, async (req, res) => {
+  try {
+    const { rows } = await db.query(
+      `DELETE FROM saques WHERE id=$1 AND modelo_id=$2 AND status='pendente' RETURNING id`,
+      [req.params.id, req.modelo_id]
+    );
+    if (!rows.length) return res.status(404).json({ erro: 'Saque não encontrado ou já processado' });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("Erro cancelar saque:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
 // ── Histórico de saques da modelo ────────────────────────────────────────────
 app.get("/api/modelo/saques", authModelo, async (req, res) => {
   try {
@@ -8042,12 +8087,19 @@ app.get("/api/modelo/saques", authModelo, async (req, res) => {
         saldo_disponivel_no_dia,
         TO_CHAR(solicitado_em AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY HH24:MI') AS solicitado_fmt,
         TO_CHAR(processado_em AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY HH24:MI') AS processado_fmt,
-        chave_pix, pix_tipo, pgto_tipo
+        chave_pix, pix_tipo, pgto_tipo, comprovante_url
       FROM saques
       WHERE modelo_id = $1
       ORDER BY solicitado_em DESC
       LIMIT 50
     `, [mid]);
+
+    for (const row of rows) {
+      row.comprovante_signed_url = row.comprovante_url
+        ? s3Privado.getSignedUrl('getObject', { Bucket: process.env.R2_BUCKET_PRIVATE, Key: row.comprovante_url, Expires: 300 })
+        : null;
+    }
+
     res.json({ rows });
   } catch (err) {
     console.error("Erro /api/modelo/saques:", err);

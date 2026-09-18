@@ -274,6 +274,9 @@ body {
       <a class="nav-item" onclick="showSection('meubanco')">
         <i class="bi bi-bank2"></i> Meu Banco
       </a>
+      <a class="nav-item" onclick="showSection('faturamento')">
+        <i class="bi bi-receipt"></i> Faturamento
+      </a>
       <a class="nav-item" onclick="showSection('saques')">
         <i class="bi bi-arrow-up-circle"></i> Saques
       </a>
@@ -336,6 +339,11 @@ body {
 
     <!-- SAQUES -->
     <div class="section" id="secSaques">
+      <div class="spin-wrap"><div class="spin"></div></div>
+    </div>
+
+    <!-- FATURAMENTO -->
+    <div class="section" id="secFaturamento">
       <div class="spin-wrap"><div class="spin"></div></div>
     </div>
 
@@ -414,7 +422,7 @@ async function api(path) {
 // ── NAVIGATION ───────────────────────────────────────────────────────
 const secMap = {
   geral:'secGeral', pix:'secPix', cartao:'secCartao',
-  meubanco:'secMeubanco', saques:'secSaques', chargebacks:'secChargebacks',
+  meubanco:'secMeubanco', faturamento:'secFaturamento', saques:'secSaques', chargebacks:'secChargebacks',
   trafego:'secTrafego', assinantes:'secAssinantes'
 };
 
@@ -432,7 +440,7 @@ function showSection(name) {
 
 const loaders = {
   geral: loadGeral, pix: loadPix, cartao: loadCartao,
-  meubanco: loadMeubanco, saques: loadSaques, chargebacks: loadChargebacks,
+  meubanco: loadMeubanco, faturamento: loadFaturamento, saques: loadSaques, chargebacks: loadChargebacks,
   trafego: loadTrafego, assinantes: loadAssinantes,
 };
 const errMap = {
@@ -468,11 +476,11 @@ async function loadGeral() {
   if (!d) return;
   document.getElementById('geralContent').innerHTML = `
     <div class="cards-grid">
-      <div class="sc green">
+      <div class="sc ${d.disponivel < 0 ? 'red' : 'green'}">
         <div class="sc-icon"><i class="bi bi-cash-stack"></i></div>
-        <div class="sc-lbl"><i class="bi bi-circle-fill" style="color:var(--ok);font-size:.45rem"></i> Saldo para Saque</div>
-        <div class="sc-val" style="color:var(--ok)">${fmt(d.disponivel)}</div>
-        <div class="sc-sub">Disponível agora</div>
+        <div class="sc-lbl"><i class="bi bi-circle-fill" style="color:${d.disponivel < 0 ? 'var(--danger,#ef4444)' : 'var(--ok)'};font-size:.45rem"></i> Saldo para Saque</div>
+        <div class="sc-val" style="color:${d.disponivel < 0 ? 'var(--danger,#ef4444)' : 'var(--ok)'}">${fmt(d.disponivel)}</div>
+        <div class="sc-sub">${d.disponivel < 0 ? 'Saldo negativo — chargeback pendente' : 'Disponível agora'}</div>
       </div>
       <div class="sc amber">
         <div class="sc-icon"><i class="bi bi-hourglass-split"></i></div>
@@ -622,10 +630,10 @@ async function loadMeubanco() {
 
   document.getElementById('meubancoContent').innerHTML = `
     <div class="cards-grid-2">
-      <div class="banco-main">
+      <div class="banco-main" style="${disponivel < 0 ? 'border-left:4px solid var(--danger,#ef4444)' : ''}">
         <div class="bm-lbl"><i class="bi bi-bank2"></i> Saldo Disponível para Saque</div>
-        <div class="bm-amt">${fmt(disponivel)}</div>
-        <div class="bm-sub">Valores liberados prontos para retirada</div>
+        <div class="bm-amt" style="${disponivel < 0 ? 'color:var(--danger,#ef4444)' : ''}">${fmt(disponivel)}</div>
+        <div class="bm-sub">${disponivel < 0 ? '⚠️ Saldo negativo — chargeback pendente de compensação' : 'Valores liberados prontos para retirada'}</div>
         ${btnSaque}
       </div>
       <div class="sc amber" style="display:flex;flex-direction:column;justify-content:center">
@@ -652,22 +660,22 @@ async function loadMeubanco() {
 function abrirModalSaque(saldoDisp) {
   const modal = document.createElement('div');
   modal.id = 'modalSaque';
-  modal.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px`;
+  modal.style.cssText = `position:fixed;inset:0;background:rgba(30,30,38,.45);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px`;
   modal.innerHTML = `
-    <div style="background:var(--surface,#1a1a2e);border:1px solid var(--border,#333);border-radius:16px;padding:32px;max-width:420px;width:100%">
-      <h3 style="margin:0 0 8px;color:var(--purple-light,#a78bfa)"><i class="bi bi-arrow-up-circle"></i> Solicitar Saque</h3>
-      <p style="margin:0 0 20px;font-size:.88rem;opacity:.75">Saldo disponível: <strong>${fmt(saldoDisp)}</strong></p>
-      <label style="font-size:.85rem;font-weight:600;display:block;margin-bottom:6px">Valor a sacar (R$)</label>
+    <div style="background:#fff;border:1px solid var(--border,#e8e4f4);border-radius:16px;padding:32px;max-width:420px;width:100%;box-shadow:0 8px 32px rgba(123,44,255,.12)">
+      <h3 style="margin:0 0 4px;color:var(--purple,#7B2CFF);font-size:1.1rem"><i class="bi bi-arrow-up-circle"></i> Solicitar Saque</h3>
+      <p style="margin:0 0 20px;font-size:.88rem;color:var(--muted,#888)">Saldo disponível: <strong style="color:var(--text,#1E1E26)">${fmt(saldoDisp)}</strong></p>
+      <label style="font-size:.85rem;font-weight:600;display:block;margin-bottom:6px;color:var(--text,#1E1E26)">Valor a sacar (R$)</label>
       <input id="inputValorSaque" type="number" min="0.01" max="${saldoDisp.toFixed(2)}" step="0.01" value="${saldoDisp.toFixed(2)}"
-        style="width:100%;padding:10px 14px;border-radius:8px;border:1px solid var(--border,#444);background:var(--bg,#0f0f1a);color:inherit;font-size:1rem;box-sizing:border-box">
-      <div id="saqueErro" style="color:#f87171;font-size:.82rem;margin-top:8px;display:none"></div>
+        style="width:100%;padding:10px 14px;border-radius:8px;border:1px solid var(--border,#e8e4f4);background:var(--bg,#fbfaff);color:var(--text,#1E1E26);font-size:1rem;box-sizing:border-box;outline:none">
+      <div id="saqueErro" style="color:#dc2626;font-size:.82rem;margin-top:8px;display:none"></div>
       <div style="display:flex;gap:12px;margin-top:24px">
         <button onclick="document.getElementById('modalSaque').remove()"
-          style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border,#444);background:transparent;color:inherit;cursor:pointer">
+          style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border,#e8e4f4);background:#fff;color:var(--text,#1E1E26);cursor:pointer;font-weight:500">
           Cancelar
         </button>
         <button id="btnConfirmarSaque" onclick="confirmarSaque(${saldoDisp})"
-          style="flex:1;padding:10px;border-radius:8px;border:none;background:#7B2CFF;color:#fff;font-weight:700;cursor:pointer">
+          style="flex:1;padding:10px;border-radius:8px;border:none;background:var(--purple,#7B2CFF);color:#fff;font-weight:700;cursor:pointer">
           Confirmar Saque
         </button>
       </div>
@@ -718,6 +726,65 @@ async function confirmarSaque(saldoDisp) {
   setTimeout(() => toast.remove(), 4000);
 }
 
+// ── FATURAMENTO ──────────────────────────────────────────────────────
+async function loadFaturamento() {
+  const d = await api('/api/modelo/faturamento');
+  if (!d) return;
+  const rows = d.rows || [];
+
+  const mesNome = iso => {
+    const [y, m] = iso.split('-');
+    return `${['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'][Number(m)-1]} ${y}`;
+  };
+
+  const tbody = rows.length ? rows.map(r => `
+    <tr>
+      <td style="font-weight:600">${mesNome(r.mes_iso || (r.mes||'').slice(0,7))}</td>
+      <td style="font-weight:700;color:var(--purple,#7B2CFF)">${fmt(r.total_geral)}</td>
+      <td style="font-size:.85rem">${fmt(r.total_midias)}</td>
+      <td style="font-size:.85rem">${fmt(r.total_assinaturas)}</td>
+      <td style="font-size:.85rem;color:var(--red,#ef4444)">${r.chargebacks > 0 ? '− ' + fmt(r.chargebacks) : '—'}</td>
+      <td style="font-weight:600">${fmt(r.valor_liquido || (Number(r.total_geral) - Number(r.chargebacks || 0)))}</td>
+      <td>
+        ${r.recibo_pdf_signed_url
+          ? `<a href="${r.recibo_pdf_signed_url}" target="_blank" rel="noopener"
+              style="display:inline-flex;align-items:center;gap:5px;padding:6px 14px;border-radius:8px;background:var(--purple,#7B2CFF);color:#fff;font-size:.82rem;font-weight:600;text-decoration:none">
+              <i class="bi bi-file-earmark-pdf"></i> Ver Recibo
+            </a>`
+          : '<span style="font-size:.8rem;color:var(--muted,#888)">—</span>'}
+      </td>
+    </tr>
+  `).join('') : `<tr><td colspan="7" style="text-align:center;padding:40px;opacity:.5">Nenhum mês fechado ainda</td></tr>`;
+
+  document.getElementById('secFaturamento').innerHTML = `
+    <div class="page-header">
+      <h1><i class="bi bi-receipt"></i> Faturamento</h1>
+      <p>Histórico de meses fechados e recibos de pagamento</p>
+    </div>
+    <div class="tcard" style="padding:0;overflow:hidden">
+      <div class="table-resp">
+        <table class="dt">
+          <thead>
+            <tr>
+              <th>Mês</th>
+              <th>Ganhos Brutos</th>
+              <th>Mídias</th>
+              <th>Assinaturas</th>
+              <th>Chargebacks</th>
+              <th>Saldo Líquido</th>
+              <th>Recibo</th>
+            </tr>
+          </thead>
+          <tbody>${tbody}</tbody>
+        </table>
+      </div>
+    </div>
+    ${rows.length ? `<p style="font-size:.78rem;color:var(--muted,#888);margin-top:12px;text-align:center">
+      Os recibos ficam disponíveis para download por 5 minutos após abrir esta página. Atualize para gerar novos links.
+    </p>` : ''}
+  `;
+}
+
 // ── SAQUES ───────────────────────────────────────────────────────────
 async function loadSaques() {
   const d = await api('/api/modelo/saques');
@@ -727,15 +794,28 @@ async function loadSaques() {
   const statusLabel = { pendente: '⏳ Pendente', pago: '✓ Pago', rejeitado: '✗ Rejeitado', processando: '🔄 Processando' };
   const statusColor = { pendente: '#f59e0b', pago: '#22c55e', rejeitado: '#ef4444', processando: '#7B2CFF' };
 
-  const tbody = rows.length ? rows.map(r => `
+  const tbody = rows.length ? rows.map(r => {
+    let obs = '—';
+    if (r.motivo_rejeicao) {
+      obs = `<span style="font-size:.8rem;color:#ef4444">${r.motivo_rejeicao}</span>`;
+    } else if (r.comprovante_signed_url) {
+      obs = `<a href="${r.comprovante_signed_url}" target="_blank" rel="noopener"
+        style="color:var(--purple,#7B2CFF);font-size:.82rem;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:4px">
+        <i class="bi bi-file-earmark-check"></i> Comprovante
+      </a>`;
+    }
+    const cancelBtn = r.status === 'pendente'
+      ? `<button onclick="cancelarSaque(${r.id})" style="background:none;border:1px solid #ef4444;color:#ef4444;border-radius:6px;padding:2px 10px;font-size:.78rem;cursor:pointer;margin-left:4px">Cancelar</button>`
+      : '';
+    return `
     <tr>
       <td>${r.solicitado_fmt || '—'}</td>
       <td style="font-weight:600">${fmt(r.valor)}</td>
-      <td><span style="color:${statusColor[r.status] || '#888'};font-weight:600">${statusLabel[r.status] || r.status}</span></td>
+      <td><span style="color:${statusColor[r.status] || '#888'};font-weight:600">${statusLabel[r.status] || r.status}</span>${cancelBtn}</td>
       <td style="font-size:.8rem;opacity:.7">${r.processado_fmt || '—'}</td>
-      ${r.motivo_rejeicao ? `<td style="font-size:.8rem;color:#ef4444">${r.motivo_rejeicao}</td>` : '<td>—</td>'}
-    </tr>
-  `).join('') : `<tr><td colspan="5" style="text-align:center;opacity:.5;padding:24px">Nenhum saque ainda</td></tr>`;
+      <td>${obs}</td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="5" style="text-align:center;opacity:.5;padding:24px">Nenhum saque ainda</td></tr>`;
 
   document.getElementById('secSaques').innerHTML = `
     <div class="page-header">
@@ -749,6 +829,15 @@ async function loadSaques() {
       </table>
     </div>
   `;
+}
+
+async function cancelarSaque(id) {
+  if (!confirm('Cancelar este pedido de saque? O valor volta para o seu saldo disponível.')) return;
+  const r = await api(`/api/modelo/saques/${id}/cancelar`, { method: 'POST' });
+  if (r?.ok) {
+    loadSaques();
+    loadGeral(); // atualiza saldo disponível
+  }
 }
 
 // ── CHARGEBACKS ──────────────────────────────────────────────────────
