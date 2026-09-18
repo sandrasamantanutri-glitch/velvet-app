@@ -4101,8 +4101,29 @@ async function editarVip(id) {
 
 pageLoaders['saques-modelos'] = async function () {
   const fmtBRL = v => `R$ ${Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
-  const statusLabel = { pendente:'⏳ Pendente', pago:'✓ Pago', rejeitado:'✗ Rejeitado', processando:'🔄 Processando' };
-  const statusColor = { pendente:'#f59e0b', pago:'#22c55e', rejeitado:'#ef4444', processando:'#7B2CFF' };
+
+  const statusBadge = {
+    pendente:    '<span class="badge badge-warning">Pendente</span>',
+    pago:        '<span class="badge badge-success">Pago</span>',
+    rejeitado:   '<span class="badge badge-danger">Rejeitado</span>',
+    processando: '<span class="badge badge-info">Processando</span>'
+  };
+
+  function showToast(msg, type = 'success') {
+    const t = document.createElement('div');
+    const bg = type === 'success' ? 'var(--green,#10b981)' : type === 'warning' ? 'var(--yellow,#f59e0b)' : 'var(--red,#ef4444)';
+    t.style.cssText = `position:fixed;bottom:24px;right:24px;background:${bg};color:#fff;padding:12px 20px;border-radius:10px;z-index:9999;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.15);font-size:.9rem`;
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 4000);
+  }
+
+  function closeModal(id) {
+    const overlay = document.getElementById(id + 'Overlay');
+    const modal   = document.getElementById(id);
+    if (overlay) overlay.remove();
+    if (modal)   modal.remove();
+  }
 
   async function renderSaques(filtroStatus = '') {
     const qs = filtroStatus ? `?status=${filtroStatus}` : '';
@@ -4111,43 +4132,48 @@ pageLoaders['saques-modelos'] = async function () {
 
     const tbody = rows.length ? rows.map(s => `
       <tr>
-        <td>${s.modelo_nome || s.nome_exibicao || '#'+s.modelo_id}</td>
-        <td style="font-weight:700">${fmtBRL(s.valor)}</td>
-        <td style="font-size:.8rem">${s.chave_pix || s.banco || '—'}</td>
-        <td><span style="color:${statusColor[s.status]||'#888'};font-weight:600">${statusLabel[s.status]||s.status}</span></td>
-        <td style="font-size:.82rem">${s.solicitado_fmt||'—'}</td>
-        <td style="font-size:.82rem">${s.processado_fmt||'—'}</td>
+        <td><strong>${s.modelo_nome || s.nome_exibicao || '#'+s.modelo_id}</strong></td>
+        <td><strong>${fmtBRL(s.valor)}</strong></td>
+        <td style="font-size:.82rem;color:var(--text-muted)">${s.chave_pix || s.banco || '—'}</td>
+        <td>${statusBadge[s.status] || `<span class="badge">${s.status}</span>`}</td>
+        <td style="font-size:.82rem;color:var(--text-muted)">${s.solicitado_fmt||'—'}</td>
+        <td style="font-size:.82rem;color:var(--text-muted)">${s.processado_fmt||'—'}</td>
         <td>
           ${s.status==='pendente' ? `
-            <button class="btn-sm btn-primary" onclick="processarSaque(${s.id},'${(s.modelo_nome||s.nome_exibicao||'Modelo').replace(/'/g,"\\'")}',${s.valor})">Processar</button>
-            <button class="btn-sm btn-danger" style="margin-left:4px" onclick="rejeitarSaque(${s.id})">Rejeitar</button>
+            <div style="display:flex;gap:6px">
+              <button class="btn btn-sm btn-primary" onclick="processarSaque(${s.id},'${(s.modelo_nome||s.nome_exibicao||'Modelo').replace(/'/g,"\\'")}',${s.valor})">Processar</button>
+              <button class="btn btn-sm btn-danger"  onclick="rejeitarSaque(${s.id},'${(s.modelo_nome||s.nome_exibicao||'Modelo').replace(/'/g,"\\'")}')">Rejeitar</button>
+            </div>
           ` : s.status==='pago' && s.recibo_pdf_url ? `
-            <button class="btn-sm" onclick="verReciboPdf(${s.id})">Recibo</button>
+            <button class="btn btn-sm btn-ghost" onclick="verReciboPdf(${s.id})">Ver Recibo</button>
           ` : '—'}
         </td>
       </tr>
-    `).join('') : `<tr><td colspan="7" style="text-align:center;padding:24px;opacity:.5">Nenhum saque encontrado</td></tr>`;
+    `).join('') : `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-muted)">Nenhum saque encontrado</td></tr>`;
 
     $('saques-modelos-content').innerHTML = `
-      <div style="margin-bottom:16px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-        <select id="filtroStatusSaque" onchange="renderSaquesAdmin(this.value)"
-          style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:inherit;cursor:pointer">
-          <option value="">Todos os status</option>
-          <option value="pendente" ${filtroStatus==='pendente'?'selected':''}>Pendentes</option>
-          <option value="pago" ${filtroStatus==='pago'?'selected':''}>Pagos</option>
-          <option value="rejeitado" ${filtroStatus==='rejeitado'?'selected':''}>Rejeitados</option>
-        </select>
-        <button class="btn-sm" onclick="renderSaquesAdmin(document.getElementById('filtroStatusSaque').value)">Atualizar</button>
-        <span style="opacity:.6;font-size:.82rem">${rows.length} registro(s)</span>
-      </div>
-      <div class="table-responsive">
-        <table class="data-table">
-          <thead><tr>
-            <th>Modelo</th><th>Valor</th><th>Chave PIX / Banco</th><th>Status</th>
-            <th>Solicitado</th><th>Processado</th><th>Ações</th>
-          </tr></thead>
-          <tbody>${tbody}</tbody>
-        </table>
+      <div class="card" style="margin-bottom:0">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+          <h3 style="flex:1;margin:0">Saques de Modelos</h3>
+          <select id="filtroStatusSaque" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:.88rem;cursor:pointer" onchange="renderSaquesAdmin(this.value)">
+            <option value="">Todos os status</option>
+            <option value="pendente"    ${filtroStatus==='pendente'   ?'selected':''}>Pendentes</option>
+            <option value="pago"        ${filtroStatus==='pago'       ?'selected':''}>Pagos</option>
+            <option value="processando" ${filtroStatus==='processando'?'selected':''}>Processando</option>
+            <option value="rejeitado"   ${filtroStatus==='rejeitado'  ?'selected':''}>Rejeitados</option>
+          </select>
+          <button class="btn btn-ghost btn-sm" onclick="renderSaquesAdmin(document.getElementById('filtroStatusSaque').value)">↻ Atualizar</button>
+          <span style="font-size:.82rem;color:var(--text-muted)">${rows.length} registro(s)</span>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead><tr>
+              <th>Modelo</th><th>Valor</th><th>Chave PIX / Banco</th><th>Status</th>
+              <th>Solicitado em</th><th>Processado em</th><th>Ações</th>
+            </tr></thead>
+            <tbody>${tbody}</tbody>
+          </table>
+        </div>
       </div>
     `;
   }
@@ -4156,35 +4182,44 @@ pageLoaders['saques-modelos'] = async function () {
 
   window.processarSaque = function(saqueId, nomeModelo, valor) {
     const fmtV = fmtBRL(valor);
+
+    const overlay = document.createElement('div');
+    overlay.id = 'modalProcessarSaqueOverlay';
+    overlay.className = 'modal-overlay active';
+    overlay.onclick = e => { if (e.target === overlay) closeModal('modalProcessarSaque'); };
+
     const modal = document.createElement('div');
     modal.id = 'modalProcessarSaque';
-    modal.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px`;
+    modal.className = 'modal active';
     modal.innerHTML = `
-      <div style="background:var(--surface,#1a1a2e);border:1px solid var(--border,#333);border-radius:16px;padding:32px;max-width:460px;width:100%">
-        <h3 style="margin:0 0 8px;color:var(--purple-light,#a78bfa)">Processar Saque #${String(saqueId).padStart(6,'0')}</h3>
-        <p style="margin:0 0 20px;font-size:.88rem;opacity:.75"><strong>${nomeModelo}</strong> — ${fmtV}</p>
-        <label style="font-size:.85rem;font-weight:600;display:block;margin-bottom:6px">Comprovante de transferência (PDF ou imagem)</label>
-        <input type="file" id="comprovanteFile" accept="image/*,.pdf"
-          style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--border,#444);background:var(--bg);color:inherit;box-sizing:border-box;font-size:.88rem">
-        <p style="font-size:.78rem;opacity:.6;margin:4px 0 0">Opcional mas recomendado — será enviado junto com o recibo no email da modelo</p>
-        <div id="saqueProcessarErro" style="color:#f87171;font-size:.82rem;margin-top:8px;display:none"></div>
-        <div style="display:flex;gap:12px;margin-top:24px">
-          <button onclick="document.getElementById('modalProcessarSaque').remove()"
-            style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:transparent;color:inherit;cursor:pointer">Cancelar</button>
-          <button id="btnEnviarProcessar"
-            onclick="enviarProcessarSaque(${saqueId})"
-            style="flex:1;padding:10px;border-radius:8px;border:none;background:#22c55e;color:#fff;font-weight:700;cursor:pointer">
-            ✓ Confirmar & Enviar Email
-          </button>
-        </div>
+      <div class="modal-header">
+        <h3>Processar Saque #${String(saqueId).padStart(6,'0')}</h3>
+        <button class="modal-close" onclick="closeModalSaque('modalProcessarSaque')">×</button>
+      </div>
+      <div class="modal-body">
+        <p style="margin:0 0 16px;color:var(--text-muted);font-size:.9rem">
+          Modelo: <strong style="color:var(--text)">${nomeModelo}</strong> &nbsp;·&nbsp; Valor: <strong style="color:var(--purple)">${fmtV}</strong>
+        </p>
+        <label style="display:block;font-size:.85rem;font-weight:600;color:var(--text-muted);margin-bottom:6px">Comprovante de transferência <span style="font-weight:400">(PDF ou imagem — opcional)</span></label>
+        <input type="file" id="comprovanteFile" accept="image/*,.pdf">
+        <p style="font-size:.78rem;color:var(--text-muted);margin:6px 0 0">Será enviado junto com o recibo no e-mail da modelo.</p>
+        <div id="saqueProcessarErro" style="display:none;margin-top:8px;color:var(--red,#ef4444);font-size:.82rem"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeModalSaque('modalProcessarSaque')">Cancelar</button>
+        <button id="btnEnviarProcessar" class="btn btn-success" onclick="enviarProcessarSaque(${saqueId})">✓ Confirmar & Enviar E-mail</button>
       </div>
     `;
+
+    document.body.appendChild(overlay);
     document.body.appendChild(modal);
   };
 
+  window.closeModalSaque = function(id) { closeModal(id); };
+
   window.enviarProcessarSaque = async function(saqueId) {
-    const btn = document.getElementById('btnEnviarProcessar');
-    const erroEl = document.getElementById('saqueProcessarErro');
+    const btn     = document.getElementById('btnEnviarProcessar');
+    const erroEl  = document.getElementById('saqueProcessarErro');
     const fileInput = document.getElementById('comprovanteFile');
 
     btn.disabled = true;
@@ -4206,21 +4241,55 @@ pageLoaders['saques-modelos'] = async function () {
       erroEl.textContent = data.erro || 'Erro ao processar saque';
       erroEl.style.display = 'block';
       btn.disabled = false;
-      btn.textContent = '✓ Confirmar & Enviar Email';
+      btn.textContent = '✓ Confirmar & Enviar E-mail';
       return;
     }
 
-    document.getElementById('modalProcessarSaque').remove();
-    const t = document.createElement('div');
-    t.style.cssText='position:fixed;bottom:24px;right:24px;background:#22c55e;color:#fff;padding:12px 20px;border-radius:10px;z-index:9999;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.3)';
-    t.textContent='✓ Saque processado! Email enviado à modelo.';
-    document.body.appendChild(t); setTimeout(()=>t.remove(),4000);
+    closeModal('modalProcessarSaque');
+    showToast('✓ Saque processado! E-mail enviado à modelo.');
     renderSaques(document.getElementById('filtroStatusSaque')?.value || '');
   };
 
-  window.rejeitarSaque = function(saqueId) {
-    const motivo = prompt('Motivo da rejeição (opcional):');
-    if (motivo === null) return; // cancelou
+  window.rejeitarSaque = function(saqueId, nomeModelo) {
+    const overlay = document.createElement('div');
+    overlay.id = 'modalRejeitarSaqueOverlay';
+    overlay.className = 'modal-overlay active';
+    overlay.onclick = e => { if (e.target === overlay) closeModal('modalRejeitarSaque'); };
+
+    const modal = document.createElement('div');
+    modal.id = 'modalRejeitarSaque';
+    modal.className = 'modal active';
+    modal.innerHTML = `
+      <div class="modal-header">
+        <h3>Rejeitar Saque #${String(saqueId).padStart(6,'0')}</h3>
+        <button class="modal-close" onclick="closeModalSaque('modalRejeitarSaque')">×</button>
+      </div>
+      <div class="modal-body">
+        <p style="margin:0 0 16px;color:var(--text-muted);font-size:.9rem">
+          Modelo: <strong style="color:var(--text)">${nomeModelo || 'Modelo'}</strong>
+        </p>
+        <label style="display:block;font-size:.85rem;font-weight:600;color:var(--text-muted);margin-bottom:6px">Motivo da rejeição <span style="font-weight:400">(opcional)</span></label>
+        <textarea id="motivoRejeicao" rows="3" placeholder="Ex: Dados bancários incorretos, saldo insuficiente..."></textarea>
+        <div id="saqueRejeitarErro" style="display:none;margin-top:8px;color:var(--red,#ef4444);font-size:.82rem"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeModalSaque('modalRejeitarSaque')">Cancelar</button>
+        <button id="btnConfirmarRejeitar" class="btn btn-danger" onclick="confirmarRejeitarSaque(${saqueId})">Rejeitar Saque</button>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+    document.body.appendChild(modal);
+    setTimeout(() => modal.querySelector('textarea')?.focus(), 50);
+  };
+
+  window.confirmarRejeitarSaque = function(saqueId) {
+    const motivo  = document.getElementById('motivoRejeicao')?.value?.trim() || '';
+    const erroEl  = document.getElementById('saqueRejeitarErro');
+    const btn     = document.getElementById('btnConfirmarRejeitar');
+
+    btn.disabled = true;
+    btn.textContent = 'Rejeitando...';
 
     const token = localStorage.getItem('admin_token') || localStorage.getItem('token') || '';
     fetch(`/admin/dashboard/saques/${saqueId}/rejeitar`, {
@@ -4229,13 +4298,13 @@ pageLoaders['saques-modelos'] = async function () {
       body: JSON.stringify({ motivo })
     }).then(r => r.json()).then(data => {
       if (data.ok) {
-        const t2 = document.createElement('div');
-        t2.style.cssText='position:fixed;bottom:24px;right:24px;background:#f59e0b;color:#fff;padding:12px 20px;border-radius:10px;z-index:9999;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.3)';
-        t2.textContent='Saque rejeitado.';
-        document.body.appendChild(t2); setTimeout(()=>t2.remove(),3000);
+        closeModal('modalRejeitarSaque');
+        showToast('Saque rejeitado.', 'warning');
         renderSaques(document.getElementById('filtroStatusSaque')?.value || '');
       } else {
-        alert(data.erro || 'Erro ao rejeitar');
+        if (erroEl) { erroEl.textContent = data.erro || 'Erro ao rejeitar'; erroEl.style.display = 'block'; }
+        btn.disabled = false;
+        btn.textContent = 'Rejeitar Saque';
       }
     });
   };
@@ -4245,10 +4314,9 @@ pageLoaders['saques-modelos'] = async function () {
     const r = await fetch(`/admin/dashboard/saques/${saqueId}`, { headers: { Authorization: `Bearer ${token}` } });
     const data = await r.json();
     if (data.recibo_pdf_url) {
-      // Gerar URL assinada via rota existente — para simplificar, abrimos detalhe
-      alert('PDF disponível no servidor: ' + data.recibo_pdf_url);
+      window.open(data.recibo_pdf_url, '_blank');
     } else {
-      alert('Recibo PDF não disponível para este saque.');
+      showToast('Recibo PDF não disponível para este saque.', 'error');
     }
   };
 
