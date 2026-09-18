@@ -4333,7 +4333,205 @@ pageLoaders['saques-modelos'] = async function () {
 
 // ========== 15. PAGAMENTOS A MODELOS ==========
 
+// ── Tab switch pagamentos-modelo ──────────────────────────────────────────────
+function switchPgtoTab(tab) {
+  $('tabFechamento').style.display  = tab === 'fechamento' ? '' : 'none';
+  $('tabHistorico').style.display   = tab === 'historico'  ? '' : 'none';
+  $('tabFechamentoBt').style.color         = tab === 'fechamento' ? 'var(--purple)' : 'var(--text-muted)';
+  $('tabFechamentoBt').style.borderBottom  = tab === 'fechamento' ? '3px solid var(--purple)' : '3px solid transparent';
+  $('tabHistoricoBt').style.color          = tab === 'historico'  ? 'var(--purple)' : 'var(--text-muted)';
+  $('tabHistoricoBt').style.borderBottom   = tab === 'historico'  ? '3px solid var(--purple)' : '3px solid transparent';
+  $('tabHistoricoBt').style.fontWeight     = tab === 'historico'  ? '700' : '600';
+}
+
+// ── Novo fluxo: Fechar Mês ────────────────────────────────────────────────────
+let _fechCalculo = null; // armazena o último cálculo retornado pelo backend
+
+function onFechamentoChange() {
+  const btn = $('btnCalcularFechamento');
+  if (btn) btn.disabled = !$('fechModeloId')?.value || !$('fechMes')?.value;
+  $('fechResultado').style.display = 'none';
+  _fechCalculo = null;
+}
+
+async function calcularFechamento() {
+  const modeloId = $('fechModeloId')?.value;
+  const mes      = $('fechMes')?.value; // YYYY-MM
+  if (!modeloId || !mes) return;
+
+  const btn = $('btnCalcularFechamento');
+  btn.disabled = true;
+  btn.textContent = 'Calculando...';
+
+  try {
+    const d = await fetchJSON(`/admin/dashboard/modelo-pagamentos/calcular?modelo_id=${modeloId}&mes=${mes}`);
+    _fechCalculo = d;
+
+    const fmt = v => money(v);
+
+    // Alerta se já foi fechado
+    const alertaEl = $('fechAlertaJaFechado');
+    if (d.ja_fechado) {
+      alertaEl.style.display = '';
+      alertaEl.innerHTML = `⚠️ Este mês já tem um pagamento registrado (ID #${d.ja_fechado.id}, status: <strong>${d.ja_fechado.status}</strong>). Fechar novamente criará um segundo registro.`;
+    } else {
+      alertaEl.style.display = 'none';
+    }
+
+    // Preencher campos de ajuste manual com valores calculados
+    $('fechInputMidias').value      = d.midias.toFixed(2);
+    $('fechInputAssinaturas').value = d.assinaturas.toFixed(2);
+    $('fechInputCb').value          = d.chargebacks.toFixed(2);
+    $('fechInputBonus').value       = '0';
+
+    // Exibir valores calculados
+    recalcularFechamento();
+
+    // Dados bancários
+    const dbEl = $('fechDadosBancarios');
+    const dbTxt = $('fechDadosBancariosTexto');
+    if (d.dados_bancarios) {
+      const db = d.dados_bancarios;
+      let txt = '';
+      if (db.pgto_tipo === 'pix') txt = `PIX (${(db.pix_tipo||'').toUpperCase()}): ${db.pix_chave || '—'}`;
+      else if (db.pgto_tipo === 'transferencia') txt = `TED — Banco: ${db.banco || '—'} | Ag: ${db.agencia || '—'} | Conta: ${db.conta || '—'}`;
+      dbTxt.textContent = txt || 'Dados bancários incompletos';
+      dbEl.style.display = '';
+    } else {
+      dbEl.style.display = 'none';
+    }
+
+    $('fechResultado').style.display = '';
+  } catch (err) {
+    toast('Erro ao calcular: ' + err.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '↻ Calcular valores do mês';
+  }
+}
+
+function recalcularFechamento() {
+  const midias      = Number($('fechInputMidias')?.value     || 0);
+  const assinaturas = Number($('fechInputAssinaturas')?.value || 0);
+  const cb          = Number($('fechInputCb')?.value         || 0);
+  const bonus       = Number($('fechInputBonus')?.value      || 0);
+  const total       = midias + assinaturas + bonus;
+  const liquido     = Math.max(0, total - cb);
+
+  $('fechValMidias').textContent      = money(midias);
+  $('fechValAssinaturas').textContent = money(assinaturas);
+  $('fechValTotal').textContent       = money(total);
+  $('fechValCb').textContent          = cb > 0 ? '− ' + money(cb) : '—';
+  $('fechCbQtd').textContent          = _fechCalculo?.chargebacks_qtd > 0 ? `(${_fechCalculo.chargebacks_qtd}x)` : '';
+  $('fechValLiquido').textContent     = money(liquido);
+}
+
+async function previewFechamento() {
+  const modeloId = $('fechModeloId')?.value;
+  const mes      = $('fechMes')?.value;
+  if (!modeloId || !mes || !_fechCalculo) { toast('Calcule primeiro os valores', 'warning'); return; }
+
+  const midias      = Number($('fechInputMidias')?.value     || 0);
+  const assinaturas = Number($('fechInputAssinaturas')?.value || 0);
+  const cb          = Number($('fechInputCb')?.value         || 0);
+  const bonus       = Number($('fechInputBonus')?.value      || 0);
+
+  // Salvar temporariamente para gerar recibo — usa endpoint POST e depois abre recibo, sem marcar como pago
+  try {
+    const fd = new FormData();
+    fd.set('modelo_id', modeloId);
+    fd.set('mes', mes);
+    fd.set('total_midias', midias.toFixed(2));
+    fd.set('total_assinaturas', assinaturas.toFixed(2));
+    fd.set('chargebacks', cb.toFixed(2));
+    fd.set('bonus', bonus.toFixed(2));
+    fd.set('bonus_tipo', 'velvet');
+    fd.set('total_geral', (midias + assinaturas + bonus).toFixed(2));
+    fd.set('preview_only', '1');
+
+    const r = await authFetch('/admin/dashboard/modelo-pagamentos', { method: 'POST', body: fd });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(data.erro || 'Erro ao gerar preview');
+
+    _fechCalculo._previewId = data.id;
+    abrirRecibo(data.id);
+  } catch (err) {
+    toast('Erro preview: ' + err.message, 'error');
+  }
+}
+
+async function confirmarFecharMes() {
+  const modeloId = $('fechModeloId')?.value;
+  const mes      = $('fechMes')?.value;
+  if (!modeloId || !mes || !_fechCalculo) { toast('Calcule primeiro os valores', 'warning'); return; }
+
+  const midias      = Number($('fechInputMidias')?.value     || 0);
+  const assinaturas = Number($('fechInputAssinaturas')?.value || 0);
+  const cb          = Number($('fechInputCb')?.value         || 0);
+  const bonus       = Number($('fechInputBonus')?.value      || 0);
+  const total       = midias + assinaturas + bonus;
+  const liquido     = Math.max(0, total - cb);
+
+  const ok = confirm(`Fechar mês ${mes} para esta modelo?\n\nGanhos: ${money(total)}\nChargebacks: ${money(cb)}\nLíquido: ${money(liquido)}\n\nIsto registrará o pagamento, gerará o recibo PDF e enviará email à modelo.`);
+  if (!ok) return;
+
+  const btn = $('btnFecharMes');
+  btn.disabled = true;
+  btn.textContent = 'Processando...';
+  $('fechErro').style.display = 'none';
+
+  try {
+    // 1. Criar registro (POST) — se já criou no preview, usa o id existente
+    let pagId = _fechCalculo._previewId || null;
+
+    if (!pagId) {
+      const fd = new FormData();
+      fd.set('modelo_id', modeloId);
+      fd.set('mes', mes);
+      fd.set('total_midias', midias.toFixed(2));
+      fd.set('total_assinaturas', assinaturas.toFixed(2));
+      fd.set('chargebacks', cb.toFixed(2));
+      fd.set('bonus', bonus.toFixed(2));
+      fd.set('bonus_tipo', 'velvet');
+      fd.set('total_geral', total.toFixed(2));
+      fd.set('force', '1');
+
+      const r = await authFetch('/admin/dashboard/modelo-pagamentos', { method: 'POST', body: fd });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.erro || 'Erro ao registrar');
+      pagId = d.id;
+    }
+
+    // 2. Marcar como pago + enviar email
+    await postJSON(`/admin/dashboard/modelo-pagamentos/${pagId}/pagar`, {});
+
+    toast('✓ Mês fechado! Recibo enviado por email à modelo.', 'success');
+    _fechCalculo = null;
+    $('fechResultado').style.display = 'none';
+    $('fechModeloId').value = '';
+    $('fechMes').value = '';
+    $('btnCalcularFechamento').disabled = true;
+  } catch (err) {
+    const erroEl = $('fechErro');
+    erroEl.textContent = 'Erro: ' + err.message;
+    erroEl.style.display = '';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '✓ Fechar Mês e Enviar';
+  }
+}
+
 pageLoaders['pagamentos-modelo'] = async function () {
+  // Carregar select de modelos no novo fluxo
+  await carregarModelosSelect('fechModeloId', 'Selecione a modelo');
+
+  // Definir mês padrão = mês anterior
+  const now = new Date();
+  const mesAnterior = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const mesVal = `${mesAnterior.getFullYear()}-${String(mesAnterior.getMonth() + 1).padStart(2, '0')}`;
+  if ($('fechMes')) $('fechMes').value = mesVal;
+
+  // Tab histórico: carregar selects do formato antigo
   await carregarModelosSelect('pgtoModeloFiltro');
   populateMonthSelect($('pgtoModeloMes'));
 
@@ -4342,7 +4540,7 @@ pageLoaders['pagamentos-modelo'] = async function () {
     if (ultimo.mes) {
       const d = new Date(ultimo.mes);
       const valor = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
-      if ($('pgtoModeloMes').querySelector(`option[value="${valor}"]`)) {
+      if ($('pgtoModeloMes')?.querySelector(`option[value="${valor}"]`)) {
         $('pgtoModeloMes').value = valor;
       }
     }

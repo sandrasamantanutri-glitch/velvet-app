@@ -4024,6 +4024,98 @@ router.put("/vip-subscriptions/:id", async (req, res) => {
 
 // ========== 16. MODELO PAGAMENTOS ==========
 
+// Calcula automaticamente mídias, assinaturas e chargebacks de um mês para o novo fluxo de fechamento
+router.get("/modelo-pagamentos/calcular", authAdmin, async (req, res) => {
+  try {
+    const modelo_id = Number(req.query.modelo_id);
+    const mes = req.query.mes; // YYYY-MM
+    if (!modelo_id || !mes) return res.status(400).json({ erro: "modelo_id e mes obrigatórios" });
+
+    const [ano, mesNum] = mes.split('-').map(Number);
+    const mesDate = `${mes}-01`;
+
+    // Checar se já existe pagamento fechado para este mês
+    const jaFechadoRes = await db.query(
+      `SELECT id, status FROM modelo_pagamentos WHERE modelo_id = $1 AND DATE_TRUNC('month', mes) = $2::date`,
+      [modelo_id, mesDate]
+    );
+
+    const [midAssinRes, cbRes, saldoGeral, mdbRes] = await Promise.all([
+      // Mídias e assinaturas do mês (por data de disponibilidade ou criação)
+      db.query(`
+        SELECT
+          COALESCE(SUM(valor_modelo) FILTER (WHERE tipo = 'midia'), 0)       AS midias,
+          COALESCE(SUM(valor_modelo) FILTER (WHERE tipo = 'assinatura'), 0)  AS assinaturas,
+          COALESCE(SUM(valor_modelo), 0)                                      AS total
+        FROM transacoes_agency
+        WHERE modelo_id = $1
+          AND status = 'pago'
+          AND (gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW()))
+          AND EXTRACT(YEAR  FROM COALESCE(disponivel_em, created_at) AT TIME ZONE 'America/Sao_Paulo') = $2
+          AND EXTRACT(MONTH FROM COALESCE(disponivel_em, created_at) AT TIME ZONE 'America/Sao_Paulo') = $3
+      `, [modelo_id, ano, mesNum]),
+
+      // Chargebacks do mês
+      db.query(`
+        SELECT COALESCE(SUM(COALESCE(valor_modelo, valor)), 0) AS total, COUNT(*) AS qtd
+        FROM chargebacks
+        WHERE modelo_id = $1
+          AND EXTRACT(YEAR  FROM criado_em AT TIME ZONE 'America/Sao_Paulo') = $2
+          AND EXTRACT(MONTH FROM criado_em AT TIME ZONE 'America/Sao_Paulo') = $3
+      `, [modelo_id, ano, mesNum]),
+
+      // Saldo total disponível do modelo
+      db.query(`
+        SELECT
+          COALESCE(SUM(valor_modelo) FILTER (WHERE gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW())), 0) AS ganhos_disponiveis
+        FROM transacoes_agency WHERE modelo_id = $1 AND status = 'pago'
+      `, [modelo_id]),
+
+      // Dados bancários da modelo
+      db.query(`
+        SELECT mdb.tipo AS pgto_tipo, mdb.pix_chave, mdb.pix_tipo, mdb.banco, mdb.agencia, mdb.conta, mdb.titular_nome
+        FROM modelo_dados_bancarios mdb
+        WHERE mdb.modelo_id = $1 AND mdb.status = 'aprovado'
+        LIMIT 1
+      `, [modelo_id])
+    ]);
+
+    const pagosRes = await db.query(
+      `SELECT COALESCE(SUM(total_geral), 0) AS pagos FROM modelo_pagamentos WHERE modelo_id = $1 AND status = 'pago'`,
+      [modelo_id]
+    );
+    const saquesRes = await db.query(
+      `SELECT COALESCE(SUM(valor) FILTER (WHERE status IN ('pago','pendente')), 0) AS comprometidos FROM saques WHERE modelo_id = $1`,
+      [modelo_id]
+    );
+
+    const midias       = Number(midAssinRes.rows[0].midias);
+    const assinaturas  = Number(midAssinRes.rows[0].assinaturas);
+    const total_geral  = Number(midAssinRes.rows[0].total);
+    const chargebacks  = Number(cbRes.rows[0].total);
+    const valor_liquido = Math.max(0, total_geral - chargebacks);
+    const ganhosDisp   = Number(saldoGeral.rows[0].ganhos_disponiveis);
+    const pagos        = Number(pagosRes.rows[0].pagos);
+    const comprometidos = Number(saquesRes.rows[0].comprometidos);
+    const saldo_disponivel = ganhosDisp - pagos - comprometidos;
+
+    res.json({
+      midias,
+      assinaturas,
+      total_geral,
+      chargebacks,
+      chargebacks_qtd: Number(cbRes.rows[0].qtd),
+      valor_liquido,
+      saldo_disponivel,
+      ja_fechado: jaFechadoRes.rows[0] || null,
+      dados_bancarios: mdbRes.rows[0] || null
+    });
+  } catch (err) {
+    console.error("Erro modelo-pagamentos/calcular:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
 router.get("/modelo-pagamentos/ultimo-mes", authAdmin, async (req, res) => {
   try {
     const { rows } = await db.query("SELECT mes FROM modelo_pagamentos ORDER BY mes DESC LIMIT 1");

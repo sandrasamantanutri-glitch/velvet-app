@@ -1030,20 +1030,128 @@
   </section>
 
   <section class="page" id="page-pagamentos-modelo">
-    <div class="page-actions">
-      <button class="btn btn-primary" onclick="abrirModalPagModelo()">+ Registrar Pagamento</button>
-      <select id="pgtoModeloFiltro" class="input-select"><option value="">Todas as modelos</option></select>
-      <select id="pgtoModeloMes" class="input-select"></select>
+
+    <!-- Tabs -->
+    <div style="display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:24px">
+      <button id="tabFechamentoBt" onclick="switchPgtoTab('fechamento')"
+        style="padding:10px 24px;border:none;background:none;cursor:pointer;font-weight:700;font-size:.95rem;color:var(--purple);border-bottom:3px solid var(--purple);margin-bottom:-2px">
+        ✦ Fechar Mês
+      </button>
+      <button id="tabHistoricoBt" onclick="switchPgtoTab('historico')"
+        style="padding:10px 24px;border:none;background:none;cursor:pointer;font-weight:600;font-size:.95rem;color:var(--text-muted);border-bottom:3px solid transparent;margin-bottom:-2px">
+        Histórico / Formato Antigo
+      </button>
     </div>
-    <div id="conciliacaoPanel" style="display:none;margin-bottom:16px;"></div>
-    <div class="card">
-      <h3>Pagamentos Realizados</h3>
-      <table class="table" id="tablePgtoModelo">
-        <thead><tr><th>ID</th><th>Modelo</th><th>Mês</th><th>Mídias</th><th>Assinaturas</th><th>Total</th><th>Status</th><th>Pago em</th><th>Recibo</th><th>Comprovativo</th><th>Ações</th></tr></thead>
-        <tbody></tbody>
-      </table>
-      <div class="pagination" id="paginationPgtoModelo"></div>
+
+    <!-- TAB: FECHAR MÊS (novo fluxo) -->
+    <div id="tabFechamento">
+      <div class="card" style="max-width:640px">
+        <h3 style="margin-bottom:20px">Fechar Mês de uma Modelo</h3>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+          <label style="display:flex;flex-direction:column;gap:6px;font-size:.85rem;font-weight:600;color:var(--text-muted)">
+            Modelo
+            <select id="fechModeloId" class="input-select" onchange="onFechamentoChange()">
+              <option value="">Selecione a modelo</option>
+            </select>
+          </label>
+          <label style="display:flex;flex-direction:column;gap:6px;font-size:.85rem;font-weight:600;color:var(--text-muted)">
+            Mês de referência
+            <input type="month" id="fechMes" class="input-select" onchange="onFechamentoChange()" style="height:38px">
+          </label>
+        </div>
+
+        <button class="btn btn-primary" id="btnCalcularFechamento" onclick="calcularFechamento()" disabled
+          style="width:100%;margin-bottom:20px">
+          ↻ Calcular valores do mês
+        </button>
+
+        <!-- Resultado do cálculo -->
+        <div id="fechResultado" style="display:none">
+          <div id="fechAlertaJaFechado" style="display:none;background:#fef3c7;border:1px solid #fbbf24;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:.88rem;color:#92400e"></div>
+
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px">
+            <div style="font-size:.75rem;font-weight:700;color:var(--text-muted);letter-spacing:.05em;margin-bottom:10px">COMPOSIÇÃO DO MÊS</div>
+            <div style="display:grid;gap:8px">
+              <div style="display:flex;justify-content:space-between;font-size:.9rem">
+                <span style="color:var(--text-muted)">Mídias</span>
+                <strong id="fechValMidias">—</strong>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:.9rem">
+                <span style="color:var(--text-muted)">Assinaturas</span>
+                <strong id="fechValAssinaturas">—</strong>
+              </div>
+              <div style="border-top:1px solid var(--border);padding-top:8px;display:flex;justify-content:space-between;font-size:.95rem">
+                <span style="font-weight:600">Ganhos Brutos</span>
+                <strong id="fechValTotal" style="color:var(--purple)">—</strong>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:.9rem">
+                <span style="color:var(--red,#ef4444)">Chargebacks <span id="fechCbQtd" style="font-size:.78rem"></span></span>
+                <strong id="fechValCb" style="color:var(--red,#ef4444)">—</strong>
+              </div>
+              <div style="border-top:2px solid var(--purple);padding-top:8px;display:flex;justify-content:space-between;font-size:1rem">
+                <span style="font-weight:700">Saldo Líquido a Pagar</span>
+                <strong id="fechValLiquido" style="color:var(--purple);font-size:1.05rem">—</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dados bancários -->
+          <div id="fechDadosBancarios" style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:.85rem;display:none">
+            <div style="font-weight:700;color:#166534;margin-bottom:6px">Dados de Pagamento</div>
+            <span id="fechDadosBancariosTexto" style="color:#166534"></span>
+          </div>
+
+          <!-- Ajuste manual -->
+          <details style="margin-bottom:16px">
+            <summary style="cursor:pointer;font-size:.85rem;color:var(--text-muted);font-weight:600;padding:6px 0">Ajustar valores manualmente</summary>
+            <div style="padding:12px 0;display:grid;gap:10px">
+              <label style="font-size:.82rem;font-weight:600;color:var(--text-muted)">Mídias
+                <input type="number" id="fechInputMidias" step="0.01" min="0" class="input-select" style="margin-top:4px;height:34px" oninput="recalcularFechamento()">
+              </label>
+              <label style="font-size:.82rem;font-weight:600;color:var(--text-muted)">Assinaturas
+                <input type="number" id="fechInputAssinaturas" step="0.01" min="0" class="input-select" style="margin-top:4px;height:34px" oninput="recalcularFechamento()">
+              </label>
+              <label style="font-size:.82rem;font-weight:600;color:var(--text-muted)">Chargebacks
+                <input type="number" id="fechInputCb" step="0.01" min="0" class="input-select" style="margin-top:4px;height:34px" oninput="recalcularFechamento()">
+              </label>
+              <label style="font-size:.82rem;font-weight:600;color:var(--text-muted)">Bônus extra (por conta da Velvet)
+                <input type="number" id="fechInputBonus" step="0.01" min="0" value="0" class="input-select" style="margin-top:4px;height:34px" oninput="recalcularFechamento()">
+              </label>
+            </div>
+          </details>
+
+          <div style="display:flex;gap:10px">
+            <button class="btn btn-ghost" style="flex:1" onclick="previewFechamento()">
+              👁 Pré-visualizar Recibo
+            </button>
+            <button class="btn btn-primary" style="flex:1" id="btnFecharMes" onclick="confirmarFecharMes()">
+              ✓ Fechar Mês e Enviar
+            </button>
+          </div>
+          <div id="fechErro" style="display:none;margin-top:10px;font-size:.82rem;color:var(--red,#ef4444);padding:8px 12px;background:#fef2f2;border-radius:6px"></div>
+        </div>
+      </div>
     </div>
+
+    <!-- TAB: HISTÓRICO / FORMATO ANTIGO -->
+    <div id="tabHistorico" style="display:none">
+      <div class="page-actions">
+        <button class="btn btn-primary" onclick="abrirModalPagModelo()">+ Registrar Pagamento (antigo)</button>
+        <select id="pgtoModeloFiltro" class="input-select"><option value="">Todas as modelos</option></select>
+        <select id="pgtoModeloMes" class="input-select"></select>
+      </div>
+      <div id="conciliacaoPanel" style="display:none;margin-bottom:16px;"></div>
+      <div class="card">
+        <h3>Histórico de Pagamentos</h3>
+        <table class="table" id="tablePgtoModelo">
+          <thead><tr><th>ID</th><th>Modelo</th><th>Mês</th><th>Mídias</th><th>Assinaturas</th><th>Total</th><th>Status</th><th>Pago em</th><th>Recibo PDF</th><th>Ações</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div class="pagination" id="paginationPgtoModelo"></div>
+      </div>
+    </div>
+
   </section>
 
  <!-- AGÊNCIAS -->
