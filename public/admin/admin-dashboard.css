@@ -1535,6 +1535,40 @@ canvas {
   }
 }
 
+/* --- Card table layout (mobile) --- */
+@media (max-width: 640px) {
+  .table-mob-card thead { display: none; }
+  .table-mob-card tbody tr {
+    display: block;
+    margin-bottom: 10px;
+    border: 1px solid var(--border, #e5e7eb);
+    border-radius: 10px;
+    overflow: hidden;
+    background: #fff;
+  }
+  .table-mob-card tbody td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: .5rem;
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(0,0,0,.05);
+    font-size: .82rem;
+    white-space: normal;
+  }
+  .table-mob-card tbody td:last-child { border-bottom: none; }
+  .table-mob-card tbody td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    font-size: .68rem;
+    color: var(--text-muted, #9ca3af);
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    flex-shrink: 0;
+    min-width: 90px;
+  }
+}
+
 /* --- Saques: painel saldo/histórico selector responsivo --- */
 @media (max-width: 640px) {
   #saqPanel-saldo .card > div:first-child,
