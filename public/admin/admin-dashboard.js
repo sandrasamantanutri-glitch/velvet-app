@@ -4146,11 +4146,6 @@ pageLoaders['saques-modelos'] = async function () {
             : `<span style="color:var(--text-muted)">—</span>`}
         </td>
         <td>
-          ${s.recibo_pdf_signed_url
-            ? `<a href="${s.recibo_pdf_signed_url}" target="_blank" class="btn btn-sm btn-ghost">📄 Ver</a>`
-            : `<span style="color:var(--text-muted)">—</span>`}
-        </td>
-        <td>
           <div style="display:flex;gap:6px;flex-wrap:wrap">
             ${s.status==='pendente' ? `
               <button class="btn btn-sm btn-primary" onclick="processarSaque(${s.id},'${nomeModelo(s).replace(/'/g,"\\'")}',${s.valor})">Processar</button>
@@ -4159,7 +4154,7 @@ pageLoaders['saques-modelos'] = async function () {
           </div>
         </td>
       </tr>
-    `).join('') : `<tr><td colspan="9" class="empty-row">Nenhum saque encontrado</td></tr>`;
+    `).join('') : `<tr><td colspan="8" class="empty-row">Nenhum saque encontrado</td></tr>`;
 
     $('saques-modelos-content').innerHTML = `
       <div class="card" style="margin-bottom:0">
@@ -4179,7 +4174,7 @@ pageLoaders['saques-modelos'] = async function () {
           <table class="table">
             <thead><tr>
               <th>Modelo</th><th>Valor</th><th>Chave PIX / Banco</th><th>Status</th>
-              <th>Solicitado em</th><th>Processado em</th><th>Comprovante</th><th>Recibo</th><th>Ações</th>
+              <th>Solicitado em</th><th>Processado em</th><th>Comprovante</th><th>Ações</th>
             </tr></thead>
             <tbody>${tbody}</tbody>
           </table>
