@@ -4393,7 +4393,7 @@ window.loadAdminSaldo = async function() {
   el.innerHTML = `
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px">
       <div style="background:var(--bg-card,#f9f8ff);border-radius:12px;padding:18px 20px;border:1px solid var(--border)">
-        <div style="font-size:.78rem;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">Ganhos Disponíveis</div>
+        <div style="font-size:.78rem;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">Ganhos Geral</div>
         <div style="font-size:1.4rem;font-weight:700;color:var(--text)">${money(d.ganhos_disponiveis)}</div>
       </div>
       <div style="background:var(--bg-card,#f9f8ff);border-radius:12px;padding:18px 20px;border:1px solid var(--border)">

@@ -7074,7 +7074,7 @@ router.get("/saques/:id", authAdmin, async (req, res) => {
   }
 });
 
-// Saldo em tempo real de uma modelo (admin)
+// Saldo em tempo real de uma modelo (admin) — mesma lógica do painel da modelo
 router.get("/saldo-modelo/:id", authAdmin, async (req, res) => {
   try {
     const modelo_id = Number(req.params.id);
