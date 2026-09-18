@@ -7955,6 +7955,49 @@ app.get("/api/modelo/painel/assinantes-dia", authModelo, async (req, res) => {
   }
 });
 
+// ── Info de saque (taxa, elegibilidade, intervalo) ───────────────────────────
+app.get("/api/modelo/sacar/info", authModelo, async (req, res) => {
+  try {
+    const mid = req.modelo_id;
+    const now = new Date();
+    const ano = now.getFullYear();
+    const mes = now.getMonth() + 1;
+
+    const mesRes = await db.query(`
+      SELECT COUNT(*) AS qtd, MAX(solicitado_em) AS ultima_solicitacao
+      FROM saques
+      WHERE modelo_id=$1 AND status IN ('pago','pendente')
+        AND EXTRACT(YEAR  FROM solicitado_em AT TIME ZONE 'America/Sao_Paulo') = $2
+        AND EXTRACT(MONTH FROM solicitado_em AT TIME ZONE 'America/Sao_Paulo') = $3
+    `, [mid, ano, mes]);
+
+    const qtdMes = Number(mesRes.rows[0].qtd || 0);
+    const ultimaSolicitacao = mesRes.rows[0].ultima_solicitacao;
+
+    let pode_sacar_hoje = true;
+    let dias_para_proximo = 0;
+    if (ultimaSolicitacao) {
+      const diffMs   = Date.now() - new Date(ultimaSolicitacao).getTime();
+      const diffDias = diffMs / (1000 * 60 * 60 * 24);
+      if (diffDias < 7) {
+        pode_sacar_hoje   = false;
+        dias_para_proximo = Math.ceil(7 - diffDias);
+      }
+    }
+
+    res.json({
+      saques_mes_count: qtdMes,
+      taxa_saque: qtdMes >= 1 ? 5 : 0,
+      pode_sacar_hoje,
+      dias_para_proximo,
+      primeiro_gratis: qtdMes === 0
+    });
+  } catch (err) {
+    console.error("Erro /api/modelo/sacar/info:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
 // ── Solicitar saque ──────────────────────────────────────────────────────────
 app.post("/api/modelo/sacar", authModelo, async (req, res) => {
   try {
@@ -7972,11 +8015,38 @@ app.post("/api/modelo/sacar", authModelo, async (req, res) => {
       [mid]
     );
     if (!bancRes.rows.length) {
-      return res.status(400).json({ erro: "Você não possui dados bancários aprovados. Cadastre sua chave PIX em 'Meu Banco'." });
+      return res.status(400).json({ erro: "Você não possui dados bancários aprovados. Cadastre seus dados em 'Dados Bancários'." });
     }
     const banc = bancRes.rows[0];
 
-    // Verificar saldo disponível (descontando pagamentos e saques; chargeback já deduz via status em transacoes_agency)
+    // Regra: 1 saque por semana (7 dias)
+    const now = new Date();
+    const ano = now.getFullYear();
+    const mes = now.getMonth() + 1;
+
+    const mesRes = await db.query(`
+      SELECT COUNT(*) AS qtd, MAX(solicitado_em) AS ultima_solicitacao
+      FROM saques
+      WHERE modelo_id=$1 AND status IN ('pago','pendente')
+        AND EXTRACT(YEAR  FROM solicitado_em AT TIME ZONE 'America/Sao_Paulo') = $2
+        AND EXTRACT(MONTH FROM solicitado_em AT TIME ZONE 'America/Sao_Paulo') = $3
+    `, [mid, ano, mes]);
+
+    const qtdMes = Number(mesRes.rows[0].qtd || 0);
+    const ultimaSolicitacao = mesRes.rows[0].ultima_solicitacao;
+
+    if (ultimaSolicitacao) {
+      const diffDias = (Date.now() - new Date(ultimaSolicitacao).getTime()) / (1000 * 60 * 60 * 24);
+      if (diffDias < 7) {
+        const diasRestantes = Math.ceil(7 - diffDias);
+        return res.status(400).json({ erro: `Você só pode solicitar 1 saque por semana. Aguarde ${diasRestantes} dia(s) para o próximo saque.` });
+      }
+    }
+
+    // Taxa: 1º saque do mês gratuito, a partir do 2º = R$5
+    const taxaSaque = qtdMes >= 1 ? 5 : 0;
+
+    // Verificar saldo disponível
     const [ganhosRes, pagosRes, saquesRes] = await Promise.all([
       db.query(`
         SELECT COALESCE(SUM(valor_modelo) FILTER (
@@ -7993,10 +8063,10 @@ app.post("/api/modelo/sacar", authModelo, async (req, res) => {
       `, [mid]),
     ]);
 
-    const ganhosDisp   = Number(ganhosRes.rows[0].ganhos_disponiveis || 0);
-    const pagos        = Number(pagosRes.rows[0].pagos || 0);
-    const saquesComp   = Number(saquesRes.rows[0].saques_comprometidos || 0);
-    const saldoDisp    = ganhosDisp - pagos - saquesComp;
+    const ganhosDisp = Number(ganhosRes.rows[0].ganhos_disponiveis || 0);
+    const pagos      = Number(pagosRes.rows[0].pagos || 0);
+    const saquesComp = Number(saquesRes.rows[0].saques_comprometidos || 0);
+    const saldoDisp  = ganhosDisp - pagos - saquesComp;
 
     if (valorNum > saldoDisp + 0.01) {
       return res.status(400).json({
@@ -8014,12 +8084,12 @@ app.post("/api/modelo/sacar", authModelo, async (req, res) => {
     }
 
     const { rows } = await db.query(`
-      INSERT INTO saques (modelo_id, valor, chave_pix, pix_tipo, banco, agencia, conta, conta_tipo,
+      INSERT INTO saques (modelo_id, valor, taxa_saque, chave_pix, pix_tipo, banco, agencia, conta, conta_tipo,
         titular_nome, titular_documento, pgto_tipo, saldo_disponivel_no_dia)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
       RETURNING id
     `, [
-      mid, valorNum,
+      mid, valorNum, taxaSaque,
       banc.pix_chave || null, banc.pix_tipo || null,
       banc.banco || null, banc.agencia || null, banc.conta || null, banc.conta_tipo || null,
       banc.titular_nome || null, banc.titular_documento || null,
@@ -8027,7 +8097,7 @@ app.post("/api/modelo/sacar", authModelo, async (req, res) => {
       saldoDisp
     ]);
 
-    res.json({ ok: true, saque_id: rows[0].id });
+    res.json({ ok: true, saque_id: rows[0].id, taxa_saque: taxaSaque, valor_transferir: valorNum - taxaSaque });
   } catch (err) {
     console.error("Erro /api/modelo/sacar:", err);
     res.status(500).json({ erro: "Erro interno" });
@@ -17462,3 +17532,6 @@ db.query("ALTER TABLE ofertas ADD COLUMN IF NOT EXISTS aviso_expiracao_enviado B
 
 db.query("ALTER TABLE modelo_dados_bancarios ADD COLUMN IF NOT EXISTS motivo_pedido TEXT")
   .catch(err => console.error("Migração motivo_pedido:", err.message));
+
+db.query("ALTER TABLE saques ADD COLUMN IF NOT EXISTS taxa_saque NUMERIC(10,2) NOT NULL DEFAULT 0")
+  .catch(err => console.error("Migração taxa_saque:", err.message));

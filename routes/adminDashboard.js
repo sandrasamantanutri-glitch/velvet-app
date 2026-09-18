@@ -4081,7 +4081,7 @@ router.get("/modelo-pagamentos/calcular", authAdmin, async (req, res) => {
 
       // Saques pagos no mês (com detalhes individuais)
       db.query(`
-        SELECT id, valor,
+        SELECT id, valor, COALESCE(taxa_saque, 0) AS taxa_saque,
           TO_CHAR(processado_em AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY') AS data_fmt
         FROM saques
         WHERE modelo_id = $1
@@ -4110,9 +4110,10 @@ router.get("/modelo-pagamentos/calcular", authAdmin, async (req, res) => {
     const pagos        = Number(pagosRes.rows[0].pagos);
     const comprometidos = Number(saquesRes.rows[0].comprometidos);
     const saldo_disponivel = ganhosDisp - pagos - comprometidos;
-    const saques_rows  = saqMesRes.rows;
-    const saques_mes   = saques_rows.reduce((s, r) => s + Number(r.valor), 0);
-    const saques_mes_qtd = saques_rows.length;
+    const saques_rows     = saqMesRes.rows;
+    const saques_mes      = saques_rows.reduce((s, r) => s + Number(r.valor), 0);
+    const saques_mes_qtd  = saques_rows.length;
+    const taxas_saques_mes = saques_rows.reduce((s, r) => s + Number(r.taxa_saque || 0), 0);
 
     res.json({
       midias,
@@ -4124,6 +4125,7 @@ router.get("/modelo-pagamentos/calcular", authAdmin, async (req, res) => {
       saldo_disponivel,
       saques_mes,
       saques_mes_qtd,
+      taxas_saques_mes,
       saques_rows,
       ja_fechado: jaFechadoRes.rows[0] || null,
       dados_bancarios: mdbRes.rows[0] || null
@@ -5241,7 +5243,7 @@ router.get("/modelo-pagamentos/:id/recibo", authAdmin, async (req, res) => {
 
     // Saques do mês
     const saquesRes = await db.query(`
-      SELECT id, valor,
+      SELECT id, valor, COALESCE(taxa_saque, 0) AS taxa_saque,
         TO_CHAR(processado_em AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY') AS data_fmt
       FROM saques
       WHERE modelo_id = $1 AND status = 'pago'
@@ -5251,6 +5253,7 @@ router.get("/modelo-pagamentos/:id/recibo", authAdmin, async (req, res) => {
     `, [p.modelo_id, anoMes, mesMes]);
     const saquesRows   = saquesRes.rows;
     const totalSacado  = saquesRows.reduce((acc, s) => acc + Number(s.valor || 0), 0);
+    const totalTaxas   = saquesRows.reduce((acc, s) => acc + Number(s.taxa_saque || 0), 0);
 
     const nomeCompleto = p.nome_completo || p.nome_exibicao || p.modelo_nome || `Modelo #${p.modelo_id}`;
     const cpf           = p.titular_documento || '—';
@@ -5280,7 +5283,13 @@ router.get("/modelo-pagamentos/:id/recibo", authAdmin, async (req, res) => {
     try { await db.query(`INSERT INTO recibos_pagamento (pagamento_id, modelo_id, numero_recibo) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING`, [p.id, p.modelo_id, reciboNum]); } catch (_) {}
 
     const saquesRowsHtml = saquesRows.length > 0
-      ? saquesRows.map(s => `<div class="row sub"><span class="lbl">${s.data_fmt} — Saque #${s.id}</span><span class="val">${fmtBRL(s.valor)}</span></div>`).join('')
+      ? saquesRows.map(s => {
+          const taxa = Number(s.taxa_saque || 0);
+          const taxaSpan = taxa > 0
+            ? ` <span style="font-size:11px;color:#c0392b">(taxa ${fmtBRL(taxa)})</span>`
+            : ` <span style="font-size:11px;color:#27a745">(gratuito)</span>`;
+          return `<div class="row sub"><span class="lbl">${s.data_fmt} — Saque #${s.id}${taxaSpan}</span><span class="val">${fmtBRL(s.valor)}</span></div>`;
+        }).join('')
       : '<div class="row sub"><span class="lbl" style="color:#999">Nenhum saque neste mês</span><span class="val">—</span></div>';
 
     res.send(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
@@ -5359,7 +5368,9 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f0f0;padding:20px;col
   <div class="sec">
     <div class="sec-title">Histórico de Saques — ${mesRefLabel}</div>
     ${saquesRowsHtml}
-    ${saquesRows.length > 0 ? `<hr class="divider-dashed"><div class="row total-row"><span class="lbl">Total Sacado</span><span class="val" style="color:#374151">${fmtBRL(totalSacado)}</span></div>` : ''}
+    ${saquesRows.length > 0 ? `<hr class="divider-dashed">
+    <div class="row total-row"><span class="lbl">Total Sacado</span><span class="val" style="color:#374151">${fmtBRL(totalSacado)}</span></div>
+    ${totalTaxas > 0 ? `<div class="row sub cb"><span class="lbl">Taxas de saque</span><span class="val">− ${fmtBRL(totalTaxas)}</span></div>` : ''}` : ''}
   </div>
 
   <!-- Valor disponível -->

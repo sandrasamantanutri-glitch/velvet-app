@@ -4133,10 +4133,18 @@ pageLoaders['saques-modelos'] = async function () {
 
     const nomeModelo = s => s.nome_exibicao || s.modelo_nome || '#' + s.modelo_id;
 
-    const tbody = rows.length ? rows.map(s => `
+    const tbody = rows.length ? rows.map(s => {
+      const taxa = Number(s.taxa_saque || 0);
+      const transferir = Number(s.valor) - taxa;
+      const taxaCell = taxa > 0
+        ? `<span style="color:#dc2626;font-size:.82rem">− ${fmtBRL(taxa)}</span>`
+        : `<span style="color:#16a34a;font-size:.82rem">Gratuito</span>`;
+      return `
       <tr>
         <td><strong>${nomeModelo(s)}</strong><br><span style="font-size:.75rem;color:var(--text-muted)">${s.modelo_email||''}</span></td>
         <td><strong>${fmtBRL(s.valor)}</strong></td>
+        <td>${taxaCell}</td>
+        <td><strong style="color:var(--purple)">${fmtBRL(transferir)}</strong></td>
         <td style="font-size:.82rem">${s.chave_pix ? `<span style="font-family:monospace">${s.chave_pix}</span>` : s.banco || '—'}</td>
         <td>${statusBadge[s.status] || `<span class="badge">${s.status}</span>`}</td>
         <td style="font-size:.8rem;color:var(--text-muted)">${s.solicitado_fmt||'—'}</td>
@@ -4149,13 +4157,13 @@ pageLoaders['saques-modelos'] = async function () {
         <td>
           <div style="display:flex;gap:6px;flex-wrap:wrap">
             ${s.status==='pendente' ? `
-              <button class="btn btn-sm btn-primary" onclick="processarSaque(${s.id},'${nomeModelo(s).replace(/'/g,"\\'")}',${s.valor})">Processar</button>
+              <button class="btn btn-sm btn-primary" onclick="processarSaque(${s.id},'${nomeModelo(s).replace(/'/g,"\\'")}',${s.valor},${taxa})">Processar</button>
               <button class="btn btn-sm btn-danger"  onclick="rejeitarSaque(${s.id},'${nomeModelo(s).replace(/'/g,"\\'")}')">Rejeitar</button>
             ` : '—'}
           </div>
         </td>
       </tr>
-    `).join('') : `<tr><td colspan="8" class="empty-row">Nenhum saque encontrado</td></tr>`;
+    `}).join('') : `<tr><td colspan="10" class="empty-row">Nenhum saque encontrado</td></tr>`;
 
     $('saques-modelos-content').innerHTML = `
       <div class="card" style="margin-bottom:0">
@@ -4174,7 +4182,7 @@ pageLoaders['saques-modelos'] = async function () {
         <div class="table-wrapper">
           <table class="table">
             <thead><tr>
-              <th>Modelo</th><th>Valor</th><th>Chave PIX / Banco</th><th>Status</th>
+              <th>Modelo</th><th>Valor</th><th>Taxa</th><th>A Transferir</th><th>Chave PIX / Banco</th><th>Status</th>
               <th>Solicitado em</th><th>Processado em</th><th>Comprovante</th><th>Ações</th>
             </tr></thead>
             <tbody>${tbody}</tbody>
@@ -4186,8 +4194,16 @@ pageLoaders['saques-modelos'] = async function () {
 
   window.renderSaquesAdmin = renderSaques;
 
-  window.processarSaque = function(saqueId, nomeModelo, valor) {
-    const fmtV = fmtBRL(valor);
+  window.processarSaque = function(saqueId, nomeModelo, valor, taxaSaque = 0) {
+    const taxa = Number(taxaSaque) || 0;
+    const transferir = Number(valor) - taxa;
+    const taxaHtml = taxa > 0
+      ? `<div style="background:#fef9c3;border:1px solid #fde047;border-radius:6px;padding:8px 12px;margin-bottom:12px;font-size:.83rem">
+           <strong style="color:#78350f">Taxa de saque: ${fmtBRL(taxa)}</strong> &nbsp;·&nbsp; <span style="color:#713f12">Valor a transferir: <strong>${fmtBRL(transferir)}</strong></span>
+         </div>`
+      : `<div style="background:#dcfce7;border:1px solid #86efac;border-radius:6px;padding:6px 12px;margin-bottom:12px;font-size:.82rem">
+           <strong style="color:#14532d">1º saque do mês — sem taxa.</strong> Transferir: <strong>${fmtBRL(transferir)}</strong>
+         </div>`;
 
     const overlay = document.createElement('div');
     overlay.id = 'modalProcessarSaqueOverlay';
@@ -4203,9 +4219,10 @@ pageLoaders['saques-modelos'] = async function () {
         <button class="modal-close" onclick="closeModalSaque('modalProcessarSaque')">×</button>
       </div>
       <div class="modal-body">
-        <p style="margin:0 0 16px;color:var(--text-muted);font-size:.9rem">
-          Modelo: <strong style="color:var(--text)">${nomeModelo}</strong> &nbsp;·&nbsp; Valor: <strong style="color:var(--purple)">${fmtV}</strong>
+        <p style="margin:0 0 12px;color:var(--text-muted);font-size:.9rem">
+          Modelo: <strong style="color:var(--text)">${nomeModelo}</strong> &nbsp;·&nbsp; Solicitado: <strong style="color:var(--purple)">${fmtBRL(valor)}</strong>
         </p>
+        ${taxaHtml}
         <label style="display:block;font-size:.85rem;font-weight:600;color:var(--text-muted);margin-bottom:6px">Comprovante de transferência <span style="font-weight:400">(PDF ou imagem — opcional)</span></label>
         <input type="file" id="comprovanteFile" accept="image/*,.pdf">
         <p style="font-size:.78rem;color:var(--text-muted);margin:6px 0 0">Será enviado junto com o recibo no e-mail da modelo.</p>
@@ -4426,10 +4443,11 @@ function recalcularFechamento() {
   $('fechCbQtd').textContent          = _fechCalculo?.chargebacks_qtd > 0 ? `(${_fechCalculo.chargebacks_qtd}x)` : '';
   $('fechValLiquido').textContent     = money(liquido);
 
-  const saquesMes  = _fechCalculo?.saques_mes   || 0;
-  const saquesRows = _fechCalculo?.saques_rows  || [];
-  const detEl      = $('fechSaquesDetalhes');
-  const pagoRowEl  = $('fechSaldoLiquidoPagoRow');
+  const saquesMes    = _fechCalculo?.saques_mes        || 0;
+  const taxasSaques  = _fechCalculo?.taxas_saques_mes  || 0;
+  const saquesRows   = _fechCalculo?.saques_rows        || [];
+  const detEl        = $('fechSaquesDetalhes');
+  const pagoRowEl    = $('fechSaldoLiquidoPagoRow');
 
   if (detEl) {
     if (saquesRows.length > 0) {
@@ -4438,15 +4456,24 @@ function recalcularFechamento() {
         <div style="font-size:.78rem;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">
           Saques realizados no mês (${saquesRows.length}x)
         </div>
-        ${saquesRows.map(s => `
+        ${saquesRows.map(s => {
+          const taxa = Number(s.taxa_saque || 0);
+          const taxaInfo = taxa > 0
+            ? `<span style="color:#dc2626;font-size:.76rem;margin-left:4px">(taxa ${money(taxa)})</span>`
+            : `<span style="color:#16a34a;font-size:.76rem;margin-left:4px">(gratuito)</span>`;
+          return `
           <div style="display:flex;justify-content:space-between;font-size:.88rem;padding:3px 0;border-bottom:1px solid #f3f4f6;color:#374151">
-            <span>${s.data_fmt || '—'} &nbsp;<span style="color:#9ca3af;font-size:.8rem">Saque #${String(s.id).padStart(4,'0')}</span></span>
+            <span>${s.data_fmt || '—'} &nbsp;<span style="color:#9ca3af;font-size:.8rem">Saque #${String(s.id).padStart(4,'0')}</span>${taxaInfo}</span>
             <span style="color:#6b7280">− ${money(s.valor)}</span>
-          </div>
-        `).join('')}
+          </div>`;
+        }).join('')}
         <div style="display:flex;justify-content:space-between;font-size:.88rem;padding:4px 0;font-weight:600;color:#6b7280">
           <span>Total sacado</span><span>− ${money(saquesMes)}</span>
-        </div>`;
+        </div>
+        ${taxasSaques > 0 ? `
+        <div style="display:flex;justify-content:space-between;font-size:.82rem;padding:2px 0;color:#dc2626">
+          <span>Taxas de saque</span><span>− ${money(taxasSaques)}</span>
+        </div>` : ''}`;
     } else {
       detEl.style.display = 'none';
       detEl.innerHTML = '';
