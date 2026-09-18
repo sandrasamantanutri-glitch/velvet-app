@@ -8150,22 +8150,16 @@ app.post("/api/modelo/dados-bancarios/solicitar", authModelo, async (req, res) =
       return res.status(400).json({ erro: "Já existe um pedido de dados bancários em análise. Aguarde a resposta do administrador." });
     }
 
-    if (existing.rows.length === 0) {
-      await db.query(
-        `INSERT INTO modelo_dados_bancarios
-          (modelo_id, tipo, pix_tipo, pix_chave, banco, agencia, conta, conta_tipo, titular_nome, titular_documento, status, motivo_pedido)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'pendente',$11)`,
-        [mid, tipo, pix_tipo, pix_chave, banco, agencia, conta, conta_tipo, titular_nome, titular_documento, motivo_pedido]
-      );
-    } else {
-      await db.query(
-        `UPDATE modelo_dados_bancarios
-            SET tipo=$2, pix_tipo=$3, pix_chave=$4, banco=$5, agencia=$6, conta=$7, conta_tipo=$8,
-                titular_nome=$9, titular_documento=$10, status='alteracao_pendente', motivo_pedido=$11, atualizado_em=NOW()
-          WHERE modelo_id=$1`,
-        [mid, tipo, pix_tipo, pix_chave, banco, agencia, conta, conta_tipo, titular_nome, titular_documento, motivo_pedido]
-      );
-    }
+    const newStatus = existing.rows.length === 0 ? 'pendente' : 'alteracao_pendente';
+    await db.query(
+      `INSERT INTO modelo_dados_bancarios
+        (modelo_id, tipo, pix_tipo, pix_chave, banco, agencia, conta, conta_tipo, titular_nome, titular_documento, status, motivo_pedido)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+       ON CONFLICT (modelo_id) DO UPDATE
+         SET tipo=$2, pix_tipo=$3, pix_chave=$4, banco=$5, agencia=$6, conta=$7, conta_tipo=$8,
+             titular_nome=$9, titular_documento=$10, status=$11, motivo_pedido=$12, atualizado_em=NOW()`,
+      [mid, tipo, pix_tipo, pix_chave, banco, agencia, conta, conta_tipo, titular_nome, titular_documento, newStatus, motivo_pedido]
+    );
 
     res.json({ ok: true });
   } catch (err) {

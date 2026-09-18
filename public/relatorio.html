@@ -898,154 +898,179 @@ async function loadChargebacks(ym) {
 
 // ── TRÁFEGO ──────────────────────────────────────────────────────────
 // ── DADOS BANCÁRIOS ──────────────────────────────────────────────────
+const _dbField = s => `<div style="padding:12px 16px;border-bottom:1px solid var(--border,#e8e4f4);display:flex;justify-content:space-between;align-items:center;font-size:.88rem;flex-wrap:wrap;gap:4px">${s}</div>`;
+const _dbLbl  = t => `<span style="color:var(--muted,#888);min-width:120px">${t}</span>`;
+const _dbVal  = t => `<span style="font-weight:500;color:var(--text,#1E1E26)">${t}</span>`;
+
+function _dbForm(dados) {
+  const tipoPix = { cpf:'CPF', cnpj:'CNPJ', email:'E-mail', telefone:'Telefone', aleatoria:'Chave aleatória' };
+  const iAlt = dados && dados.status === 'aprovado';
+  return `
+    <div style="padding:20px 20px 4px">
+      ${iAlt ? `
+      <div style="margin-bottom:20px">
+        <label class="db-lbl">Motivo da solicitação *</label>
+        <textarea id="dbMotivo" rows="3" placeholder="Ex: troquei de banco, chave PIX desativada, erro na chave..."
+          style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border,#e8e4f4);font-size:.875rem;resize:vertical;font-family:inherit;background:var(--bg,#fbfaff);color:var(--text,#1E1E26);box-sizing:border-box"></textarea>
+      </div>` : ''}
+      <div style="margin-bottom:16px">
+        <label class="db-lbl">Tipo de recebimento *</label>
+        <select id="dbTipo" onchange="toggleBankFields()" style="width:220px;padding:10px 12px;border-radius:8px;border:1px solid var(--border,#e8e4f4);font-size:.875rem;background:var(--bg,#fbfaff);color:var(--text,#1E1E26)">
+          <option value="pix" ${dados && dados.tipo==='pix'?'selected':''}>PIX</option>
+          <option value="banco" ${dados && dados.tipo==='banco'?'selected':''}>Conta Bancária</option>
+        </select>
+      </div>
+      <div id="dbPixFields" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+        <div>
+          <label class="db-lbl">Tipo de chave</label>
+          <select id="dbPixTipo" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border,#e8e4f4);font-size:.875rem;background:var(--bg,#fbfaff);color:var(--text,#1E1E26)">
+            <option value="cpf"      ${dados && dados.pix_tipo==='cpf'?'selected':''}>CPF</option>
+            <option value="cnpj"     ${dados && dados.pix_tipo==='cnpj'?'selected':''}>CNPJ</option>
+            <option value="email"    ${dados && dados.pix_tipo==='email'?'selected':''}>E-mail</option>
+            <option value="telefone" ${dados && dados.pix_tipo==='telefone'?'selected':''}>Telefone</option>
+            <option value="aleatoria"${dados && dados.pix_tipo==='aleatoria'?'selected':''}>Chave aleatória</option>
+          </select>
+        </div>
+        <div>
+          <label class="db-lbl">Chave PIX</label>
+          <input id="dbPixChave" type="text" value="${dados && dados.pix_chave ? dados.pix_chave : ''}" placeholder="Sua chave PIX"
+            style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border,#e8e4f4);font-size:.875rem;background:var(--bg,#fbfaff);color:var(--text,#1E1E26);box-sizing:border-box">
+        </div>
+      </div>
+      <div id="dbBancoFields" style="display:none;margin-bottom:16px">
+        <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:16px;margin-bottom:16px">
+          <div>
+            <label class="db-lbl">Banco</label>
+            <input id="dbBanco" type="text" value="${dados && dados.banco ? dados.banco : ''}" placeholder="Nome do banco"
+              style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border,#e8e4f4);font-size:.875rem;background:var(--bg,#fbfaff);color:var(--text,#1E1E26);box-sizing:border-box">
+          </div>
+          <div>
+            <label class="db-lbl">Agência</label>
+            <input id="dbAgencia" type="text" value="${dados && dados.agencia ? dados.agencia : ''}" placeholder="0000"
+              style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border,#e8e4f4);font-size:.875rem;background:var(--bg,#fbfaff);color:var(--text,#1E1E26);box-sizing:border-box">
+          </div>
+          <div>
+            <label class="db-lbl">Conta</label>
+            <input id="dbConta" type="text" value="${dados && dados.conta ? dados.conta : ''}" placeholder="00000-0"
+              style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border,#e8e4f4);font-size:.875rem;background:var(--bg,#fbfaff);color:var(--text,#1E1E26);box-sizing:border-box">
+          </div>
+        </div>
+        <div>
+          <label class="db-lbl">Tipo de conta</label>
+          <select id="dbContaTipo" style="width:180px;padding:10px 12px;border-radius:8px;border:1px solid var(--border,#e8e4f4);font-size:.875rem;background:var(--bg,#fbfaff);color:var(--text,#1E1E26)">
+            <option value="corrente" ${dados && dados.conta_tipo==='corrente'?'selected':''}>Corrente</option>
+            <option value="poupança" ${dados && dados.conta_tipo==='poupança'?'selected':''}>Poupança</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+        <div>
+          <label class="db-lbl">Nome do titular *</label>
+          <input id="dbTitularNome" type="text" value="${dados && dados.titular_nome ? dados.titular_nome : ''}" placeholder="Nome completo"
+            style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border,#e8e4f4);font-size:.875rem;background:var(--bg,#fbfaff);color:var(--text,#1E1E26);box-sizing:border-box">
+        </div>
+        <div>
+          <label class="db-lbl">CPF / CNPJ do titular *</label>
+          <input id="dbTitularDoc" type="text" value="${dados && dados.titular_documento ? dados.titular_documento : ''}" placeholder="000.000.000-00"
+            style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border,#e8e4f4);font-size:.875rem;background:var(--bg,#fbfaff);color:var(--text,#1E1E26);box-sizing:border-box">
+        </div>
+      </div>
+      <div id="dbErro" style="color:#dc2626;font-size:.82rem;margin-bottom:14px;display:none"></div>
+      <div style="display:flex;gap:10px;align-items:center;padding-bottom:4px">
+        <button id="dbSubmitBtn" onclick="enviarDadosBancarios()" style="background:var(--purple,#7B2CFF);color:#fff;border:none;border-radius:8px;padding:11px 28px;font-size:.9rem;font-weight:700;cursor:pointer">
+          ${iAlt ? 'Enviar Solicitação' : 'Enviar Dados'}
+        </button>
+        ${iAlt ? `<button onclick="document.getElementById('dbFormWrap').style.display='none'" style="background:transparent;border:1px solid var(--border,#e8e4f4);border-radius:8px;padding:11px 20px;font-size:.88rem;color:var(--muted,#888);cursor:pointer">Cancelar</button>` : ''}
+      </div>
+    </div>`;
+}
+
 async function loadDadosBancarios() {
   const d = await api('/api/modelo/dados-bancarios');
   if (!d) return;
   const { dados, saque_pendente } = d;
-
-  const statusLabel = {
-    pendente: '<span style="background:#fef9c3;color:#92400e;padding:2px 8px;border-radius:6px;font-size:.75rem;font-weight:600">Em análise</span>',
-    aprovado: '<span style="background:#dcfce7;color:#166534;padding:2px 8px;border-radius:6px;font-size:.75rem;font-weight:600">Aprovado</span>',
-    rejeitado: '<span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:6px;font-size:.75rem;font-weight:600">Rejeitado</span>',
-    alteracao_pendente: '<span style="background:#fef9c3;color:#92400e;padding:2px 8px;border-radius:6px;font-size:.75rem;font-weight:600">Alteração em análise</span>',
-  };
-
   const tipoPix = { cpf:'CPF', cnpj:'CNPJ', email:'E-mail', telefone:'Telefone', aleatoria:'Chave aleatória' };
 
-  let dadosAprovadosHtml = '';
+  // ── Card de dados aprovados ──────────────────────────────────────────
+  let statusBanner = '';
+  let dadosCard    = '';
+  let alteracaoBtn = '';
+
   if (dados && dados.status === 'aprovado') {
-    dadosAprovadosHtml = `
+    dadosCard = `
       <div class="tcard" style="margin-bottom:1rem">
-        <div class="tcard-hd"><h5><i class="bi bi-check-circle me-1" style="color:#16a34a"></i> Dados Aprovados</h5></div>
+        <div class="tcard-hd" style="padding:14px 16px">
+          <h5 style="display:flex;align-items:center;gap:8px">
+            <i class="bi bi-check-circle-fill" style="color:#16a34a"></i> Dados Bancários Aprovados
+          </h5>
+        </div>
         ${dados.tipo === 'pix' ? `
-        <div class="info-row"><span class="ir-lbl">Tipo</span><span class="ir-val">PIX</span></div>
-        <div class="info-row"><span class="ir-lbl">Tipo de chave</span><span class="ir-val">${tipoPix[dados.pix_tipo] || dados.pix_tipo || '—'}</span></div>
-        <div class="info-row"><span class="ir-lbl">Chave PIX</span><span class="ir-val" style="font-family:monospace">${dados.pix_chave || '—'}</span></div>
+          ${_dbField(_dbLbl('Tipo de recebimento') + _dbVal('PIX'))}
+          ${_dbField(_dbLbl('Tipo de chave') + _dbVal(tipoPix[dados.pix_tipo] || dados.pix_tipo || '—'))}
+          ${_dbField(_dbLbl('Chave PIX') + `<span style="font-family:monospace;font-size:.88rem;font-weight:600;color:var(--purple,#7B2CFF)">${dados.pix_chave || '—'}</span>`)}
         ` : `
-        <div class="info-row"><span class="ir-lbl">Tipo</span><span class="ir-val">Conta Bancária</span></div>
-        <div class="info-row"><span class="ir-lbl">Banco</span><span class="ir-val">${dados.banco || '—'}</span></div>
-        <div class="info-row"><span class="ir-lbl">Agência</span><span class="ir-val">${dados.agencia || '—'}</span></div>
-        <div class="info-row"><span class="ir-lbl">Conta</span><span class="ir-val">${dados.conta || '—'} (${dados.conta_tipo || '—'})</span></div>
+          ${_dbField(_dbLbl('Tipo de recebimento') + _dbVal('Conta Bancária'))}
+          ${_dbField(_dbLbl('Banco') + _dbVal(dados.banco || '—'))}
+          ${_dbField(_dbLbl('Agência / Conta') + _dbVal(`${dados.agencia || '—'} / ${dados.conta || '—'} (${dados.conta_tipo || '—'})`))}
         `}
-        <div class="info-row"><span class="ir-lbl">Titular</span><span class="ir-val">${dados.titular_nome || '—'}</span></div>
-        <div class="info-row"><span class="ir-lbl">CPF/CNPJ</span><span class="ir-val">${dados.titular_documento || '—'}</span></div>
+        ${_dbField(_dbLbl('Titular') + _dbVal(dados.titular_nome || '—'))}
+        ${_dbField(_dbLbl('CPF / CNPJ') + _dbVal(dados.titular_documento || '—'))}
+      </div>`;
+
+    if (!saque_pendente) {
+      alteracaoBtn = `
+        <button onclick="document.getElementById('dbFormWrap').style.display=''" style="background:transparent;border:1px solid var(--border,#e8e4f4);border-radius:8px;padding:9px 18px;font-size:.85rem;font-weight:600;color:var(--purple,#7B2CFF);cursor:pointer;margin-bottom:1rem">
+          <i class="bi bi-pencil-square"></i> Solicitar Alteração de Dados
+        </button>`;
+    }
+  } else if (dados && (dados.status === 'pendente' || dados.status === 'alteracao_pendente')) {
+    statusBanner = `
+      <div style="background:#fef9c3;border:1px solid #fde047;border-radius:12px;padding:16px;margin-bottom:1rem">
+        <div style="font-weight:700;color:#92400e;margin-bottom:6px"><i class="bi bi-hourglass-split"></i> ${dados.status === 'pendente' ? 'Cadastro em análise' : 'Solicitação de alteração em análise'}</div>
+        <p style="font-size:.85rem;color:#78350f;margin:0">Seus dados bancários estão sendo analisados pela equipe. Aguarde a aprovação.</p>
+        ${dados.motivo_pedido ? `<p style="font-size:.82rem;color:#78350f;margin-top:8px"><strong>Motivo informado:</strong> ${dados.motivo_pedido}</p>` : ''}
+        ${dados.tipo === 'pix'
+          ? `<p style="font-size:.82rem;color:#78350f;margin-top:4px"><strong>Chave PIX enviada:</strong> ${dados.pix_chave || '—'} (${tipoPix[dados.pix_tipo] || dados.pix_tipo || '—'})</p>`
+          : `<p style="font-size:.82rem;color:#78350f;margin-top:4px"><strong>Conta enviada:</strong> ${dados.banco || '—'} ag. ${dados.agencia || '—'} / ${dados.conta || '—'}</p>`}
       </div>`;
   } else if (dados && dados.status === 'rejeitado') {
-    dadosAprovadosHtml = `
+    statusBanner = `
       <div style="background:#fee2e2;border:1px solid #fca5a5;border-radius:12px;padding:16px;margin-bottom:1rem">
-        <strong style="color:#991b1b"><i class="bi bi-x-circle"></i> Dados Rejeitados</strong>
-        <p style="font-size:.85rem;color:#7f1d1d;margin-top:6px">Seu pedido de dados bancários foi rejeitado. Envie um novo cadastro abaixo.</p>
+        <div style="font-weight:700;color:#991b1b;margin-bottom:6px"><i class="bi bi-x-circle"></i> Dados Rejeitados</div>
+        <p style="font-size:.85rem;color:#7f1d1d;margin:0">Seu pedido foi rejeitado. Preencha o formulário abaixo para enviar novos dados.</p>
       </div>`;
-  } else if (!dados) {
-    dadosAprovadosHtml = `
+  } else {
+    statusBanner = `
       <div style="background:#f0ebff;border:1px solid #d1c0ff;border-radius:12px;padding:16px;margin-bottom:1rem">
-        <strong style="color:#7B2CFF"><i class="bi bi-info-circle"></i> Nenhum dado cadastrado</strong>
-        <p style="font-size:.85rem;color:#5b21b6;margin-top:6px">Cadastre seus dados bancários para poder solicitar saques.</p>
+        <div style="font-weight:700;color:#7B2CFF;margin-bottom:6px"><i class="bi bi-info-circle"></i> Nenhum dado cadastrado</div>
+        <p style="font-size:.85rem;color:#5b21b6;margin:0">Cadastre seus dados bancários para poder solicitar saques.</p>
       </div>`;
   }
 
-  const pendingBlock = (dados && (dados.status === 'pendente' || dados.status === 'alteracao_pendente')) ? `
-    <div style="background:#fef9c3;border:1px solid #fde047;border-radius:12px;padding:16px;margin-bottom:1rem">
-      <strong style="color:#92400e"><i class="bi bi-hourglass-split"></i> Pedido em análise</strong>
-      <p style="font-size:.85rem;color:#78350f;margin-top:6px">
-        ${dados.status === 'pendente' ? 'Seu cadastro de dados bancários está sendo analisado.' : 'Sua solicitação de alteração está sendo analisada.'}
-        Aguarde a aprovação do administrador.
-      </p>
-      ${dados.motivo_pedido ? `<p style="font-size:.82rem;color:#78350f;margin-top:4px"><strong>Motivo informado:</strong> ${dados.motivo_pedido}</p>` : ''}
+  const saqueWarning = saque_pendente ? `
+    <div style="background:#fef9c3;border:1px solid #fde047;border-radius:10px;padding:12px 16px;margin-bottom:1rem;font-size:.84rem;color:#78350f">
+      <i class="bi bi-lock-fill"></i> <strong>Alteração bloqueada</strong> — há um saque em processamento. Aguarde a conclusão para solicitar alteração dos dados.
     </div>` : '';
 
   const canRequest = !saque_pendente && !(dados && (dados.status === 'pendente' || dados.status === 'alteracao_pendente'));
-  const saqueWarning = saque_pendente ? `
-    <div style="background:#fee2e2;border:1px solid #fca5a5;border-radius:12px;padding:14px;margin-bottom:1rem;font-size:.85rem;color:#991b1b">
-      <i class="bi bi-lock-fill"></i> <strong>Saque pendente</strong> — não é possível solicitar alteração de dados bancários enquanto houver um saque em processamento.
-    </div>` : '';
+  const isAlt      = dados && dados.status === 'aprovado';
+  const formWrapStyle = isAlt ? 'display:none' : '';
 
-  const formTitle = (!dados || dados.status === 'rejeitado') ? 'Cadastrar Dados Bancários' : 'Solicitar Alteração';
   const formHtml = canRequest ? `
-    <div class="tcard">
-      <div class="tcard-hd"><h5><i class="bi bi-pencil-square me-1" style="color:var(--purple)"></i> ${formTitle}</h5></div>
-      <div style="padding:0 0 12px">
-        ${dados && dados.status === 'aprovado' ? `
-        <div style="margin-bottom:14px">
-          <label style="font-size:.82rem;font-weight:600;color:var(--text);display:block;margin-bottom:5px">Motivo da solicitação *</label>
-          <textarea id="dbMotivo" rows="3" placeholder="Ex: troquei de banco, chave PIX desativada..."
-            style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);font-size:.85rem;resize:vertical;font-family:inherit"></textarea>
-        </div>` : ''}
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
-          <div>
-            <label style="font-size:.82rem;font-weight:600;color:var(--text);display:block;margin-bottom:5px">Tipo de recebimento *</label>
-            <select id="dbTipo" onchange="toggleBankFields()" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);font-size:.85rem;background:var(--bg)">
-              <option value="pix" ${dados && dados.tipo==='pix'?'selected':''}>PIX</option>
-              <option value="banco" ${dados && dados.tipo==='banco'?'selected':''}>Conta Bancária</option>
-            </select>
-          </div>
+    <div id="dbFormWrap" style="${formWrapStyle}">
+      <div class="tcard">
+        <div class="tcard-hd" style="padding:14px 16px">
+          <h5><i class="bi bi-pencil-square me-1" style="color:var(--purple,#7B2CFF)"></i> ${isAlt ? 'Solicitar Alteração' : 'Cadastrar Dados Bancários'}</h5>
         </div>
-        <div id="dbPixFields" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
-          <div>
-            <label style="font-size:.82rem;font-weight:600;color:var(--text);display:block;margin-bottom:5px">Tipo de chave</label>
-            <select id="dbPixTipo" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);font-size:.85rem;background:var(--bg)">
-              <option value="cpf" ${dados && dados.pix_tipo==='cpf'?'selected':''}>CPF</option>
-              <option value="cnpj" ${dados && dados.pix_tipo==='cnpj'?'selected':''}>CNPJ</option>
-              <option value="email" ${dados && dados.pix_tipo==='email'?'selected':''}>E-mail</option>
-              <option value="telefone" ${dados && dados.pix_tipo==='telefone'?'selected':''}>Telefone</option>
-              <option value="aleatoria" ${dados && dados.pix_tipo==='aleatoria'?'selected':''}>Chave aleatória</option>
-            </select>
-          </div>
-          <div>
-            <label style="font-size:.82rem;font-weight:600;color:var(--text);display:block;margin-bottom:5px">Chave PIX</label>
-            <input id="dbPixChave" type="text" value="${dados && dados.pix_chave ? dados.pix_chave : ''}" placeholder="Sua chave PIX"
-              style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);font-size:.85rem;background:var(--bg)">
-          </div>
-        </div>
-        <div id="dbBancoFields" style="display:none;gap:12px;margin-bottom:14px">
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
-            <div>
-              <label style="font-size:.82rem;font-weight:600;color:var(--text);display:block;margin-bottom:5px">Banco</label>
-              <input id="dbBanco" type="text" value="${dados && dados.banco ? dados.banco : ''}" placeholder="Nome do banco"
-                style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);font-size:.85rem;background:var(--bg)">
-            </div>
-            <div>
-              <label style="font-size:.82rem;font-weight:600;color:var(--text);display:block;margin-bottom:5px">Agência</label>
-              <input id="dbAgencia" type="text" value="${dados && dados.agencia ? dados.agencia : ''}" placeholder="0000"
-                style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);font-size:.85rem;background:var(--bg)">
-            </div>
-            <div>
-              <label style="font-size:.82rem;font-weight:600;color:var(--text);display:block;margin-bottom:5px">Conta</label>
-              <input id="dbConta" type="text" value="${dados && dados.conta ? dados.conta : ''}" placeholder="00000-0"
-                style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);font-size:.85rem;background:var(--bg)">
-            </div>
-          </div>
-          <div style="margin-top:12px">
-            <label style="font-size:.82rem;font-weight:600;color:var(--text);display:block;margin-bottom:5px">Tipo de conta</label>
-            <select id="dbContaTipo" style="width:180px;padding:10px;border-radius:8px;border:1px solid var(--border);font-size:.85rem;background:var(--bg)">
-              <option value="corrente" ${dados && dados.conta_tipo==='corrente'?'selected':''}>Corrente</option>
-              <option value="poupança" ${dados && dados.conta_tipo==='poupança'?'selected':''}>Poupança</option>
-            </select>
-          </div>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
-          <div>
-            <label style="font-size:.82rem;font-weight:600;color:var(--text);display:block;margin-bottom:5px">Nome do titular *</label>
-            <input id="dbTitularNome" type="text" value="${dados && dados.titular_nome ? dados.titular_nome : ''}" placeholder="Nome completo"
-              style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);font-size:.85rem;background:var(--bg)">
-          </div>
-          <div>
-            <label style="font-size:.82rem;font-weight:600;color:var(--text);display:block;margin-bottom:5px">CPF / CNPJ do titular *</label>
-            <input id="dbTitularDoc" type="text" value="${dados && dados.titular_documento ? dados.titular_documento : ''}" placeholder="000.000.000-00"
-              style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);font-size:.85rem;background:var(--bg)">
-          </div>
-        </div>
-        <div id="dbErro" style="color:#dc2626;font-size:.82rem;margin-bottom:12px;display:none"></div>
-        <button id="dbSubmitBtn" onclick="enviarDadosBancarios()" style="background:var(--purple);color:#fff;border:none;border-radius:8px;padding:11px 28px;font-size:.9rem;font-weight:700;cursor:pointer">
-          ${dados && dados.status === 'aprovado' ? 'Solicitar Alteração' : 'Enviar Dados'}
-        </button>
+        ${_dbForm(dados)}
       </div>
     </div>` : '';
 
   document.getElementById('dadosbancariosContent').innerHTML = `
-    ${dadosAprovadosHtml}
-    ${pendingBlock}
+    ${statusBanner}
+    ${dadosCard}
     ${saqueWarning}
+    ${alteracaoBtn}
     ${formHtml}
   `;
 
@@ -1064,40 +1089,40 @@ function toggleBankFields() {
 
 async function enviarDadosBancarios() {
   const erroEl = document.getElementById('dbErro');
-  const btn = document.getElementById('dbSubmitBtn');
+  const btn    = document.getElementById('dbSubmitBtn');
   erroEl.style.display = 'none';
 
-  const tipo = document.getElementById('dbTipo')?.value;
-  const motivoEl = document.getElementById('dbMotivo');
-  const motivo = motivoEl ? motivoEl.value.trim() : '';
-  const titular_nome = document.getElementById('dbTitularNome')?.value.trim();
-  const titular_documento = document.getElementById('dbTitularDoc')?.value.trim();
+  const tipo           = document.getElementById('dbTipo')?.value;
+  const motivoEl       = document.getElementById('dbMotivo');
+  const motivo         = motivoEl ? motivoEl.value.trim() : '';
+  const titular_nome   = document.getElementById('dbTitularNome')?.value.trim();
+  const titular_doc    = document.getElementById('dbTitularDoc')?.value.trim();
 
-  if (!titular_nome || !titular_documento) {
+  if (!titular_nome || !titular_doc) {
     erroEl.textContent = 'Nome e CPF/CNPJ do titular são obrigatórios.';
     erroEl.style.display = 'block';
     return;
   }
 
-  const body = { tipo, titular_nome, titular_documento };
+  const body = { tipo, titular_nome, titular_documento: titular_doc };
   if (motivoEl) body.motivo_pedido = motivo;
 
   if (tipo === 'pix') {
-    body.pix_tipo = document.getElementById('dbPixTipo')?.value;
+    body.pix_tipo  = document.getElementById('dbPixTipo')?.value;
     body.pix_chave = document.getElementById('dbPixChave')?.value.trim();
     if (!body.pix_chave) { erroEl.textContent = 'Informe a chave PIX.'; erroEl.style.display = 'block'; return; }
   } else {
-    body.banco = document.getElementById('dbBanco')?.value.trim();
-    body.agencia = document.getElementById('dbAgencia')?.value.trim();
-    body.conta = document.getElementById('dbConta')?.value.trim();
+    body.banco      = document.getElementById('dbBanco')?.value.trim();
+    body.agencia    = document.getElementById('dbAgencia')?.value.trim();
+    body.conta      = document.getElementById('dbConta')?.value.trim();
     body.conta_tipo = document.getElementById('dbContaTipo')?.value;
-    if (!body.banco || !body.conta) { erroEl.textContent = 'Preencha os dados bancários.'; erroEl.style.display = 'block'; return; }
+    if (!body.banco || !body.conta) { erroEl.textContent = 'Preencha banco e conta.'; erroEl.style.display = 'block'; return; }
   }
 
-  btn.disabled = true;
+  btn.disabled    = true;
   btn.textContent = 'Enviando...';
 
-  const res = await fetch('/api/modelo/dados-bancarios/solicitar', {
+  const res  = await fetch('/api/modelo/dados-bancarios/solicitar', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
     body: JSON.stringify(body),
@@ -1105,10 +1130,10 @@ async function enviarDadosBancarios() {
   const data = await res.json();
 
   if (!res.ok) {
-    erroEl.textContent = data.erro || 'Erro ao enviar dados.';
+    erroEl.textContent  = data.erro || 'Erro ao enviar dados.';
     erroEl.style.display = 'block';
-    btn.disabled = false;
-    btn.textContent = 'Enviar Dados';
+    btn.disabled        = false;
+    btn.textContent     = 'Enviar Dados';
     return;
   }
 
@@ -1117,7 +1142,7 @@ async function enviarDadosBancarios() {
 
   const toast = document.createElement('div');
   toast.style.cssText = `position:fixed;bottom:24px;right:24px;background:#22c55e;color:#fff;padding:14px 22px;border-radius:12px;z-index:9999;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.3)`;
-  toast.textContent = '✓ Dados enviados! Aguarde a aprovação.';
+  toast.textContent   = '✓ Dados enviados! Aguarde a aprovação.';
   document.body.appendChild(toast);
   setTimeout(() => toast.remove(), 4000);
 }
