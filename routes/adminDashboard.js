@@ -2751,7 +2751,7 @@ router.get("/dados-bancarios", async (req, res) => {
       FROM modelo_dados_bancarios b
       LEFT JOIN modelos m ON m.id = b.modelo_id
       WHERE ${where}
-      ORDER BY CASE WHEN b.status = 'pendente' THEN 0 ELSE 1 END, b.criado_em DESC
+      ORDER BY CASE WHEN b.status IN ('pendente','alteracao_pendente') THEN 0 ELSE 1 END, b.atualizado_em DESC NULLS LAST, b.criado_em DESC
       LIMIT $1 OFFSET $2
     `, params);
 
