@@ -7714,25 +7714,33 @@ const V_CORTE = "2026-09-01T03:00:00.000Z"; // UTC = 2026-09-01 00:00 BRT
 app.get("/api/modelo/painel/geral", authModelo, async (req, res) => {
   try {
     const mid = req.modelo_id;
-    const [disp, pend, ass, vis] = await Promise.all([
+    const [ganhosDisp, ganhosPend, pagosRes, saquesRes, ass, vis] = await Promise.all([
+      // Ganhos disponíveis (mesma lógica de meubanco: não-stripe ou stripe já liberado)
+      db.query(`
+        SELECT COALESCE(SUM(valor_modelo) FILTER (
+          WHERE gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW())
+        ), 0) AS total
+        FROM transacoes_agency
+        WHERE modelo_id = $1 AND status = 'pago'
+      `, [mid]),
+      // Ganhos pendentes (stripe ainda não liberado)
       db.query(`
         SELECT COALESCE(SUM(valor_modelo), 0) AS total
         FROM transacoes_agency
         WHERE modelo_id = $1 AND status = 'pago'
-          AND (
-            (disponivel_em IS NULL     AND created_at    >= $2)
-            OR
-            (disponivel_em IS NOT NULL AND disponivel_em >= $2
-              AND disponivel_em < (DATE_TRUNC('day', NOW() AT TIME ZONE 'America/Sao_Paulo') + INTERVAL '1 day') AT TIME ZONE 'America/Sao_Paulo')
-          )
-      `, [mid, V_CORTE]),
-      db.query(`
-        SELECT COALESCE(SUM(valor_modelo), 0) AS total
-        FROM transacoes_agency
-        WHERE modelo_id = $1 AND status = 'pago'
-          AND created_at >= NOW() - INTERVAL '30 days'
           AND disponivel_em IS NOT NULL
-          AND disponivel_em >= (DATE_TRUNC('day', NOW() AT TIME ZONE 'America/Sao_Paulo') + INTERVAL '1 day') AT TIME ZONE 'America/Sao_Paulo'
+          AND disponivel_em > NOW()
+      `, [mid]),
+      // Total já pago via modelo_pagamentos
+      db.query(`
+        SELECT COALESCE(SUM(total_geral), 0) AS pagos FROM modelo_pagamentos WHERE modelo_id=$1 AND status='pago'
+      `, [mid]),
+      // Saques já pagos + pendentes
+      db.query(`
+        SELECT
+          COALESCE(SUM(valor) FILTER (WHERE status='pago'),     0) AS saques_pagos,
+          COALESCE(SUM(valor) FILTER (WHERE status='pendente'), 0) AS saques_pendentes
+        FROM saques WHERE modelo_id=$1
       `, [mid]),
       db.query(`
         SELECT COUNT(DISTINCT cliente_id) AS total
@@ -7747,9 +7755,17 @@ app.get("/api/modelo/painel/geral", authModelo, async (req, res) => {
         WHERE modelo_id = $1
       `, [mid]),
     ]);
+
+    const bruto        = parseFloat(ganhosDisp.rows[0].total);
+    const pendente     = parseFloat(ganhosPend.rows[0].total);
+    const pagos        = parseFloat(pagosRes.rows[0].pagos);
+    const saquesPagos  = parseFloat(saquesRes.rows[0].saques_pagos);
+    const saqPendentes = parseFloat(saquesRes.rows[0].saques_pendentes);
+    const disponivel   = Math.max(0, bruto - pagos - saquesPagos - saqPendentes);
+
     res.json({
-      disponivel:    parseFloat(disp.rows[0].total),
-      pendente:      parseFloat(pend.rows[0].total),
+      disponivel,
+      pendente,
       assinantes:    parseInt(ass.rows[0].total),
       visitas_hoje:  parseInt(vis.rows[0].hoje || 0),
       visitas_mes:   parseInt(vis.rows[0].mes  || 0),
