@@ -609,15 +609,15 @@ async function loadMeubanco() {
   if (!d) return;
   const { disponivel, pendente, saques_pendentes } = d;
   const temSaquePendente = (saques_pendentes || 0) > 0;
-  const podeSacar = disponivel >= 500 && !temSaquePendente;
+  const podeSacar = disponivel > 0 && !temSaquePendente;
 
   let btnSaque = '';
   if (temSaquePendente) {
     btnSaque = `<button class="btn-saque" disabled style="opacity:.6">Saque em análise...</button>`;
-  } else if (disponivel >= 500) {
+  } else if (disponivel > 0) {
     btnSaque = `<button class="btn-saque" onclick="abrirModalSaque(${disponivel})">Solicitar Saque</button>`;
   } else {
-    btnSaque = `<button class="btn-saque" disabled>Solicitar Saque <small style="font-size:.7rem;opacity:.7">(mín. R$ 500)</small></button>`;
+    btnSaque = `<button class="btn-saque" disabled>Solicitar Saque</button>`;
   }
 
   document.getElementById('meubancoContent').innerHTML = `
@@ -627,7 +627,6 @@ async function loadMeubanco() {
         <div class="bm-amt">${fmt(disponivel)}</div>
         <div class="bm-sub">Valores liberados prontos para retirada</div>
         ${btnSaque}
-        ${disponivel > 0 && disponivel < 500 ? '<div style="margin-top:.6rem;font-size:.72rem;opacity:.8">Saldo mínimo: R$ 500,00</div>' : ''}
       </div>
       <div class="sc amber" style="display:flex;flex-direction:column;justify-content:center">
         <div class="sc-icon"><i class="bi bi-hourglass-split"></i></div>
@@ -642,7 +641,7 @@ async function loadMeubanco() {
     </div>
     <div class="tcard">
       <div class="tcard-hd"><h5><i class="bi bi-info-circle me-1" style="color:var(--purple)"></i> Informações de Saque</h5></div>
-      <div class="info-row"><span class="ir-lbl">Valor mínimo</span><span class="ir-val">R$ 500,00</span></div>
+      <div class="info-row"><span class="ir-lbl">Valor mínimo</span><span class="ir-val">R$ 1,00</span></div>
       <div class="info-row"><span class="ir-lbl">Prazo de processamento</span><span class="ir-val">até 48 horas úteis</span></div>
       <div class="info-row"><span class="ir-lbl">Chave PIX</span><span class="ir-val" style="font-size:.8rem">Cadastrada em Meu Banco</span></div>
     </div>
@@ -659,7 +658,7 @@ function abrirModalSaque(saldoDisp) {
       <h3 style="margin:0 0 8px;color:var(--purple-light,#a78bfa)"><i class="bi bi-arrow-up-circle"></i> Solicitar Saque</h3>
       <p style="margin:0 0 20px;font-size:.88rem;opacity:.75">Saldo disponível: <strong>${fmt(saldoDisp)}</strong></p>
       <label style="font-size:.85rem;font-weight:600;display:block;margin-bottom:6px">Valor a sacar (R$)</label>
-      <input id="inputValorSaque" type="number" min="500" max="${saldoDisp.toFixed(2)}" step="0.01" value="${saldoDisp.toFixed(2)}"
+      <input id="inputValorSaque" type="number" min="0.01" max="${saldoDisp.toFixed(2)}" step="0.01" value="${saldoDisp.toFixed(2)}"
         style="width:100%;padding:10px 14px;border-radius:8px;border:1px solid var(--border,#444);background:var(--bg,#0f0f1a);color:inherit;font-size:1rem;box-sizing:border-box">
       <div id="saqueErro" style="color:#f87171;font-size:.82rem;margin-top:8px;display:none"></div>
       <div style="display:flex;gap:12px;margin-top:24px">
@@ -683,7 +682,7 @@ async function confirmarSaque(saldoDisp) {
   const valor = parseFloat(document.getElementById('inputValorSaque').value);
 
   erroEl.style.display = 'none';
-  if (!valor || valor < 500) { erroEl.textContent = 'Valor mínimo: R$ 500,00'; erroEl.style.display = 'block'; return; }
+  if (!valor || valor <= 0) { erroEl.textContent = 'Valor inválido'; erroEl.style.display = 'block'; return; }
   if (valor > saldoDisp + 0.01) { erroEl.textContent = 'Valor maior que o saldo disponível'; erroEl.style.display = 'block'; return; }
 
   btn.disabled = true;

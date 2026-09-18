@@ -7960,8 +7960,8 @@ app.post("/api/modelo/sacar", authModelo, async (req, res) => {
     const { valor } = req.body;
     const valorNum = Number(valor);
 
-    if (!valorNum || valorNum < 500) {
-      return res.status(400).json({ erro: "Valor mínimo para saque é R$ 500,00" });
+    if (!valorNum || valorNum <= 0) {
+      return res.status(400).json({ erro: "Valor inválido para saque" });
     }
 
     // Verificar dados bancários aprovados
