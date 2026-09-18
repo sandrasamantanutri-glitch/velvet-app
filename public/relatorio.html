@@ -855,6 +855,19 @@ async function loadSaques() {
   const statusColor = { pendente: '#f59e0b', pago: '#22c55e', rejeitado: '#ef4444', processando: '#7B2CFF' };
 
   const tbody = rows.length ? rows.map(r => {
+    const taxa = Number(r.taxa_saque || 0);
+    const recebido = Number(r.valor) - taxa;
+
+    let valorCell;
+    if (taxa > 0) {
+      valorCell = `
+        <div style="font-weight:600">${fmt(r.valor)}</div>
+        <div style="font-size:.75rem;color:#ef4444;margin-top:1px">− ${fmt(taxa)} taxa</div>
+        <div style="font-size:.78rem;font-weight:700;color:var(--purple,#7B2CFF)">= ${fmt(recebido)} recebido</div>`;
+    } else {
+      valorCell = `<span style="font-weight:600">${fmt(r.valor)}</span>`;
+    }
+
     let obs = '—';
     if (r.motivo_rejeicao) {
       obs = `<span style="font-size:.8rem;color:#ef4444">${r.motivo_rejeicao}</span>`;
@@ -870,7 +883,7 @@ async function loadSaques() {
     return `
     <tr>
       <td>${r.solicitado_fmt || '—'}</td>
-      <td style="font-weight:600">${fmt(r.valor)}</td>
+      <td>${valorCell}</td>
       <td><span style="color:${statusColor[r.status] || '#888'};font-weight:600">${statusLabel[r.status] || r.status}</span>${cancelBtn}</td>
       <td style="font-size:.8rem;opacity:.7">${r.processado_fmt || '—'}</td>
       <td>${obs}</td>
@@ -884,7 +897,7 @@ async function loadSaques() {
     </div>
     <div class="table-resp">
       <table class="dt">
-        <thead><tr><th>Solicitado em</th><th>Valor</th><th>Status</th><th>Processado em</th><th>Observação</th></tr></thead>
+        <thead><tr><th>Solicitado em</th><th>Valor / Taxa</th><th>Status</th><th>Processado em</th><th>Observação</th></tr></thead>
         <tbody>${tbody}</tbody>
       </table>
     </div>

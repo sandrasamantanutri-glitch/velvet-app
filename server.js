@@ -8155,7 +8155,7 @@ app.get("/api/modelo/saques", authModelo, async (req, res) => {
     const mid = req.modelo_id;
     const { rows } = await db.query(`
       SELECT
-        id, valor, status, motivo_rejeicao,
+        id, valor, COALESCE(taxa_saque, 0) AS taxa_saque, status, motivo_rejeicao,
         saldo_disponivel_no_dia,
         TO_CHAR(solicitado_em AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY HH24:MI') AS solicitado_fmt,
         TO_CHAR(processado_em AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY HH24:MI') AS processado_fmt,
