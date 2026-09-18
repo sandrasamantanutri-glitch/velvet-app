@@ -652,22 +652,22 @@ async function loadMeubanco() {
 function abrirModalSaque(saldoDisp) {
   const modal = document.createElement('div');
   modal.id = 'modalSaque';
-  modal.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px`;
+  modal.style.cssText = `position:fixed;inset:0;background:rgba(30,30,38,.45);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px`;
   modal.innerHTML = `
-    <div style="background:var(--surface,#1a1a2e);border:1px solid var(--border,#333);border-radius:16px;padding:32px;max-width:420px;width:100%">
-      <h3 style="margin:0 0 8px;color:var(--purple-light,#a78bfa)"><i class="bi bi-arrow-up-circle"></i> Solicitar Saque</h3>
-      <p style="margin:0 0 20px;font-size:.88rem;opacity:.75">Saldo disponível: <strong>${fmt(saldoDisp)}</strong></p>
-      <label style="font-size:.85rem;font-weight:600;display:block;margin-bottom:6px">Valor a sacar (R$)</label>
+    <div style="background:#fff;border:1px solid var(--border,#e8e4f4);border-radius:16px;padding:32px;max-width:420px;width:100%;box-shadow:0 8px 32px rgba(123,44,255,.12)">
+      <h3 style="margin:0 0 4px;color:var(--purple,#7B2CFF);font-size:1.1rem"><i class="bi bi-arrow-up-circle"></i> Solicitar Saque</h3>
+      <p style="margin:0 0 20px;font-size:.88rem;color:var(--muted,#888)">Saldo disponível: <strong style="color:var(--text,#1E1E26)">${fmt(saldoDisp)}</strong></p>
+      <label style="font-size:.85rem;font-weight:600;display:block;margin-bottom:6px;color:var(--text,#1E1E26)">Valor a sacar (R$)</label>
       <input id="inputValorSaque" type="number" min="0.01" max="${saldoDisp.toFixed(2)}" step="0.01" value="${saldoDisp.toFixed(2)}"
-        style="width:100%;padding:10px 14px;border-radius:8px;border:1px solid var(--border,#444);background:var(--bg,#0f0f1a);color:inherit;font-size:1rem;box-sizing:border-box">
-      <div id="saqueErro" style="color:#f87171;font-size:.82rem;margin-top:8px;display:none"></div>
+        style="width:100%;padding:10px 14px;border-radius:8px;border:1px solid var(--border,#e8e4f4);background:var(--bg,#fbfaff);color:var(--text,#1E1E26);font-size:1rem;box-sizing:border-box;outline:none">
+      <div id="saqueErro" style="color:#dc2626;font-size:.82rem;margin-top:8px;display:none"></div>
       <div style="display:flex;gap:12px;margin-top:24px">
         <button onclick="document.getElementById('modalSaque').remove()"
-          style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border,#444);background:transparent;color:inherit;cursor:pointer">
+          style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border,#e8e4f4);background:#fff;color:var(--text,#1E1E26);cursor:pointer;font-weight:500">
           Cancelar
         </button>
         <button id="btnConfirmarSaque" onclick="confirmarSaque(${saldoDisp})"
-          style="flex:1;padding:10px;border-radius:8px;border:none;background:#7B2CFF;color:#fff;font-weight:700;cursor:pointer">
+          style="flex:1;padding:10px;border-radius:8px;border:none;background:var(--purple,#7B2CFF);color:#fff;font-weight:700;cursor:pointer">
           Confirmar Saque
         </button>
       </div>
