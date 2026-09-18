@@ -667,6 +667,7 @@ async function loadMeubanco() {
       <div class="tcard-hd"><h5><i class="bi bi-info-circle me-1" style="color:var(--purple)"></i> Informações de Saque</h5></div>
       <div class="info-row"><span class="ir-lbl">Valor mínimo</span><span class="ir-val">R$ 1,00</span></div>
       <div class="info-row"><span class="ir-lbl">Prazo de processamento</span><span class="ir-val">até 48 horas úteis</span></div>
+      <div class="info-row"><span class="ir-lbl">Valor mínimo</span><span class="ir-val">R$ 100,00</span></div>
       <div class="info-row"><span class="ir-lbl">1º saque do mês</span><span class="ir-val" style="color:#16a34a;font-weight:700">Gratuito</span></div>
       <div class="info-row"><span class="ir-lbl">2º saque em diante</span><span class="ir-val">R$ 5,00 por saque</span></div>
       <div class="info-row"><span class="ir-lbl">Intervalo mínimo</span><span class="ir-val">1 saque por semana (7 dias)</span></div>
@@ -750,6 +751,7 @@ async function confirmarSaque(saldoDisp, taxa = 0) {
 
   erroEl.style.display = 'none';
   if (!valor || valor <= 0) { erroEl.textContent = 'Valor inválido'; erroEl.style.display = 'block'; return; }
+  if (valor < 100) { erroEl.textContent = 'Valor mínimo para saque é R$ 100,00'; erroEl.style.display = 'block'; return; }
   if (valor > saldoDisp + 0.01) { erroEl.textContent = 'Valor maior que o saldo disponível'; erroEl.style.display = 'block'; return; }
 
   btn.disabled = true;
