@@ -7974,16 +7974,17 @@ app.get("/api/modelo/sacar/info", authModelo, async (req, res) => {
     const qtdMes = Number(mesRes.rows[0].qtd || 0);
     const ultimaSolicitacao = mesRes.rows[0].ultima_solicitacao;
 
+    // TODO: reativar regra dos 7 dias após testes
     let pode_sacar_hoje = true;
     let dias_para_proximo = 0;
-    if (ultimaSolicitacao) {
-      const diffMs   = Date.now() - new Date(ultimaSolicitacao).getTime();
-      const diffDias = diffMs / (1000 * 60 * 60 * 24);
-      if (diffDias < 7) {
-        pode_sacar_hoje   = false;
-        dias_para_proximo = Math.ceil(7 - diffDias);
-      }
-    }
+    // if (ultimaSolicitacao) {
+    //   const diffMs   = Date.now() - new Date(ultimaSolicitacao).getTime();
+    //   const diffDias = diffMs / (1000 * 60 * 60 * 24);
+    //   if (diffDias < 7) {
+    //     pode_sacar_hoje   = false;
+    //     dias_para_proximo = Math.ceil(7 - diffDias);
+    //   }
+    // }
 
     res.json({
       saques_mes_count: qtdMes,
