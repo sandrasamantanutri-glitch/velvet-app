@@ -3337,15 +3337,16 @@ async function carregarBancarios(page) {
         <td>${r.pix_chave || '—'}</td>
         <td>${r.titular_nome}</td>
         <td>${badgeStatus(r.status)}</td>
+        <td style="max-width:200px;font-size:.8rem;color:#555">${r.motivo_pedido ? r.motivo_pedido : '—'}</td>
         <td>
           <button class="btn btn-sm btn-primary" onclick="editarBancario(${r.id})">Editar</button>
-          ${r.status === 'pendente' ? `
+          ${(r.status === 'pendente' || r.status === 'alteracao_pendente') ? `
             <button class="btn btn-sm btn-success" onclick="aprovarBancario(${r.id})">Aprovar</button>
             <button class="btn btn-sm btn-danger" onclick="rejeitarBancario(${r.id})">Rejeitar</button>
           ` : ''}
         </td>
       </tr>
-    `).join('') || emptyRow(7);
+    `).join('') || emptyRow(8);
     buildPagination('paginationBancarios', page, data.totalPages || 1, 'carregarBancarios');
   } catch (err) { console.error('Erro bancários:', err); }
 }

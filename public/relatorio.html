@@ -283,6 +283,9 @@ body {
       <a class="nav-item" onclick="showSection('chargebacks')">
         <i class="bi bi-exclamation-triangle"></i> Chargebacks
       </a>
+      <a class="nav-item" onclick="showSection('dadosbancarios')">
+        <i class="bi bi-credit-card-2-back"></i> Dados Bancários
+      </a>
       <div class="nav-label">Análise</div>
       <a class="nav-item" onclick="showSection('trafego')">
         <i class="bi bi-bar-chart-line"></i> Tráfego
@@ -356,6 +359,15 @@ body {
       <div id="chargebackContent"><div class="spin-wrap"><div class="spin"></div></div></div>
     </div>
 
+    <!-- DADOS BANCÁRIOS -->
+    <div class="section" id="secDadosbancarios">
+      <div class="page-header">
+        <h1>Dados Bancários</h1>
+        <p>Dados aprovados para saque e solicitações de alteração</p>
+      </div>
+      <div id="dadosbancariosContent"><div class="spin-wrap"><div class="spin"></div></div></div>
+    </div>
+
     <!-- TRÁFEGO -->
     <div class="section" id="secTrafego">
       <div class="page-header">
@@ -423,6 +435,7 @@ async function api(path) {
 const secMap = {
   geral:'secGeral', pix:'secPix', cartao:'secCartao',
   meubanco:'secMeubanco', faturamento:'secFaturamento', saques:'secSaques', chargebacks:'secChargebacks',
+  dadosbancarios:'secDadosbancarios',
   trafego:'secTrafego', assinantes:'secAssinantes'
 };
 
@@ -441,11 +454,13 @@ function showSection(name) {
 const loaders = {
   geral: loadGeral, pix: loadPix, cartao: loadCartao,
   meubanco: loadMeubanco, faturamento: loadFaturamento, saques: loadSaques, chargebacks: loadChargebacks,
+  dadosbancarios: loadDadosBancarios,
   trafego: loadTrafego, assinantes: loadAssinantes,
 };
 const errMap = {
   geral:'geralContent', pix:'pixContent', cartao:'cartaoContent',
   meubanco:'meubancoContent', chargebacks:'chargebackContent',
+  dadosbancarios:'dadosbancariosContent',
   trafego:'trafegoContent', assinantes:'assinantesContent'
 };
 
@@ -882,6 +897,231 @@ async function loadChargebacks(ym) {
 }
 
 // ── TRÁFEGO ──────────────────────────────────────────────────────────
+// ── DADOS BANCÁRIOS ──────────────────────────────────────────────────
+async function loadDadosBancarios() {
+  const d = await api('/api/modelo/dados-bancarios');
+  if (!d) return;
+  const { dados, saque_pendente } = d;
+
+  const statusLabel = {
+    pendente: '<span style="background:#fef9c3;color:#92400e;padding:2px 8px;border-radius:6px;font-size:.75rem;font-weight:600">Em análise</span>',
+    aprovado: '<span style="background:#dcfce7;color:#166534;padding:2px 8px;border-radius:6px;font-size:.75rem;font-weight:600">Aprovado</span>',
+    rejeitado: '<span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:6px;font-size:.75rem;font-weight:600">Rejeitado</span>',
+    alteracao_pendente: '<span style="background:#fef9c3;color:#92400e;padding:2px 8px;border-radius:6px;font-size:.75rem;font-weight:600">Alteração em análise</span>',
+  };
+
+  const tipoPix = { cpf:'CPF', cnpj:'CNPJ', email:'E-mail', telefone:'Telefone', aleatoria:'Chave aleatória' };
+
+  let dadosAprovadosHtml = '';
+  if (dados && dados.status === 'aprovado') {
+    dadosAprovadosHtml = `
+      <div class="tcard" style="margin-bottom:1rem">
+        <div class="tcard-hd"><h5><i class="bi bi-check-circle me-1" style="color:#16a34a"></i> Dados Aprovados</h5></div>
+        ${dados.tipo === 'pix' ? `
+        <div class="info-row"><span class="ir-lbl">Tipo</span><span class="ir-val">PIX</span></div>
+        <div class="info-row"><span class="ir-lbl">Tipo de chave</span><span class="ir-val">${tipoPix[dados.pix_tipo] || dados.pix_tipo || '—'}</span></div>
+        <div class="info-row"><span class="ir-lbl">Chave PIX</span><span class="ir-val" style="font-family:monospace">${dados.pix_chave || '—'}</span></div>
+        ` : `
+        <div class="info-row"><span class="ir-lbl">Tipo</span><span class="ir-val">Conta Bancária</span></div>
+        <div class="info-row"><span class="ir-lbl">Banco</span><span class="ir-val">${dados.banco || '—'}</span></div>
+        <div class="info-row"><span class="ir-lbl">Agência</span><span class="ir-val">${dados.agencia || '—'}</span></div>
+        <div class="info-row"><span class="ir-lbl">Conta</span><span class="ir-val">${dados.conta || '—'} (${dados.conta_tipo || '—'})</span></div>
+        `}
+        <div class="info-row"><span class="ir-lbl">Titular</span><span class="ir-val">${dados.titular_nome || '—'}</span></div>
+        <div class="info-row"><span class="ir-lbl">CPF/CNPJ</span><span class="ir-val">${dados.titular_documento || '—'}</span></div>
+      </div>`;
+  } else if (dados && dados.status === 'rejeitado') {
+    dadosAprovadosHtml = `
+      <div style="background:#fee2e2;border:1px solid #fca5a5;border-radius:12px;padding:16px;margin-bottom:1rem">
+        <strong style="color:#991b1b"><i class="bi bi-x-circle"></i> Dados Rejeitados</strong>
+        <p style="font-size:.85rem;color:#7f1d1d;margin-top:6px">Seu pedido de dados bancários foi rejeitado. Envie um novo cadastro abaixo.</p>
+      </div>`;
+  } else if (!dados) {
+    dadosAprovadosHtml = `
+      <div style="background:#f0ebff;border:1px solid #d1c0ff;border-radius:12px;padding:16px;margin-bottom:1rem">
+        <strong style="color:#7B2CFF"><i class="bi bi-info-circle"></i> Nenhum dado cadastrado</strong>
+        <p style="font-size:.85rem;color:#5b21b6;margin-top:6px">Cadastre seus dados bancários para poder solicitar saques.</p>
+      </div>`;
+  }
+
+  const pendingBlock = (dados && (dados.status === 'pendente' || dados.status === 'alteracao_pendente')) ? `
+    <div style="background:#fef9c3;border:1px solid #fde047;border-radius:12px;padding:16px;margin-bottom:1rem">
+      <strong style="color:#92400e"><i class="bi bi-hourglass-split"></i> Pedido em análise</strong>
+      <p style="font-size:.85rem;color:#78350f;margin-top:6px">
+        ${dados.status === 'pendente' ? 'Seu cadastro de dados bancários está sendo analisado.' : 'Sua solicitação de alteração está sendo analisada.'}
+        Aguarde a aprovação do administrador.
+      </p>
+      ${dados.motivo_pedido ? `<p style="font-size:.82rem;color:#78350f;margin-top:4px"><strong>Motivo informado:</strong> ${dados.motivo_pedido}</p>` : ''}
+    </div>` : '';
+
+  const canRequest = !saque_pendente && !(dados && (dados.status === 'pendente' || dados.status === 'alteracao_pendente'));
+  const saqueWarning = saque_pendente ? `
+    <div style="background:#fee2e2;border:1px solid #fca5a5;border-radius:12px;padding:14px;margin-bottom:1rem;font-size:.85rem;color:#991b1b">
+      <i class="bi bi-lock-fill"></i> <strong>Saque pendente</strong> — não é possível solicitar alteração de dados bancários enquanto houver um saque em processamento.
+    </div>` : '';
+
+  const formTitle = (!dados || dados.status === 'rejeitado') ? 'Cadastrar Dados Bancários' : 'Solicitar Alteração';
+  const formHtml = canRequest ? `
+    <div class="tcard">
+      <div class="tcard-hd"><h5><i class="bi bi-pencil-square me-1" style="color:var(--purple)"></i> ${formTitle}</h5></div>
+      <div style="padding:0 0 12px">
+        ${dados && dados.status === 'aprovado' ? `
+        <div style="margin-bottom:14px">
+          <label style="font-size:.82rem;font-weight:600;color:var(--text);display:block;margin-bottom:5px">Motivo da solicitação *</label>
+          <textarea id="dbMotivo" rows="3" placeholder="Ex: troquei de banco, chave PIX desativada..."
+            style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);font-size:.85rem;resize:vertical;font-family:inherit"></textarea>
+        </div>` : ''}
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+          <div>
+            <label style="font-size:.82rem;font-weight:600;color:var(--text);display:block;margin-bottom:5px">Tipo de recebimento *</label>
+            <select id="dbTipo" onchange="toggleBankFields()" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);font-size:.85rem;background:var(--bg)">
+              <option value="pix" ${dados && dados.tipo==='pix'?'selected':''}>PIX</option>
+              <option value="banco" ${dados && dados.tipo==='banco'?'selected':''}>Conta Bancária</option>
+            </select>
+          </div>
+        </div>
+        <div id="dbPixFields" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+          <div>
+            <label style="font-size:.82rem;font-weight:600;color:var(--text);display:block;margin-bottom:5px">Tipo de chave</label>
+            <select id="dbPixTipo" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);font-size:.85rem;background:var(--bg)">
+              <option value="cpf" ${dados && dados.pix_tipo==='cpf'?'selected':''}>CPF</option>
+              <option value="cnpj" ${dados && dados.pix_tipo==='cnpj'?'selected':''}>CNPJ</option>
+              <option value="email" ${dados && dados.pix_tipo==='email'?'selected':''}>E-mail</option>
+              <option value="telefone" ${dados && dados.pix_tipo==='telefone'?'selected':''}>Telefone</option>
+              <option value="aleatoria" ${dados && dados.pix_tipo==='aleatoria'?'selected':''}>Chave aleatória</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:.82rem;font-weight:600;color:var(--text);display:block;margin-bottom:5px">Chave PIX</label>
+            <input id="dbPixChave" type="text" value="${dados && dados.pix_chave ? dados.pix_chave : ''}" placeholder="Sua chave PIX"
+              style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);font-size:.85rem;background:var(--bg)">
+          </div>
+        </div>
+        <div id="dbBancoFields" style="display:none;gap:12px;margin-bottom:14px">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+            <div>
+              <label style="font-size:.82rem;font-weight:600;color:var(--text);display:block;margin-bottom:5px">Banco</label>
+              <input id="dbBanco" type="text" value="${dados && dados.banco ? dados.banco : ''}" placeholder="Nome do banco"
+                style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);font-size:.85rem;background:var(--bg)">
+            </div>
+            <div>
+              <label style="font-size:.82rem;font-weight:600;color:var(--text);display:block;margin-bottom:5px">Agência</label>
+              <input id="dbAgencia" type="text" value="${dados && dados.agencia ? dados.agencia : ''}" placeholder="0000"
+                style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);font-size:.85rem;background:var(--bg)">
+            </div>
+            <div>
+              <label style="font-size:.82rem;font-weight:600;color:var(--text);display:block;margin-bottom:5px">Conta</label>
+              <input id="dbConta" type="text" value="${dados && dados.conta ? dados.conta : ''}" placeholder="00000-0"
+                style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);font-size:.85rem;background:var(--bg)">
+            </div>
+          </div>
+          <div style="margin-top:12px">
+            <label style="font-size:.82rem;font-weight:600;color:var(--text);display:block;margin-bottom:5px">Tipo de conta</label>
+            <select id="dbContaTipo" style="width:180px;padding:10px;border-radius:8px;border:1px solid var(--border);font-size:.85rem;background:var(--bg)">
+              <option value="corrente" ${dados && dados.conta_tipo==='corrente'?'selected':''}>Corrente</option>
+              <option value="poupança" ${dados && dados.conta_tipo==='poupança'?'selected':''}>Poupança</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
+          <div>
+            <label style="font-size:.82rem;font-weight:600;color:var(--text);display:block;margin-bottom:5px">Nome do titular *</label>
+            <input id="dbTitularNome" type="text" value="${dados && dados.titular_nome ? dados.titular_nome : ''}" placeholder="Nome completo"
+              style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);font-size:.85rem;background:var(--bg)">
+          </div>
+          <div>
+            <label style="font-size:.82rem;font-weight:600;color:var(--text);display:block;margin-bottom:5px">CPF / CNPJ do titular *</label>
+            <input id="dbTitularDoc" type="text" value="${dados && dados.titular_documento ? dados.titular_documento : ''}" placeholder="000.000.000-00"
+              style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);font-size:.85rem;background:var(--bg)">
+          </div>
+        </div>
+        <div id="dbErro" style="color:#dc2626;font-size:.82rem;margin-bottom:12px;display:none"></div>
+        <button id="dbSubmitBtn" onclick="enviarDadosBancarios()" style="background:var(--purple);color:#fff;border:none;border-radius:8px;padding:11px 28px;font-size:.9rem;font-weight:700;cursor:pointer">
+          ${dados && dados.status === 'aprovado' ? 'Solicitar Alteração' : 'Enviar Dados'}
+        </button>
+      </div>
+    </div>` : '';
+
+  document.getElementById('dadosbancariosContent').innerHTML = `
+    ${dadosAprovadosHtml}
+    ${pendingBlock}
+    ${saqueWarning}
+    ${formHtml}
+  `;
+
+  toggleBankFields();
+}
+
+function toggleBankFields() {
+  const tipo = document.getElementById('dbTipo');
+  if (!tipo) return;
+  const isPix = tipo.value === 'pix';
+  const pixF = document.getElementById('dbPixFields');
+  const bancF = document.getElementById('dbBancoFields');
+  if (pixF) pixF.style.display = isPix ? 'grid' : 'none';
+  if (bancF) bancF.style.display = isPix ? 'none' : 'block';
+}
+
+async function enviarDadosBancarios() {
+  const erroEl = document.getElementById('dbErro');
+  const btn = document.getElementById('dbSubmitBtn');
+  erroEl.style.display = 'none';
+
+  const tipo = document.getElementById('dbTipo')?.value;
+  const motivoEl = document.getElementById('dbMotivo');
+  const motivo = motivoEl ? motivoEl.value.trim() : '';
+  const titular_nome = document.getElementById('dbTitularNome')?.value.trim();
+  const titular_documento = document.getElementById('dbTitularDoc')?.value.trim();
+
+  if (!titular_nome || !titular_documento) {
+    erroEl.textContent = 'Nome e CPF/CNPJ do titular são obrigatórios.';
+    erroEl.style.display = 'block';
+    return;
+  }
+
+  const body = { tipo, titular_nome, titular_documento };
+  if (motivoEl) body.motivo_pedido = motivo;
+
+  if (tipo === 'pix') {
+    body.pix_tipo = document.getElementById('dbPixTipo')?.value;
+    body.pix_chave = document.getElementById('dbPixChave')?.value.trim();
+    if (!body.pix_chave) { erroEl.textContent = 'Informe a chave PIX.'; erroEl.style.display = 'block'; return; }
+  } else {
+    body.banco = document.getElementById('dbBanco')?.value.trim();
+    body.agencia = document.getElementById('dbAgencia')?.value.trim();
+    body.conta = document.getElementById('dbConta')?.value.trim();
+    body.conta_tipo = document.getElementById('dbContaTipo')?.value;
+    if (!body.banco || !body.conta) { erroEl.textContent = 'Preencha os dados bancários.'; erroEl.style.display = 'block'; return; }
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Enviando...';
+
+  const res = await fetch('/api/modelo/dados-bancarios/solicitar', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json();
+
+  if (!res.ok) {
+    erroEl.textContent = data.erro || 'Erro ao enviar dados.';
+    erroEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Enviar Dados';
+    return;
+  }
+
+  loadedSections.delete('dadosbancarios');
+  loadDadosBancarios();
+
+  const toast = document.createElement('div');
+  toast.style.cssText = `position:fixed;bottom:24px;right:24px;background:#22c55e;color:#fff;padding:14px 22px;border-radius:12px;z-index:9999;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.3)`;
+  toast.textContent = '✓ Dados enviados! Aguarde a aprovação.';
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 4000);
+}
+
 async function loadTrafego(ym) {
   if (!ym) ym = currentYM();
   const d = await api(`/api/modelo/painel/trafego?mes=${ym}`);
