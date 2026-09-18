@@ -8035,13 +8035,14 @@ app.post("/api/modelo/sacar", authModelo, async (req, res) => {
     const qtdMes = Number(mesRes.rows[0].qtd || 0);
     const ultimaSolicitacao = mesRes.rows[0].ultima_solicitacao;
 
-    if (ultimaSolicitacao) {
-      const diffDias = (Date.now() - new Date(ultimaSolicitacao).getTime()) / (1000 * 60 * 60 * 24);
-      if (diffDias < 7) {
-        const diasRestantes = Math.ceil(7 - diffDias);
-        return res.status(400).json({ erro: `Você só pode solicitar 1 saque por semana. Aguarde ${diasRestantes} dia(s) para o próximo saque.` });
-      }
-    }
+    // TODO: reativar regra dos 7 dias após testes
+    // if (ultimaSolicitacao) {
+    //   const diffDias = (Date.now() - new Date(ultimaSolicitacao).getTime()) / (1000 * 60 * 60 * 24);
+    //   if (diffDias < 7) {
+    //     const diasRestantes = Math.ceil(7 - diffDias);
+    //     return res.status(400).json({ erro: `Você só pode solicitar 1 saque por semana. Aguarde ${diasRestantes} dia(s) para o próximo saque.` });
+    //   }
+    // }
 
     // Taxa: 1º saque do mês gratuito, a partir do 2º = R$5
     const taxaSaque = qtdMes >= 1 ? 5 : 0;
