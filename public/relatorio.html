@@ -178,7 +178,7 @@ body {
   border: 2px solid rgba(255,255,255,.4); border-radius: 8px;
   background: #e8e4f4; color: #7B2CFF;
   font-family: inherit; font-size: .88rem; font-weight: 600;
-  opacity: .6; cursor: not-allowed;
+  opacity: .6; cursor: pointer;
 }
 .soon-tag { font-size: .65rem; padding: .15rem .5rem; border-radius: 20px; background: var(--hold-bg); color: var(--hold); font-weight: 600; }
 
@@ -226,6 +226,14 @@ body {
 }
 @media (max-width: 420px) {
   .cards-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 480px) {
+  .banco-main { padding: 1rem; }
+  .banco-main .bm-amt { font-size: 1.5rem; }
+  .btn-saque { width: 100%; margin-top: .75rem; }
+  .info-row { flex-direction: column; align-items: flex-start; gap: .2rem; }
+  .tcard-ft { flex-direction: column; text-align: center; }
+  .sc .sc-val { font-size: 1.1rem; }
 }
 
 /* info row */
@@ -665,9 +673,8 @@ async function loadMeubanco() {
     </div>
     <div class="tcard">
       <div class="tcard-hd"><h5><i class="bi bi-info-circle me-1" style="color:var(--purple)"></i> Informações de Saque</h5></div>
-      <div class="info-row"><span class="ir-lbl">Valor mínimo</span><span class="ir-val">R$ 1,00</span></div>
-      <div class="info-row"><span class="ir-lbl">Prazo de processamento</span><span class="ir-val">até 48 horas úteis</span></div>
       <div class="info-row"><span class="ir-lbl">Valor mínimo</span><span class="ir-val">R$ 100,00</span></div>
+      <div class="info-row"><span class="ir-lbl">Prazo de processamento</span><span class="ir-val">até 48 horas úteis</span></div>
       <div class="info-row"><span class="ir-lbl">1º saque do mês</span><span class="ir-val" style="color:#16a34a;font-weight:700">Gratuito</span></div>
       <div class="info-row"><span class="ir-lbl">2º saque em diante</span><span class="ir-val">R$ 5,00 por saque</span></div>
       <div class="info-row"><span class="ir-lbl">Intervalo mínimo</span><span class="ir-val">1 saque por semana (7 dias)</span></div>
@@ -974,12 +981,12 @@ function _dbForm(dados) {
       </div>` : ''}
       <div style="margin-bottom:16px">
         <label class="db-lbl">Tipo de recebimento *</label>
-        <select id="dbTipo" onchange="toggleBankFields()" style="width:220px;padding:10px 12px;border-radius:8px;border:1px solid var(--border,#e8e4f4);font-size:.875rem;background:var(--bg,#fbfaff);color:var(--text,#1E1E26)">
+        <select id="dbTipo" onchange="toggleBankFields()" style="width:100%;max-width:220px;padding:10px 12px;border-radius:8px;border:1px solid var(--border,#e8e4f4);font-size:.875rem;background:var(--bg,#fbfaff);color:var(--text,#1E1E26)">
           <option value="pix" ${dados && dados.tipo==='pix'?'selected':''}>PIX</option>
           <option value="banco" ${dados && dados.tipo==='banco'?'selected':''}>Conta Bancária</option>
         </select>
       </div>
-      <div id="dbPixFields" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+      <div id="dbPixFields" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:16px;margin-bottom:16px">
         <div>
           <label class="db-lbl">Tipo de chave</label>
           <select id="dbPixTipo" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border,#e8e4f4);font-size:.875rem;background:var(--bg,#fbfaff);color:var(--text,#1E1E26)">
@@ -997,7 +1004,7 @@ function _dbForm(dados) {
         </div>
       </div>
       <div id="dbBancoFields" style="display:none;margin-bottom:16px">
-        <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:16px;margin-bottom:16px">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:16px;margin-bottom:16px">
           <div>
             <label class="db-lbl">Banco</label>
             <input id="dbBanco" type="text" value="${dados && dados.banco ? dados.banco : ''}" placeholder="Nome do banco"
@@ -1016,13 +1023,13 @@ function _dbForm(dados) {
         </div>
         <div>
           <label class="db-lbl">Tipo de conta</label>
-          <select id="dbContaTipo" style="width:180px;padding:10px 12px;border-radius:8px;border:1px solid var(--border,#e8e4f4);font-size:.875rem;background:var(--bg,#fbfaff);color:var(--text,#1E1E26)">
+          <select id="dbContaTipo" style="width:100%;max-width:180px;padding:10px 12px;border-radius:8px;border:1px solid var(--border,#e8e4f4);font-size:.875rem;background:var(--bg,#fbfaff);color:var(--text,#1E1E26)">
             <option value="corrente" ${dados && dados.conta_tipo==='corrente'?'selected':''}>Corrente</option>
             <option value="poupança" ${dados && dados.conta_tipo==='poupança'?'selected':''}>Poupança</option>
           </select>
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:16px;margin-bottom:20px">
         <div>
           <label class="db-lbl">Nome do titular *</label>
           <input id="dbTitularNome" type="text" value="${dados && dados.titular_nome ? dados.titular_nome : ''}" placeholder="Nome completo"

@@ -7074,13 +7074,17 @@ router.get("/saques/:id", authAdmin, async (req, res) => {
   }
 });
 
-// Saldo em tempo real de uma modelo (admin)
+// Saldo em tempo real de uma modelo (admin) — mesma lógica do painel da modelo
 router.get("/saldo-modelo/:id", authAdmin, async (req, res) => {
   try {
     const modelo_id = Number(req.params.id);
     const [ganhosRes, pagosRes, saquesRes] = await Promise.all([
       db.query(`
-        SELECT COALESCE(SUM(valor_modelo), 0) AS ganhos_disponiveis
+        SELECT
+          COALESCE(SUM(valor_modelo), 0) AS ganhos_geral,
+          COALESCE(SUM(valor_modelo) FILTER (
+            WHERE gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW())
+          ), 0) AS ganhos_liberados
         FROM transacoes_agency
         WHERE modelo_id = $1 AND status = 'pago'
       `, [modelo_id]),
@@ -7093,11 +7097,12 @@ router.get("/saldo-modelo/:id", authAdmin, async (req, res) => {
         FROM saques WHERE modelo_id = $1
       `, [modelo_id]),
     ]);
-    const ganhos      = Number(ganhosRes.rows[0].ganhos_disponiveis);
-    const pagos       = Number(pagosRes.rows[0].pagos);
-    const comprometidos = Number(saquesRes.rows[0].comprometidos);
-    const saldo_disponivel = Math.max(0, ganhos - pagos - comprometidos);
-    res.json({ ganhos_disponiveis: ganhos, pagamentos_fechados: pagos, saques_comprometidos: comprometidos, saldo_disponivel });
+    const ganhos_geral    = Number(ganhosRes.rows[0].ganhos_geral);
+    const ganhos_liberados = Number(ganhosRes.rows[0].ganhos_liberados);
+    const pagos            = Number(pagosRes.rows[0].pagos);
+    const comprometidos    = Number(saquesRes.rows[0].comprometidos);
+    const saldo_disponivel = Math.max(0, ganhos_liberados - pagos - comprometidos);
+    res.json({ ganhos_geral, ganhos_liberados, pagamentos_fechados: pagos, saques_comprometidos: comprometidos, saldo_disponivel });
   } catch (err) {
     console.error("Erro saldo-modelo:", err);
     res.status(500).json({ erro: "Erro interno" });

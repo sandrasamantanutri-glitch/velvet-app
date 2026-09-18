@@ -8101,7 +8101,21 @@ app.post("/api/modelo/sacar", authModelo, async (req, res) => {
       saldoDisp
     ]);
 
-    res.json({ ok: true, saque_id: rows[0].id, taxa_saque: taxaSaque, valor_transferir: valorNum - taxaSaque });
+    const saqueId = rows[0].id;
+
+    // Notificar admins no sino
+    const nomeRes = await db.query(`SELECT nome FROM modelos WHERE id=$1`, [mid]);
+    const nomeModelo = nomeRes.rows[0]?.nome || `Modelo #${mid}`;
+    const fmtBRL = v => `R$ ${Number(v).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.')}`;
+    const io = req.app.get('io');
+    criarNotificacaoAdmin(db, io, {
+      tipo:         'saque_solicitado',
+      referencia_id: saqueId,
+      titulo:       `💸 Novo pedido de saque — ${nomeModelo}`,
+      mensagem:     `Valor: ${fmtBRL(valorNum)}${taxaSaque > 0 ? ` (taxa ${fmtBRL(taxaSaque)})` : ' (gratuito)'}`,
+    });
+
+    res.json({ ok: true, saque_id: saqueId, taxa_saque: taxaSaque, valor_transferir: valorNum - taxaSaque });
   } catch (err) {
     console.error("Erro /api/modelo/sacar:", err);
     res.status(500).json({ erro: "Erro interno" });
