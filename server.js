@@ -17124,9 +17124,29 @@ app.get("/api/email/desinscrever", async (req, res) => {
       </div>
     </body></html>`;
 
+  const paginaFormEmail = (tipo) => `<!DOCTYPE html>
+    <html lang="pt"><head><meta charset="utf-8"><title>Cancelar inscrição</title></head>
+    <body style="font-family:Arial,Helvetica,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#f0ebfa;">
+      <div style="text-align:center;background:#fff;padding:40px;border-radius:14px;max-width:420px;box-shadow:0 2px 10px rgba(0,0,0,0.08);">
+        <h2 style="color:#6f42c1;margin:0 0 12px;">Cancelar inscrição</h2>
+        <p style="color:#7a6a9a;margin:0 0 20px;">Informe seu e-mail para confirmar o cancelamento.</p>
+        <form method="GET" action="/api/email/desinscrever-email" style="display:flex;flex-direction:column;gap:12px;">
+          <input type="hidden" name="tipo" value="${tipo}">
+          <input type="email" name="email" required placeholder="seu@email.com"
+            style="padding:10px 14px;border:1px solid #d0c4f0;border-radius:8px;font-size:15px;outline:none;">
+          <button type="submit"
+            style="padding:12px;background:#6f42c1;color:#fff;border:none;border-radius:8px;font-size:15px;cursor:pointer;font-weight:600;">
+            Confirmar cancelamento
+          </button>
+        </form>
+      </div>
+    </body></html>`;
+
   try {
     const { token } = req.query;
-    if (!token) throw new Error("token ausente");
+    if (!token) {
+      return res.send(paginaFormEmail(req.query.tipo || "novidades_criadoras"));
+    }
 
     const { email, tipo } = jwt.verify(token, process.env.JWT_SECRET);
 
@@ -17167,6 +17187,59 @@ app.get("/api/email/desinscrever", async (req, res) => {
   } catch (err) {
     console.error("Erro /api/email/desinscrever:", err.message);
     res.status(400).send(paginaResultado("Link inválido", "Esse link de cancelamento não é válido ou já expirou."));
+  }
+});
+
+app.get("/api/email/desinscrever-email", async (req, res) => {
+  const paginaResultado = (titulo, mensagem) => `<!DOCTYPE html>
+    <html lang="pt"><head><meta charset="utf-8"><title>${titulo}</title></head>
+    <body style="font-family:Arial,Helvetica,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#f0ebfa;">
+      <div style="text-align:center;background:#fff;padding:40px;border-radius:14px;max-width:420px;box-shadow:0 2px 10px rgba(0,0,0,0.08);">
+        <h2 style="color:#6f42c1;margin:0 0 12px;">${titulo}</h2>
+        <p style="color:#7a6a9a;margin:0;">${mensagem}</p>
+      </div>
+    </body></html>`;
+
+  try {
+    const { email, tipo } = req.query;
+    if (!email) return res.status(400).send(paginaResultado("Erro", "E-mail não informado."));
+
+    const colunasValidas = {
+      novidades_plataforma: "pref_novidades_plataforma",
+      novidades_criadoras: "pref_novidades_criadoras",
+      ofertas: "pref_ofertas"
+    };
+    const coluna = colunasValidas[tipo] || "pref_novidades_criadoras";
+
+    const clienteRes = await db.query(
+      `UPDATE clientes c SET ${coluna} = false
+       FROM users u
+       WHERE u.id = c.user_id AND LOWER(u.email) = LOWER($1)
+       RETURNING c.id`,
+      [email.trim()]
+    );
+
+    if (clienteRes.rowCount) {
+      const cliente_id = clienteRes.rows[0].id;
+      if (coluna === "pref_novidades_criadoras") {
+        const vips = await db.query(`
+          SELECT m.brevo_list_id
+          FROM vip_subscriptions v
+          JOIN modelos m ON m.id = v.modelo_id
+          WHERE v.cliente_id = $1 AND v.ativo = true AND m.brevo_list_id IS NOT NULL
+        `, [cliente_id]);
+        for (const row of vips.rows) {
+          try { await removerContatoAudienceVIP(row.brevo_list_id, email.trim()); } catch (_) {}
+        }
+      } else if (coluna === "pref_novidades_plataforma") {
+        try { await removerContatoAudienceVIP(4, email.trim()); } catch (_) {}
+      }
+    }
+
+    res.send(paginaResultado("✅ Preferência salva", "Você não vai mais receber esse tipo de email."));
+  } catch (err) {
+    console.error("Erro /api/email/desinscrever-email:", err.message);
+    res.status(500).send("Erro interno.");
   }
 });
 

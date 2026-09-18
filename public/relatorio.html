@@ -224,6 +224,40 @@ body {
   .dt td { white-space: normal; }
   .bdg { font-size: .65rem; padding: .15rem .4rem; }
 }
+/* ── CARD TABLE (mobile) ── */
+@media (max-width: 640px) {
+  .dt-card { border-collapse: collapse; width: 100%; }
+  .dt-card thead { display: none; }
+  .dt-card tbody tr {
+    display: block;
+    margin-bottom: 10px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--card);
+  }
+  .dt-card tbody td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: .5rem;
+    padding: .55rem .85rem;
+    border-bottom: 1px solid rgba(0,0,0,.05);
+    font-size: .8rem;
+    white-space: normal;
+  }
+  .dt-card tbody td:last-child { border-bottom: none; }
+  .dt-card tbody td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    font-size: .68rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    flex-shrink: 0;
+    min-width: 90px;
+  }
+}
 @media (max-width: 420px) {
   .cards-grid { grid-template-columns: 1fr; }
 }
@@ -808,13 +842,13 @@ async function loadFaturamento() {
 
   const tbody = rows.length ? rows.map(r => `
     <tr>
-      <td style="font-weight:600">${mesNome(r.mes_iso || (r.mes||'').slice(0,7))}</td>
-      <td style="font-weight:700;color:var(--purple,#7B2CFF)">${fmt(r.total_geral)}</td>
-      <td style="font-size:.85rem">${fmt(r.total_midias)}</td>
-      <td style="font-size:.85rem">${fmt(r.total_assinaturas)}</td>
-      <td style="font-size:.85rem;color:var(--red,#ef4444)">${r.chargebacks > 0 ? '− ' + fmt(r.chargebacks) : '—'}</td>
-      <td style="font-weight:600">${fmt(r.valor_liquido || (Number(r.total_geral) - Number(r.chargebacks || 0)))}</td>
-      <td>
+      <td data-label="Mês" style="font-weight:600">${mesNome(r.mes_iso || (r.mes||'').slice(0,7))}</td>
+      <td data-label="Ganhos Brutos" style="font-weight:700;color:var(--purple,#7B2CFF)">${fmt(r.total_geral)}</td>
+      <td data-label="Mídias" style="font-size:.85rem">${fmt(r.total_midias)}</td>
+      <td data-label="Assinaturas" style="font-size:.85rem">${fmt(r.total_assinaturas)}</td>
+      <td data-label="Chargebacks" style="font-size:.85rem;color:var(--red,#ef4444)">${r.chargebacks > 0 ? '− ' + fmt(r.chargebacks) : '—'}</td>
+      <td data-label="Saldo Líquido" style="font-weight:600">${fmt(r.valor_liquido || (Number(r.total_geral) - Number(r.chargebacks || 0)))}</td>
+      <td data-label="Recibo">
         ${r.recibo_pdf_signed_url
           ? `<a href="${r.recibo_pdf_signed_url}" target="_blank" rel="noopener"
               style="display:inline-flex;align-items:center;gap:5px;padding:6px 14px;border-radius:8px;background:var(--purple,#7B2CFF);color:#fff;font-size:.82rem;font-weight:600;text-decoration:none">
@@ -832,7 +866,7 @@ async function loadFaturamento() {
     </div>
     <div class="tcard" style="padding:0;overflow:hidden">
       <div class="table-resp">
-        <table class="dt">
+        <table class="dt dt-card">
           <thead>
             <tr>
               <th>Mês</th>
@@ -888,13 +922,13 @@ async function loadSaques() {
       : '';
     return `
     <tr>
-      <td>${r.solicitado_fmt || '—'}</td>
-      <td style="font-weight:600">${fmt(r.valor)}</td>
-      <td>${taxaCell}</td>
-      <td>${recebidoCell}</td>
-      <td><span style="color:${statusColor[r.status] || '#888'};font-weight:600">${statusLabel[r.status] || r.status}</span>${cancelBtn}</td>
-      <td style="font-size:.8rem;opacity:.7">${r.processado_fmt || '—'}</td>
-      <td>${obs}</td>
+      <td data-label="Solicitado em">${r.solicitado_fmt || '—'}</td>
+      <td data-label="Valor" style="font-weight:600">${fmt(r.valor)}</td>
+      <td data-label="Taxa">${taxaCell}</td>
+      <td data-label="Recebido">${recebidoCell}</td>
+      <td data-label="Status"><span style="color:${statusColor[r.status] || '#888'};font-weight:600">${statusLabel[r.status] || r.status}</span>${cancelBtn}</td>
+      <td data-label="Processado em" style="font-size:.8rem;opacity:.7">${r.processado_fmt || '—'}</td>
+      <td data-label="Observação">${obs}</td>
     </tr>`;
   }).join('') : `<tr><td colspan="7" style="text-align:center;opacity:.5;padding:24px">Nenhum saque ainda</td></tr>`;
 
@@ -904,7 +938,7 @@ async function loadSaques() {
       <p>Seus pedidos de transferência</p>
     </div>
     <div class="table-resp">
-      <table class="dt">
+      <table class="dt dt-card">
         <thead><tr><th>Solicitado em</th><th>Valor</th><th>Taxa</th><th>Recebido</th><th>Status</th><th>Processado em</th><th>Observação</th></tr></thead>
         <tbody>${tbody}</tbody>
       </table>

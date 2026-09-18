@@ -4453,20 +4453,20 @@ window.loadAdminHistoricoSaques = async function() {
       ? `<span style="color:#ef4444;font-size:.8rem">${r.motivo_rejeicao}</span>`
       : '—';
     return `<tr>
-      <td style="font-size:.82rem">${r.solicitado_fmt || '—'}</td>
-      <td style="font-weight:600">${money(r.valor)}</td>
-      <td>${taxaCell}</td>
-      <td>${recebidoCell}</td>
-      <td>${statusBadge[r.status] || r.status}</td>
-      <td style="font-size:.8rem;color:var(--text-muted)">${r.processado_fmt || '—'}</td>
-      <td>${obs}</td>
+      <td data-label="Solicitado em" style="font-size:.82rem">${r.solicitado_fmt || '—'}</td>
+      <td data-label="Valor" style="font-weight:600">${money(r.valor)}</td>
+      <td data-label="Taxa">${taxaCell}</td>
+      <td data-label="Recebido">${recebidoCell}</td>
+      <td data-label="Status">${statusBadge[r.status] || r.status}</td>
+      <td data-label="Processado em" style="font-size:.8rem;color:var(--text-muted)">${r.processado_fmt || '—'}</td>
+      <td data-label="Observação">${obs}</td>
     </tr>`;
   }).join('') : `<tr><td colspan="7" class="empty-row">Nenhum saque encontrado</td></tr>`;
 
   el.innerHTML = `
     <p style="font-size:.82rem;color:var(--text-muted);margin-bottom:12px">${rows.length} registro(s)</p>
     <div class="table-wrapper">
-      <table class="table">
+      <table class="table table-mob-card">
         <thead><tr>
           <th>Solicitado em</th><th>Valor</th><th>Taxa</th><th>Recebido</th>
           <th>Status</th><th>Processado em</th><th>Observação</th>
