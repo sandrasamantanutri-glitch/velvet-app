@@ -620,7 +620,7 @@
     <!-- Painel principal de fechamento -->
     <div id="fechamentoDetalhe" style="display:none;">
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-bottom:16px;">
 
         <!-- PLATAFORMA -->
         <div class="card" style="padding:20px;">
@@ -655,7 +655,7 @@
         </div>
       </div>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-bottom:16px;">
 
         <!-- CONTA BANCÁRIA -->
         <div class="card" style="padding:20px;">
@@ -1025,17 +1025,17 @@
   <!-- SAQUES DE MODELOS -->
   <section class="page" id="page-saques-modelos">
     <!-- Sub-tabs -->
-    <div style="display:flex;gap:0;border-bottom:2px solid var(--border,#e8e4f4);margin-bottom:20px">
+    <div style="display:flex;gap:0;border-bottom:2px solid var(--border,#e8e4f4);margin-bottom:20px;flex-wrap:wrap">
       <button id="saqTab-pendentes" onclick="switchSaqTab('pendentes')"
-        style="padding:10px 20px;border:none;background:none;cursor:pointer;font-weight:700;font-size:.9rem;border-bottom:3px solid var(--purple,#7B2CFF);color:var(--purple,#7B2CFF);margin-bottom:-2px">
+        style="padding:10px 20px;border:none;background:none;cursor:pointer;font-weight:700;font-size:.9rem;border-bottom:3px solid var(--purple,#7B2CFF);color:var(--purple,#7B2CFF);margin-bottom:-2px;white-space:nowrap">
         Saques
       </button>
       <button id="saqTab-saldo" onclick="switchSaqTab('saldo')"
-        style="padding:10px 20px;border:none;background:none;cursor:pointer;font-weight:600;font-size:.9rem;border-bottom:3px solid transparent;color:var(--text-muted,#888);margin-bottom:-2px">
+        style="padding:10px 20px;border:none;background:none;cursor:pointer;font-weight:600;font-size:.9rem;border-bottom:3px solid transparent;color:var(--text-muted,#888);margin-bottom:-2px;white-space:nowrap">
         Saldo Modelos
       </button>
       <button id="saqTab-historico" onclick="switchSaqTab('historico')"
-        style="padding:10px 20px;border:none;background:none;cursor:pointer;font-weight:600;font-size:.9rem;border-bottom:3px solid transparent;color:var(--text-muted,#888);margin-bottom:-2px">
+        style="padding:10px 20px;border:none;background:none;cursor:pointer;font-weight:600;font-size:.9rem;border-bottom:3px solid transparent;color:var(--text-muted,#888);margin-bottom:-2px;white-space:nowrap">
         Histórico de Saques
       </button>
     </div>
@@ -1079,13 +1079,13 @@
   <section class="page" id="page-pagamentos-modelo">
 
     <!-- Tabs -->
-    <div style="display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:24px">
+    <div style="display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:24px;flex-wrap:wrap">
       <button id="tabFechamentoBt" onclick="switchPgtoTab('fechamento')"
-        style="padding:10px 24px;border:none;background:none;cursor:pointer;font-weight:700;font-size:.95rem;color:var(--purple);border-bottom:3px solid var(--purple);margin-bottom:-2px">
+        style="padding:10px 24px;border:none;background:none;cursor:pointer;font-weight:700;font-size:.95rem;color:var(--purple);border-bottom:3px solid var(--purple);margin-bottom:-2px;white-space:nowrap">
         ✦ Fechar Mês
       </button>
       <button id="tabHistoricoBt" onclick="switchPgtoTab('historico')"
-        style="padding:10px 24px;border:none;background:none;cursor:pointer;font-weight:600;font-size:.95rem;color:var(--text-muted);border-bottom:3px solid transparent;margin-bottom:-2px">
+        style="padding:10px 24px;border:none;background:none;cursor:pointer;font-weight:600;font-size:.95rem;color:var(--text-muted);border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap">
         Histórico / Formato Antigo
       </button>
     </div>
@@ -1095,7 +1095,7 @@
       <div class="card" style="max-width:640px">
         <h3 style="margin-bottom:20px">Fechar Mês de uma Modelo</h3>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:16px">
           <label style="display:flex;flex-direction:column;gap:6px;font-size:.85rem;font-weight:600;color:var(--text-muted)">
             Modelo
             <select id="fechModeloId" class="input-select" onchange="onFechamentoChange()">
@@ -1104,7 +1104,7 @@
           </label>
           <label style="display:flex;flex-direction:column;gap:6px;font-size:.85rem;font-weight:600;color:var(--text-muted)">
             Mês de referência
-            <input type="month" id="pgtoFechMes" class="input-select" onchange="onFechamentoChange()" style="height:38px">
+            <input type="month" id="pgtoFechMes" class="input-select" onchange="onFechamentoChange()" style="height:38px;width:100%">
           </label>
         </div>
 
