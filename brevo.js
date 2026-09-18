@@ -65,6 +65,15 @@ function gerarTokenDesinscricao(email, tipo) {
   return jwt.sign({ email, tipo, action: "unsub_email" }, process.env.JWT_SECRET);
 }
 
+let _atributoUnsubCriado = false;
+async function garantirAtributoUnsub() {
+  if (_atributoUnsubCriado) return;
+  try {
+    await request("POST", "/v3/contacts/attributes/contact/UNSUB_TOKEN", { type: "text" });
+  } catch (_) { /* já existe — Brevo retorna 400 */ }
+  _atributoUnsubCriado = true;
+}
+
 async function adicionarContatoLista(listId, email, nome, tipoPref) {
   const partes = (nome || "").trim().split(/\s+/);
   const attributes = {
@@ -72,6 +81,7 @@ async function adicionarContatoLista(listId, email, nome, tipoPref) {
     LASTNAME: partes.slice(1).join(" ") || ""
   };
   if (tipoPref) {
+    await garantirAtributoUnsub();
     attributes.UNSUB_TOKEN = gerarTokenDesinscricao(email.trim(), tipoPref);
   }
   await request("POST", "/v3/contacts", {

@@ -17,6 +17,8 @@ const FOOTER = `
 `;
 
 // Rodapé para campanhas Brevo — inclui link de descadastro via merge tag {{contact.UNSUB_TOKEN}}
+// Se UNSUB_TOKEN estiver vazio (atributo não definido no Brevo), o link redireciona para
+// um formulário de fallback que permite o descadastro por e-mail.
 const FOOTER_CAMPANHA = `
   <div style="margin-top:28px;padding-top:18px;border-top:1px solid #f0ebfa;text-align:center;">
     <p style="margin:0 0 4px;color:#6b5a7d;">Equipe Velvet</p>
@@ -25,7 +27,7 @@ const FOOTER_CAMPANHA = `
     </p>
     <p style="margin:10px 0 0;font-size:11px;color:#c0aed8;">
       Não quer mais receber esse tipo de email?
-      <a href="https://velvet.lat/api/email/desinscrever?token={{contact.UNSUB_TOKEN}}" style="color:#c0aed8;text-decoration:underline;">Cancelar inscrição</a>
+      <a href="https://velvet.lat/api/email/desinscrever?token={{contact.UNSUB_TOKEN}}&tipo=novidades_criadoras" style="color:#c0aed8;text-decoration:underline;">Cancelar inscrição</a>
     </p>
   </div>
 `;
