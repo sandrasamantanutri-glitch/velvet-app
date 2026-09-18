@@ -5239,6 +5239,19 @@ router.get("/modelo-pagamentos/:id/recibo", authAdmin, async (req, res) => {
         AND EXTRACT(MONTH FROM CASE WHEN disponivel_em IS NOT NULL THEN disponivel_em ELSE created_at AT TIME ZONE 'America/Sao_Paulo' END) = $3
     `, [p.modelo_id, anoMes, mesMes]);
 
+    // Saques do mês
+    const saquesRes = await db.query(`
+      SELECT id, valor,
+        TO_CHAR(processado_em AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY') AS data_fmt
+      FROM saques
+      WHERE modelo_id = $1 AND status = 'pago'
+        AND EXTRACT(YEAR  FROM processado_em AT TIME ZONE 'America/Sao_Paulo') = $2
+        AND EXTRACT(MONTH FROM processado_em AT TIME ZONE 'America/Sao_Paulo') = $3
+      ORDER BY processado_em
+    `, [p.modelo_id, anoMes, mesMes]);
+    const saquesRows   = saquesRes.rows;
+    const totalSacado  = saquesRows.reduce((acc, s) => acc + Number(s.valor || 0), 0);
+
     const nomeCompleto = p.nome_completo || p.nome_exibicao || p.modelo_nome || `Modelo #${p.modelo_id}`;
     const cpf           = p.titular_documento || '—';
     const endereco      = p.endereco || '—';
@@ -5247,7 +5260,6 @@ router.get("/modelo-pagamentos/:id/recibo", authAdmin, async (req, res) => {
     const mesRefRaw     = new Date(p.mes).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric', timeZone: 'UTC' });
     const mesRefLabel   = mesRefRaw.charAt(0).toUpperCase() + mesRefRaw.slice(1);
     const reciboNum     = String(p.id).padStart(6, '0');
-    const dataPagamento = p.pago_em ? new Date(p.pago_em).toLocaleDateString('pt-BR') : '—';
     const fmtBRL = v => `R$ ${Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
     const pgtoTipo = (p.pgto_tipo || '').toLowerCase() || (p.pix_chave ? 'pix' : p.banco ? 'transferencia' : null);
@@ -5255,24 +5267,21 @@ router.get("/modelo-pagamentos/:id/recibo", authAdmin, async (req, res) => {
     if (pgtoTipo === 'pix') tipoPagamento = `PIX — ${(p.pix_tipo || '').toUpperCase()}: ${p.pix_chave || '—'}`;
     else if (pgtoTipo === 'transferencia') tipoPagamento = `TED — Banco: ${p.banco || '—'} | Ag: ${p.agencia || '—'} | Conta: ${p.conta || '—'}${p.conta_tipo ? ' (' + p.conta_tipo + ')' : ''}`;
 
-    // Valores líquidos (status=pago, armazenados no pagamento)
-    const midias_liq      = Number(p.total_midias     || 0);
-    const assinaturas_liq = Number(p.total_assinaturas || 0);
-    const chargebacksVal  = Number(p.chargebacks       || 0);
-    const bonusVal        = Number(p.bonus             || 0);
-    const totalGeral      = Number(p.total_geral       || 0);
+    const chargebacksVal  = Number(p.chargebacks || 0);
+    const bonusVal        = Number(p.bonus        || 0);
 
     // Valores brutos (pago + chargeback)
     const midias_bruto      = Number(brutoRes.rows[0]?.midias_bruto      || 0);
     const assinaturas_bruto = Number(brutoRes.rows[0]?.assinaturas_bruto || 0);
-    const total_bruto       = midias_bruto + assinaturas_bruto;
-
-    const cbMostrar = chargebacksVal;
-
-    const saldoLiquido = midias_liq + assinaturas_liq;
-    const totalPagar   = Number(p.valor_liquido || 0) || totalGeral;
+    const ganhosBrutos      = midias_bruto + assinaturas_bruto;
+    const saldoDoMes        = ganhosBrutos - chargebacksVal + bonusVal;
+    const valorDisponivel   = saldoDoMes - totalSacado;
 
     try { await db.query(`INSERT INTO recibos_pagamento (pagamento_id, modelo_id, numero_recibo) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING`, [p.id, p.modelo_id, reciboNum]); } catch (_) {}
+
+    const saquesRowsHtml = saquesRows.length > 0
+      ? saquesRows.map(s => `<div class="row sub"><span class="lbl">${s.data_fmt} — Saque #${s.id}</span><span class="val">${fmtBRL(s.valor)}</span></div>`).join('')
+      : '<div class="row sub"><span class="lbl" style="color:#999">Nenhum saque neste mês</span><span class="val">—</span></div>';
 
     res.send(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
 <base href="${baseUrl}/">
@@ -5301,9 +5310,12 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f0f0;padding:20px;col
 .row.sub .val{font-size:12px;font-weight:400}
 .row.cb .val{color:#c0392b}
 .row.bon .val{color:#1a7f37}
-.divider{border:none;border-top:2px solid #7B2CFF;margin:12px 0}
-.row.total .lbl{font-size:15px;font-weight:700;color:#111}
-.row.total .val{font-size:16px;font-weight:700;color:#7B2CFF}
+.row.total-row .lbl{font-weight:700;color:#111}
+.row.total-row .val{font-weight:700;color:#7B2CFF}
+.row.disponivel .lbl{font-size:14px;font-weight:700;color:#111}
+.row.disponivel .val{font-size:15px;font-weight:700;color:#16a34a}
+.divider{border:none;border-top:2px solid #7B2CFF;margin:10px 0}
+.divider-dashed{border:none;border-top:1px dashed #ddd;margin:8px 0}
 .pi{background:#f0f9f0;border:1px solid #c3e6cb;border-radius:6px;padding:12px 16px;margin-bottom:20px}
 .pi h4{color:#27a745;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px}
 .pi p{font-size:12px;color:#333;line-height:1.8}
@@ -5331,21 +5343,34 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f0f0;padding:20px;col
     <div><h4>Emissor</h4><p><strong>Empresa:</strong> Velvet Entertainment Ltda<br><strong>CNPJ:</strong> 66.615.892/0001-43<br><strong>Endereço:</strong> R Cel José Eusébio, 95 casa 13<br><strong>Cidade/UF:</strong> São Paulo/SP</p></div>
   </div>
 
-  <!-- Bloco único: breakdown do pagamento -->
+  <!-- Composição do pagamento -->
   <div class="sec">
     <div class="sec-title">Composição do pagamento — ${mesRefLabel}</div>
-    <div class="row"><span class="lbl" style="font-weight:600;">Saldo Bruto</span><span class="val" style="font-weight:600;">${fmtBRL(saldoLiquido + cbMostrar)}</span></div>
-    <div class="row sub"><span class="lbl">Mídias</span><span class="val">${fmtBRL(midias_liq)}</span></div>
-    <div class="row sub"><span class="lbl">Assinaturas</span><span class="val">${fmtBRL(assinaturas_liq)}</span></div>
-    ${cbMostrar > 0 ? `<div class="row sub cb"><span class="lbl">Chargebacks / estornos</span><span class="val">− ${fmtBRL(cbMostrar)}</span></div>` : ''}
-    <hr class="divider">
-    <div class="row"><span class="lbl">Saldo líquido</span><span class="val">${fmtBRL(saldoLiquido)}</span></div>
+    <div class="row sub"><span class="lbl">Mídias</span><span class="val">${fmtBRL(midias_bruto)}</span></div>
+    <div class="row sub"><span class="lbl">Assinaturas</span><span class="val">${fmtBRL(assinaturas_bruto)}</span></div>
+    <div class="row total-row"><span class="lbl">Ganhos Brutos</span><span class="val">${fmtBRL(ganhosBrutos)}</span></div>
+    ${chargebacksVal > 0 ? `<div class="row cb"><span class="lbl">Chargebacks / estornos</span><span class="val">− ${fmtBRL(chargebacksVal)}</span></div>` : ''}
     ${bonusVal > 0 ? `<div class="row bon"><span class="lbl">Bônus</span><span class="val">+ ${fmtBRL(bonusVal)}</span></div>` : ''}
+    <hr class="divider">
+    <div class="row total-row"><span class="lbl">Saldo do Mês</span><span class="val">${fmtBRL(saldoDoMes)}</span></div>
+  </div>
+
+  <!-- Histórico de saques -->
+  <div class="sec">
+    <div class="sec-title">Histórico de Saques — ${mesRefLabel}</div>
+    ${saquesRowsHtml}
+    ${saquesRows.length > 0 ? `<hr class="divider-dashed"><div class="row total-row"><span class="lbl">Total Sacado</span><span class="val" style="color:#374151">${fmtBRL(totalSacado)}</span></div>` : ''}
+  </div>
+
+  <!-- Valor disponível -->
+  <div class="sec">
+    <hr class="divider">
+    <div class="row disponivel" style="padding-top:10px"><span class="lbl">Valor Disponível no ato do fechamento</span><span class="val">${fmtBRL(valorDisponivel)}</span></div>
   </div>
 
   <div class="pi">
     <h4>Dados do Pagamento</h4>
-    <p><strong>Data de emissão:</strong> ${new Date().toLocaleDateString('pt-BR')} &nbsp;|&nbsp; <strong>Forma:</strong> ${tipoPagamento}</p>
+    <p><strong>Data de emissão:</strong> ${dataEmissao} &nbsp;|&nbsp; <strong>Forma:</strong> ${tipoPagamento}</p>
   </div>
 
   <div class="ft">
