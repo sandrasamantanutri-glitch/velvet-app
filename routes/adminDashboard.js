@@ -5343,6 +5343,20 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f0f0;padding:20px;col
   }
 });
 
+router.delete("/modelo-pagamentos/:id", authAdmin, async (req, res) => {
+  try {
+    const { rows } = await db.query(
+      "DELETE FROM modelo_pagamentos WHERE id=$1 RETURNING id",
+      [req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ erro: "Pagamento não encontrado" });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("Erro excluir modelo-pagamento:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
 router.put("/modelo-pagamentos/:id", authAdmin, async (req, res) => {
   try {
     const { total_midias, total_assinaturas, total_geral, status, recibo_url } = req.body;

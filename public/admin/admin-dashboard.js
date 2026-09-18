@@ -4719,8 +4719,11 @@ async function carregarPgtoModelo(page) {
           ${r.status !== 'pago'
             ? `<button class="btn btn-sm btn-success" onclick="marcarPgtoModeloPago(${r.id})">Marcar pago</button>`
             : ''}
-          <button class="btn btn-sm btn-ghost" onclick="abrirRecibo(${r.id})" title="Abrir recibo HTML">🖨️</button>
+          ${r.recibo_pdf_signed_url
+            ? `<a href="${r.recibo_pdf_signed_url}" target="_blank" class="btn btn-sm btn-ghost" title="Ver recibo PDF">📄</a>`
+            : `<button class="btn btn-sm btn-ghost" onclick="abrirRecibo(${r.id})" title="Abrir recibo HTML">🖨️</button>`}
           <button class="btn btn-sm btn-ghost" onclick="editarPgtoModelo(${r.id})">Editar</button>
+          <button class="btn btn-sm btn-danger" onclick="excluirPgtoModelo(${r.id})">Excluir</button>
         </td>
       </tr>
     `).join('') || emptyRow(10);
@@ -4916,6 +4919,17 @@ async function abrirRecibo(id) {
     win.document.write('<html><body style="font-family:sans-serif;padding:40px"><h2>Erro ao gerar recibo</h2><p>' + err.message + '</p></body></html>');
     win.document.close();
     toast('Erro ao gerar recibo: ' + err.message, 'error');
+  }
+}
+
+async function excluirPgtoModelo(id) {
+  if (!confirm('Tem certeza que deseja excluir este pagamento? Esta ação não pode ser desfeita.')) return;
+  try {
+    await authFetch(`/admin/dashboard/modelo-pagamentos/${id}`, { method: 'DELETE' });
+    toast('Pagamento excluído', 'success');
+    carregarPgtoModelo(1);
+  } catch (err) {
+    toast('Erro ao excluir: ' + err.message, 'error');
   }
 }
 
