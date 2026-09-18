@@ -4079,14 +4079,16 @@ router.get("/modelo-pagamentos/calcular", authAdmin, async (req, res) => {
         LIMIT 1
       `, [modelo_id]),
 
-      // Saques pagos no mês
+      // Saques pagos no mês (com detalhes individuais)
       db.query(`
-        SELECT COALESCE(SUM(valor), 0) AS total, COUNT(*) AS qtd
+        SELECT id, valor,
+          TO_CHAR(processado_em AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY') AS data_fmt
         FROM saques
         WHERE modelo_id = $1
           AND status = 'pago'
           AND EXTRACT(YEAR  FROM processado_em AT TIME ZONE 'America/Sao_Paulo') = $2
           AND EXTRACT(MONTH FROM processado_em AT TIME ZONE 'America/Sao_Paulo') = $3
+        ORDER BY processado_em
       `, [modelo_id, ano, mesNum])
     ]);
 
@@ -4108,8 +4110,9 @@ router.get("/modelo-pagamentos/calcular", authAdmin, async (req, res) => {
     const pagos        = Number(pagosRes.rows[0].pagos);
     const comprometidos = Number(saquesRes.rows[0].comprometidos);
     const saldo_disponivel = ganhosDisp - pagos - comprometidos;
-    const saques_mes   = Number(saqMesRes.rows[0].total);
-    const saques_mes_qtd = Number(saqMesRes.rows[0].qtd);
+    const saques_rows  = saqMesRes.rows;
+    const saques_mes   = saques_rows.reduce((s, r) => s + Number(r.valor), 0);
+    const saques_mes_qtd = saques_rows.length;
 
     res.json({
       midias,
@@ -4121,6 +4124,7 @@ router.get("/modelo-pagamentos/calcular", authAdmin, async (req, res) => {
       saldo_disponivel,
       saques_mes,
       saques_mes_qtd,
+      saques_rows,
       ja_fechado: jaFechadoRes.rows[0] || null,
       dados_bancarios: mdbRes.rows[0] || null
     });
@@ -4917,7 +4921,7 @@ function gerarReciboPDF(p) {
     doc.rect(50, pY, W, 45).fill('#f0fff4').stroke('#c3e6cb');
     doc.fontSize(8).font('Helvetica-Bold').fillColor('#27a745').text('DADOS DO PAGAMENTO', 65, pY + 7);
     doc.fillColor('#222').fontSize(9).font('Helvetica')
-      .text(`Data: ${dataPagamento}`, 65, pY + 20)
+      .text(`Data de Emissão: ${dataEmissao}`, 65, pY + 20)
       .text(`Forma: ${tipoPagamento}`, 65, pY + 33);
     doc.fillColor('black');
 
@@ -5341,7 +5345,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f0f0;padding:20px;col
 
   <div class="pi">
     <h4>Dados do Pagamento</h4>
-    <p><strong>Data do pagamento:</strong> ${dataPagamento} &nbsp;|&nbsp; <strong>Forma:</strong> ${tipoPagamento}</p>
+    <p><strong>Data de emissão:</strong> ${new Date().toLocaleDateString('pt-BR')} &nbsp;|&nbsp; <strong>Forma:</strong> ${tipoPagamento}</p>
   </div>
 
   <div class="ft">

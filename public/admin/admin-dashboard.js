@@ -4426,14 +4426,43 @@ function recalcularFechamento() {
   $('fechCbQtd').textContent          = _fechCalculo?.chargebacks_qtd > 0 ? `(${_fechCalculo.chargebacks_qtd}x)` : '';
   $('fechValLiquido').textContent     = money(liquido);
 
-  const saquesMes    = _fechCalculo?.saques_mes    || 0;
-  const saquesMesQtd = _fechCalculo?.saques_mes_qtd || 0;
-  const rowEl = $('fechSaquesMesRow');
-  if (rowEl) rowEl.style.display = saquesMes > 0 ? '' : 'none';
-  const saquesMesQtdEl = $('fechSaquesMesQtd');
-  if (saquesMesQtdEl) saquesMesQtdEl.textContent = saquesMesQtd > 0 ? `(${saquesMesQtd}x)` : '';
-  const saquesMesEl = $('fechValSaquesMes');
-  if (saquesMesEl) saquesMesEl.textContent = saquesMes > 0 ? money(saquesMes) : '—';
+  const saquesMes  = _fechCalculo?.saques_mes   || 0;
+  const saquesRows = _fechCalculo?.saques_rows  || [];
+  const detEl      = $('fechSaquesDetalhes');
+  const pagoRowEl  = $('fechSaldoLiquidoPagoRow');
+
+  if (detEl) {
+    if (saquesRows.length > 0) {
+      detEl.style.display = '';
+      detEl.innerHTML = `
+        <div style="font-size:.78rem;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">
+          Saques realizados no mês (${saquesRows.length}x)
+        </div>
+        ${saquesRows.map(s => `
+          <div style="display:flex;justify-content:space-between;font-size:.88rem;padding:3px 0;border-bottom:1px solid #f3f4f6;color:#374151">
+            <span>${s.data_fmt || '—'} &nbsp;<span style="color:#9ca3af;font-size:.8rem">Saque #${String(s.id).padStart(4,'0')}</span></span>
+            <span style="color:#6b7280">− ${money(s.valor)}</span>
+          </div>
+        `).join('')}
+        <div style="display:flex;justify-content:space-between;font-size:.88rem;padding:4px 0;font-weight:600;color:#6b7280">
+          <span>Total sacado</span><span>− ${money(saquesMes)}</span>
+        </div>`;
+    } else {
+      detEl.style.display = 'none';
+      detEl.innerHTML = '';
+    }
+  }
+
+  if (pagoRowEl) {
+    if (saquesMes > 0) {
+      pagoRowEl.style.display = 'flex';
+      const saldoDisp = Math.max(0, liquido - saquesMes);
+      if ($('fechValSaldoPago'))      $('fechValSaldoPago').textContent      = `− ${money(saquesMes)}`;
+      if ($('fechValSaldoDisponivel')) $('fechValSaldoDisponivel').textContent = money(saldoDisp);
+    } else {
+      pagoRowEl.style.display = 'none';
+    }
+  }
 }
 
 async function previewFechamento() {
