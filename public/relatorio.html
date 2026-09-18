@@ -476,11 +476,11 @@ async function loadGeral() {
   if (!d) return;
   document.getElementById('geralContent').innerHTML = `
     <div class="cards-grid">
-      <div class="sc green">
+      <div class="sc ${d.disponivel < 0 ? 'red' : 'green'}">
         <div class="sc-icon"><i class="bi bi-cash-stack"></i></div>
-        <div class="sc-lbl"><i class="bi bi-circle-fill" style="color:var(--ok);font-size:.45rem"></i> Saldo para Saque</div>
-        <div class="sc-val" style="color:var(--ok)">${fmt(d.disponivel)}</div>
-        <div class="sc-sub">Disponível agora</div>
+        <div class="sc-lbl"><i class="bi bi-circle-fill" style="color:${d.disponivel < 0 ? 'var(--danger,#ef4444)' : 'var(--ok)'};font-size:.45rem"></i> Saldo para Saque</div>
+        <div class="sc-val" style="color:${d.disponivel < 0 ? 'var(--danger,#ef4444)' : 'var(--ok)'}">${fmt(d.disponivel)}</div>
+        <div class="sc-sub">${d.disponivel < 0 ? 'Saldo negativo — chargeback pendente' : 'Disponível agora'}</div>
       </div>
       <div class="sc amber">
         <div class="sc-icon"><i class="bi bi-hourglass-split"></i></div>
@@ -630,10 +630,10 @@ async function loadMeubanco() {
 
   document.getElementById('meubancoContent').innerHTML = `
     <div class="cards-grid-2">
-      <div class="banco-main">
+      <div class="banco-main" style="${disponivel < 0 ? 'border-left:4px solid var(--danger,#ef4444)' : ''}">
         <div class="bm-lbl"><i class="bi bi-bank2"></i> Saldo Disponível para Saque</div>
-        <div class="bm-amt">${fmt(disponivel)}</div>
-        <div class="bm-sub">Valores liberados prontos para retirada</div>
+        <div class="bm-amt" style="${disponivel < 0 ? 'color:var(--danger,#ef4444)' : ''}">${fmt(disponivel)}</div>
+        <div class="bm-sub">${disponivel < 0 ? '⚠️ Saldo negativo — chargeback pendente de compensação' : 'Valores liberados prontos para retirada'}</div>
         ${btnSaque}
       </div>
       <div class="sc amber" style="display:flex;flex-direction:column;justify-content:center">

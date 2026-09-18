@@ -7714,7 +7714,7 @@ const V_CORTE = "2026-09-01T03:00:00.000Z"; // UTC = 2026-09-01 00:00 BRT
 app.get("/api/modelo/painel/geral", authModelo, async (req, res) => {
   try {
     const mid = req.modelo_id;
-    const [ganhosDisp, ganhosPend, pagosRes, saquesRes, ass, vis] = await Promise.all([
+    const [ganhosDisp, ganhosPend, pagosRes, saquesRes, cbRes, ass, vis] = await Promise.all([
       // Ganhos disponíveis (mesma lógica de meubanco: não-stripe ou stripe já liberado)
       db.query(`
         SELECT COALESCE(SUM(valor_modelo) FILTER (
@@ -7742,6 +7742,11 @@ app.get("/api/modelo/painel/geral", authModelo, async (req, res) => {
           COALESCE(SUM(valor) FILTER (WHERE status='pendente'), 0) AS saques_pendentes
         FROM saques WHERE modelo_id=$1
       `, [mid]),
+      // Chargebacks lançados contra a modelo
+      db.query(`
+        SELECT COALESCE(SUM(COALESCE(valor_modelo, valor)), 0) AS total
+        FROM chargebacks WHERE modelo_id=$1
+      `, [mid]),
       db.query(`
         SELECT COUNT(DISTINCT cliente_id) AS total
         FROM vip_subscriptions
@@ -7761,7 +7766,8 @@ app.get("/api/modelo/painel/geral", authModelo, async (req, res) => {
     const pagos        = parseFloat(pagosRes.rows[0].pagos);
     const saquesPagos  = parseFloat(saquesRes.rows[0].saques_pagos);
     const saqPendentes = parseFloat(saquesRes.rows[0].saques_pendentes);
-    const disponivel   = Math.max(0, bruto - pagos - saquesPagos - saqPendentes);
+    const chargebacks  = parseFloat(cbRes.rows[0].total);
+    const disponivel   = bruto - pagos - saquesPagos - saqPendentes - chargebacks;
 
     res.json({
       disponivel,
@@ -7815,7 +7821,7 @@ app.get("/api/modelo/painel/transacoes", authModelo, async (req, res) => {
 app.get("/api/modelo/painel/meubanco", authModelo, async (req, res) => {
   try {
     const mid = req.modelo_id;
-    const [ganhosDisp, ganhosPend, pagosRes, saquesRes] = await Promise.all([
+    const [ganhosDisp, ganhosPend, pagosRes, saquesRes, cbRes] = await Promise.all([
       // Ganhos disponíveis (não-stripe ou stripe já liberado)
       db.query(`
         SELECT COALESCE(SUM(valor_modelo) FILTER (
@@ -7843,6 +7849,11 @@ app.get("/api/modelo/painel/meubanco", authModelo, async (req, res) => {
           COALESCE(SUM(valor) FILTER (WHERE status='pendente'), 0) AS saques_pendentes
         FROM saques WHERE modelo_id=$1
       `, [mid]),
+      // Chargebacks lançados contra a modelo
+      db.query(`
+        SELECT COALESCE(SUM(COALESCE(valor_modelo, valor)), 0) AS total
+        FROM chargebacks WHERE modelo_id=$1
+      `, [mid]),
     ]);
 
     const bruto         = parseFloat(ganhosDisp.rows[0].total);
@@ -7850,7 +7861,8 @@ app.get("/api/modelo/painel/meubanco", authModelo, async (req, res) => {
     const pagos         = parseFloat(pagosRes.rows[0].pagos);
     const saquesPagos   = parseFloat(saquesRes.rows[0].saques_pagos);
     const saqPendentes  = parseFloat(saquesRes.rows[0].saques_pendentes);
-    const disponivel    = Math.max(0, bruto - pagos - saquesPagos - saqPendentes);
+    const chargebacks   = parseFloat(cbRes.rows[0].total);
+    const disponivel    = bruto - pagos - saquesPagos - saqPendentes - chargebacks;
 
     res.json({
       disponivel,
@@ -7974,8 +7986,8 @@ app.post("/api/modelo/sacar", authModelo, async (req, res) => {
     }
     const banc = bancRes.rows[0];
 
-    // Verificar saldo disponível (descontando pagamentos e saques já existentes)
-    const [ganhosRes, pagosRes, saquesRes] = await Promise.all([
+    // Verificar saldo disponível (descontando pagamentos, saques e chargebacks)
+    const [ganhosRes, pagosRes, saquesRes, cbRes2] = await Promise.all([
       db.query(`
         SELECT COALESCE(SUM(valor_modelo) FILTER (
           WHERE gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW())
@@ -7989,12 +8001,17 @@ app.post("/api/modelo/sacar", authModelo, async (req, res) => {
         SELECT COALESCE(SUM(valor) FILTER (WHERE status IN ('pago','pendente')), 0) AS saques_comprometidos
         FROM saques WHERE modelo_id=$1
       `, [mid]),
+      db.query(`
+        SELECT COALESCE(SUM(COALESCE(valor_modelo, valor)), 0) AS total
+        FROM chargebacks WHERE modelo_id=$1
+      `, [mid]),
     ]);
 
     const ganhosDisp   = Number(ganhosRes.rows[0].ganhos_disponiveis || 0);
     const pagos        = Number(pagosRes.rows[0].pagos || 0);
     const saquesComp   = Number(saquesRes.rows[0].saques_comprometidos || 0);
-    const saldoDisp    = ganhosDisp - pagos - saquesComp;
+    const cbDebt       = Number(cbRes2.rows[0].total || 0);
+    const saldoDisp    = ganhosDisp - pagos - saquesComp - cbDebt;
 
     if (valorNum > saldoDisp + 0.01) {
       return res.status(400).json({
