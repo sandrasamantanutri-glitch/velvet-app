@@ -8138,18 +8138,20 @@ app.post("/api/modelo/dados-bancarios/solicitar", authModelo, async (req, res) =
     const newStatus = existing.rows.length === 0 ? 'pendente' : 'alteracao_pendente';
     await db.query(
       `INSERT INTO modelo_dados_bancarios
-        (modelo_id, tipo, pix_tipo, pix_chave, banco, agencia, conta, conta_tipo, titular_nome, titular_documento, status, motivo_pedido)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+        (modelo_id, tipo, pix_tipo, pix_chave, banco, agencia, conta, conta_tipo, titular_nome, titular_documento, confirmado_titular, status, motivo_pedido)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,true,$11,$12)
        ON CONFLICT (modelo_id) DO UPDATE
-         SET tipo=$2, pix_tipo=$3, pix_chave=$4, banco=$5, agencia=$6, conta=$7, conta_tipo=$8,
-             titular_nome=$9, titular_documento=$10, status=$11, motivo_pedido=$12, atualizado_em=NOW()`,
+         SET tipo=EXCLUDED.tipo, pix_tipo=EXCLUDED.pix_tipo, pix_chave=EXCLUDED.pix_chave,
+             banco=EXCLUDED.banco, agencia=EXCLUDED.agencia, conta=EXCLUDED.conta, conta_tipo=EXCLUDED.conta_tipo,
+             titular_nome=EXCLUDED.titular_nome, titular_documento=EXCLUDED.titular_documento,
+             confirmado_titular=true, status=EXCLUDED.status, motivo_pedido=EXCLUDED.motivo_pedido, atualizado_em=NOW()`,
       [mid, tipo, pix_tipo, pix_chave, banco, agencia, conta, conta_tipo, titular_nome, titular_documento, newStatus, motivo_pedido]
     );
 
     res.json({ ok: true });
   } catch (err) {
-    console.error("Erro /api/modelo/dados-bancarios/solicitar:", err);
-    res.status(500).json({ erro: "Erro interno" });
+    console.error("Erro /api/modelo/dados-bancarios/solicitar:", err.message, err.detail || '');
+    res.status(500).json({ erro: "Erro interno", detalhe: err.message });
   }
 });
 
