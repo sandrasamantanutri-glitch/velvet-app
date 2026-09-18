@@ -4349,14 +4349,14 @@ let _fechCalculo = null; // armazena o último cálculo retornado pelo backend
 
 function onFechamentoChange() {
   const btn = $('btnCalcularFechamento');
-  if (btn) btn.disabled = !$('fechModeloId')?.value || !$('fechMes')?.value;
+  if (btn) btn.disabled = !$('fechModeloId')?.value || !$('pgtoFechMes')?.value;
   $('fechResultado').style.display = 'none';
   _fechCalculo = null;
 }
 
 async function calcularFechamento() {
   const modeloId = $('fechModeloId')?.value;
-  const mes      = $('fechMes')?.value; // YYYY-MM
+  const mes      = $('pgtoFechMes')?.value; // YYYY-MM
   if (!modeloId || !mes) return;
 
   const btn = $('btnCalcularFechamento');
@@ -4428,7 +4428,7 @@ function recalcularFechamento() {
 
 async function previewFechamento() {
   const modeloId = $('fechModeloId')?.value;
-  const mes      = $('fechMes')?.value;
+  const mes      = $('pgtoFechMes')?.value;
   if (!modeloId || !mes || !_fechCalculo) { toast('Calcule primeiro os valores', 'warning'); return; }
 
   const midias      = Number($('fechInputMidias')?.value     || 0);
@@ -4462,7 +4462,7 @@ async function previewFechamento() {
 
 async function confirmarFecharMes() {
   const modeloId = $('fechModeloId')?.value;
-  const mes      = $('fechMes')?.value;
+  const mes      = $('pgtoFechMes')?.value;
   if (!modeloId || !mes || !_fechCalculo) { toast('Calcule primeiro os valores', 'warning'); return; }
 
   const midias      = Number($('fechInputMidias')?.value     || 0);
@@ -4509,7 +4509,7 @@ async function confirmarFecharMes() {
     _fechCalculo = null;
     $('fechResultado').style.display = 'none';
     $('fechModeloId').value = '';
-    $('fechMes').value = '';
+    $('pgtoFechMes').value = '';
     $('btnCalcularFechamento').disabled = true;
   } catch (err) {
     const erroEl = $('fechErro');
@@ -4529,7 +4529,7 @@ pageLoaders['pagamentos-modelo'] = async function () {
   const now = new Date();
   const mesAnterior = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const mesVal = `${mesAnterior.getFullYear()}-${String(mesAnterior.getMonth() + 1).padStart(2, '0')}`;
-  if ($('fechMes')) $('fechMes').value = mesVal;
+  if ($('pgtoFechMes')) $('pgtoFechMes').value = mesVal;
 
   // Tab histórico: carregar selects do formato antigo
   await carregarModelosSelect('pgtoModeloFiltro');
