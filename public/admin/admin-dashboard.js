@@ -187,6 +187,7 @@ const pageTitles = {
   transacoes: 'Transacoes por Modelo',
   password: 'Reset de Senhas',
   vip: 'Assinaturas VIP',
+  'saques-modelos': 'Saques de Modelos',
   'pagamentos-modelo': 'Pagamentos a Modelos',
   agencias: 'Agencias',
   chargebacks: 'Chargebacks',
@@ -4096,6 +4097,165 @@ async function editarVip(id) {
     ], () => carregarVip(1));
   } catch (err) { toast('Erro: ' + err.message, 'error'); }
 }
+// ========== SAQUES DE MODELOS ==========
+
+pageLoaders['saques-modelos'] = async function () {
+  const fmtBRL = v => `R$ ${Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+  const statusLabel = { pendente:'⏳ Pendente', pago:'✓ Pago', rejeitado:'✗ Rejeitado', processando:'🔄 Processando' };
+  const statusColor = { pendente:'#f59e0b', pago:'#22c55e', rejeitado:'#ef4444', processando:'#7B2CFF' };
+
+  async function renderSaques(filtroStatus = '') {
+    const qs = filtroStatus ? `?status=${filtroStatus}` : '';
+    const data = await fetchJSON(`/admin/dashboard/saques${qs}`).catch(() => ({ rows: [] }));
+    const rows = data.rows || [];
+
+    const tbody = rows.length ? rows.map(s => `
+      <tr>
+        <td>${s.modelo_nome || s.nome_exibicao || '#'+s.modelo_id}</td>
+        <td style="font-weight:700">${fmtBRL(s.valor)}</td>
+        <td style="font-size:.8rem">${s.chave_pix || s.banco || '—'}</td>
+        <td><span style="color:${statusColor[s.status]||'#888'};font-weight:600">${statusLabel[s.status]||s.status}</span></td>
+        <td style="font-size:.82rem">${s.solicitado_fmt||'—'}</td>
+        <td style="font-size:.82rem">${s.processado_fmt||'—'}</td>
+        <td>
+          ${s.status==='pendente' ? `
+            <button class="btn-sm btn-primary" onclick="processarSaque(${s.id},'${(s.modelo_nome||s.nome_exibicao||'Modelo').replace(/'/g,"\\'")}',${s.valor})">Processar</button>
+            <button class="btn-sm btn-danger" style="margin-left:4px" onclick="rejeitarSaque(${s.id})">Rejeitar</button>
+          ` : s.status==='pago' && s.recibo_pdf_url ? `
+            <button class="btn-sm" onclick="verReciboPdf(${s.id})">Recibo</button>
+          ` : '—'}
+        </td>
+      </tr>
+    `).join('') : `<tr><td colspan="7" style="text-align:center;padding:24px;opacity:.5">Nenhum saque encontrado</td></tr>`;
+
+    $('saques-modelos-content').innerHTML = `
+      <div style="margin-bottom:16px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <select id="filtroStatusSaque" onchange="renderSaquesAdmin(this.value)"
+          style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:inherit;cursor:pointer">
+          <option value="">Todos os status</option>
+          <option value="pendente" ${filtroStatus==='pendente'?'selected':''}>Pendentes</option>
+          <option value="pago" ${filtroStatus==='pago'?'selected':''}>Pagos</option>
+          <option value="rejeitado" ${filtroStatus==='rejeitado'?'selected':''}>Rejeitados</option>
+        </select>
+        <button class="btn-sm" onclick="renderSaquesAdmin(document.getElementById('filtroStatusSaque').value)">Atualizar</button>
+        <span style="opacity:.6;font-size:.82rem">${rows.length} registro(s)</span>
+      </div>
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead><tr>
+            <th>Modelo</th><th>Valor</th><th>Chave PIX / Banco</th><th>Status</th>
+            <th>Solicitado</th><th>Processado</th><th>Ações</th>
+          </tr></thead>
+          <tbody>${tbody}</tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  window.renderSaquesAdmin = renderSaques;
+
+  window.processarSaque = function(saqueId, nomeModelo, valor) {
+    const fmtV = fmtBRL(valor);
+    const modal = document.createElement('div');
+    modal.id = 'modalProcessarSaque';
+    modal.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px`;
+    modal.innerHTML = `
+      <div style="background:var(--surface,#1a1a2e);border:1px solid var(--border,#333);border-radius:16px;padding:32px;max-width:460px;width:100%">
+        <h3 style="margin:0 0 8px;color:var(--purple-light,#a78bfa)">Processar Saque #${String(saqueId).padStart(6,'0')}</h3>
+        <p style="margin:0 0 20px;font-size:.88rem;opacity:.75"><strong>${nomeModelo}</strong> — ${fmtV}</p>
+        <label style="font-size:.85rem;font-weight:600;display:block;margin-bottom:6px">Comprovante de transferência (PDF ou imagem)</label>
+        <input type="file" id="comprovanteFile" accept="image/*,.pdf"
+          style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--border,#444);background:var(--bg);color:inherit;box-sizing:border-box;font-size:.88rem">
+        <p style="font-size:.78rem;opacity:.6;margin:4px 0 0">Opcional mas recomendado — será enviado junto com o recibo no email da modelo</p>
+        <div id="saqueProcessarErro" style="color:#f87171;font-size:.82rem;margin-top:8px;display:none"></div>
+        <div style="display:flex;gap:12px;margin-top:24px">
+          <button onclick="document.getElementById('modalProcessarSaque').remove()"
+            style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:transparent;color:inherit;cursor:pointer">Cancelar</button>
+          <button id="btnEnviarProcessar"
+            onclick="enviarProcessarSaque(${saqueId})"
+            style="flex:1;padding:10px;border-radius:8px;border:none;background:#22c55e;color:#fff;font-weight:700;cursor:pointer">
+            ✓ Confirmar & Enviar Email
+          </button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+  };
+
+  window.enviarProcessarSaque = async function(saqueId) {
+    const btn = document.getElementById('btnEnviarProcessar');
+    const erroEl = document.getElementById('saqueProcessarErro');
+    const fileInput = document.getElementById('comprovanteFile');
+
+    btn.disabled = true;
+    btn.textContent = 'Enviando...';
+    erroEl.style.display = 'none';
+
+    const formData = new FormData();
+    if (fileInput.files[0]) formData.append('comprovante', fileInput.files[0]);
+
+    const token = localStorage.getItem('admin_token') || localStorage.getItem('token') || '';
+    const r = await fetch(`/admin/dashboard/saques/${saqueId}/processar`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+      body: formData
+    });
+    const data = await r.json();
+
+    if (!r.ok) {
+      erroEl.textContent = data.erro || 'Erro ao processar saque';
+      erroEl.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = '✓ Confirmar & Enviar Email';
+      return;
+    }
+
+    document.getElementById('modalProcessarSaque').remove();
+    const t = document.createElement('div');
+    t.style.cssText='position:fixed;bottom:24px;right:24px;background:#22c55e;color:#fff;padding:12px 20px;border-radius:10px;z-index:9999;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.3)';
+    t.textContent='✓ Saque processado! Email enviado à modelo.';
+    document.body.appendChild(t); setTimeout(()=>t.remove(),4000);
+    renderSaques(document.getElementById('filtroStatusSaque')?.value || '');
+  };
+
+  window.rejeitarSaque = function(saqueId) {
+    const motivo = prompt('Motivo da rejeição (opcional):');
+    if (motivo === null) return; // cancelou
+
+    const token = localStorage.getItem('admin_token') || localStorage.getItem('token') || '';
+    fetch(`/admin/dashboard/saques/${saqueId}/rejeitar`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ motivo })
+    }).then(r => r.json()).then(data => {
+      if (data.ok) {
+        const t2 = document.createElement('div');
+        t2.style.cssText='position:fixed;bottom:24px;right:24px;background:#f59e0b;color:#fff;padding:12px 20px;border-radius:10px;z-index:9999;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.3)';
+        t2.textContent='Saque rejeitado.';
+        document.body.appendChild(t2); setTimeout(()=>t2.remove(),3000);
+        renderSaques(document.getElementById('filtroStatusSaque')?.value || '');
+      } else {
+        alert(data.erro || 'Erro ao rejeitar');
+      }
+    });
+  };
+
+  window.verReciboPdf = async function(saqueId) {
+    const token = localStorage.getItem('admin_token') || localStorage.getItem('token') || '';
+    const r = await fetch(`/admin/dashboard/saques/${saqueId}`, { headers: { Authorization: `Bearer ${token}` } });
+    const data = await r.json();
+    if (data.recibo_pdf_url) {
+      // Gerar URL assinada via rota existente — para simplificar, abrimos detalhe
+      alert('PDF disponível no servidor: ' + data.recibo_pdf_url);
+    } else {
+      alert('Recibo PDF não disponível para este saque.');
+    }
+  };
+
+  $('saques-modelos-content').innerHTML = '<div class="spin-wrap"><div class="spin"></div></div>';
+  await renderSaques('pendente');
+};
+
 // ========== 15. PAGAMENTOS A MODELOS ==========
 
 pageLoaders['pagamentos-modelo'] = async function () {

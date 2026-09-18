@@ -7799,30 +7799,47 @@ app.get("/api/modelo/painel/transacoes", authModelo, async (req, res) => {
 app.get("/api/modelo/painel/meubanco", authModelo, async (req, res) => {
   try {
     const mid = req.modelo_id;
-    const [disp, pend] = await Promise.all([
+    const [ganhosDisp, ganhosPend, pagosRes, saquesRes] = await Promise.all([
+      // Ganhos disponíveis (não-stripe ou stripe já liberado)
+      db.query(`
+        SELECT COALESCE(SUM(valor_modelo) FILTER (
+          WHERE gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW())
+        ), 0) AS total
+        FROM transacoes_agency
+        WHERE modelo_id = $1 AND status = 'pago'
+      `, [mid]),
+      // Ganhos pendentes (stripe ainda não liberado)
       db.query(`
         SELECT COALESCE(SUM(valor_modelo), 0) AS total
         FROM transacoes_agency
         WHERE modelo_id = $1 AND status = 'pago'
-          AND (
-            (disponivel_em IS NULL     AND created_at    >= $2)
-            OR
-            (disponivel_em IS NOT NULL AND disponivel_em >= $2
-              AND disponivel_em < (DATE_TRUNC('day', NOW() AT TIME ZONE 'America/Sao_Paulo') + INTERVAL '1 day') AT TIME ZONE 'America/Sao_Paulo')
-          )
-      `, [mid, V_CORTE]),
-      db.query(`
-        SELECT COALESCE(SUM(valor_modelo), 0) AS total
-        FROM transacoes_agency
-        WHERE modelo_id = $1 AND status = 'pago'
-          AND created_at >= NOW() - INTERVAL '30 days'
           AND disponivel_em IS NOT NULL
-          AND disponivel_em >= (DATE_TRUNC('day', NOW() AT TIME ZONE 'America/Sao_Paulo') + INTERVAL '1 day') AT TIME ZONE 'America/Sao_Paulo'
+          AND disponivel_em > NOW()
+      `, [mid]),
+      // Total já pago via modelo_pagamentos
+      db.query(`
+        SELECT COALESCE(SUM(total_geral),0) AS pagos FROM modelo_pagamentos WHERE modelo_id=$1 AND status='pago'
+      `, [mid]),
+      // Saques já pagos + pendentes
+      db.query(`
+        SELECT
+          COALESCE(SUM(valor) FILTER (WHERE status='pago'),     0) AS saques_pagos,
+          COALESCE(SUM(valor) FILTER (WHERE status='pendente'), 0) AS saques_pendentes
+        FROM saques WHERE modelo_id=$1
       `, [mid]),
     ]);
+
+    const bruto         = parseFloat(ganhosDisp.rows[0].total);
+    const pendente      = parseFloat(ganhosPend.rows[0].total);
+    const pagos         = parseFloat(pagosRes.rows[0].pagos);
+    const saquesPagos   = parseFloat(saquesRes.rows[0].saques_pagos);
+    const saqPendentes  = parseFloat(saquesRes.rows[0].saques_pendentes);
+    const disponivel    = Math.max(0, bruto - pagos - saquesPagos - saqPendentes);
+
     res.json({
-      disponivel: parseFloat(disp.rows[0].total),
-      pendente:   parseFloat(pend.rows[0].total),
+      disponivel,
+      pendente,
+      saques_pendentes: saqPendentes,
     });
   } catch (err) {
     console.error("Erro /api/modelo/painel/meubanco:", err);
@@ -7917,6 +7934,108 @@ app.get("/api/modelo/painel/assinantes-dia", authModelo, async (req, res) => {
   } catch (err) {
     console.error("Erro /api/modelo/painel/assinantes-dia:", err);
     res.status(500).json({ error: "Erro interno" });
+  }
+});
+
+// ── Solicitar saque ──────────────────────────────────────────────────────────
+app.post("/api/modelo/sacar", authModelo, async (req, res) => {
+  try {
+    const mid = req.modelo_id;
+    const { valor } = req.body;
+    const valorNum = Number(valor);
+
+    if (!valorNum || valorNum < 500) {
+      return res.status(400).json({ erro: "Valor mínimo para saque é R$ 500,00" });
+    }
+
+    // Verificar dados bancários aprovados
+    const bancRes = await db.query(
+      `SELECT * FROM modelo_dados_bancarios WHERE modelo_id=$1 AND status='aprovado' LIMIT 1`,
+      [mid]
+    );
+    if (!bancRes.rows.length) {
+      return res.status(400).json({ erro: "Você não possui dados bancários aprovados. Cadastre sua chave PIX em 'Meu Banco'." });
+    }
+    const banc = bancRes.rows[0];
+
+    // Verificar saldo disponível (descontando pagamentos e saques já existentes)
+    const [ganhosRes, pagosRes, saquesRes] = await Promise.all([
+      db.query(`
+        SELECT COALESCE(SUM(valor_modelo) FILTER (
+          WHERE gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW())
+        ), 0) AS ganhos_disponiveis
+        FROM transacoes_agency WHERE modelo_id=$1 AND status='pago'
+      `, [mid]),
+      db.query(`
+        SELECT COALESCE(SUM(total_geral),0) AS pagos FROM modelo_pagamentos WHERE modelo_id=$1 AND status='pago'
+      `, [mid]),
+      db.query(`
+        SELECT COALESCE(SUM(valor) FILTER (WHERE status IN ('pago','pendente')), 0) AS saques_comprometidos
+        FROM saques WHERE modelo_id=$1
+      `, [mid]),
+    ]);
+
+    const ganhosDisp   = Number(ganhosRes.rows[0].ganhos_disponiveis || 0);
+    const pagos        = Number(pagosRes.rows[0].pagos || 0);
+    const saquesComp   = Number(saquesRes.rows[0].saques_comprometidos || 0);
+    const saldoDisp    = ganhosDisp - pagos - saquesComp;
+
+    if (valorNum > saldoDisp + 0.01) {
+      return res.status(400).json({
+        erro: `Saldo insuficiente. Saldo disponível: R$ ${saldoDisp.toFixed(2).replace('.', ',')}`
+      });
+    }
+
+    // Verificar se há saque pendente em aberto
+    const pendRes = await db.query(
+      `SELECT id FROM saques WHERE modelo_id=$1 AND status='pendente' LIMIT 1`,
+      [mid]
+    );
+    if (pendRes.rows.length) {
+      return res.status(400).json({ erro: "Você já possui um saque pendente em análise. Aguarde o processamento antes de solicitar um novo." });
+    }
+
+    const { rows } = await db.query(`
+      INSERT INTO saques (modelo_id, valor, chave_pix, pix_tipo, banco, agencia, conta, conta_tipo,
+        titular_nome, titular_documento, pgto_tipo, saldo_disponivel_no_dia)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+      RETURNING id
+    `, [
+      mid, valorNum,
+      banc.pix_chave || null, banc.pix_tipo || null,
+      banc.banco || null, banc.agencia || null, banc.conta || null, banc.conta_tipo || null,
+      banc.titular_nome || null, banc.titular_documento || null,
+      banc.tipo || 'pix',
+      saldoDisp
+    ]);
+
+    res.json({ ok: true, saque_id: rows[0].id });
+  } catch (err) {
+    console.error("Erro /api/modelo/sacar:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+// ── Histórico de saques da modelo ────────────────────────────────────────────
+app.get("/api/modelo/saques", authModelo, async (req, res) => {
+  try {
+    const mid = req.modelo_id;
+    const { rows } = await db.query(`
+      SELECT
+        id, valor, status, motivo_rejeicao,
+        saldo_disponivel_no_dia,
+        TO_CHAR(solicitado_em AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY HH24:MI') AS solicitado_fmt,
+        TO_CHAR(processado_em AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY HH24:MI') AS processado_fmt,
+        chave_pix, pix_tipo, pgto_tipo
+      FROM saques
+      WHERE modelo_id = $1
+      ORDER BY solicitado_em DESC
+      LIMIT 50
+    `, [mid]);
+    res.json({ rows });
+  } catch (err) {
+    console.error("Erro /api/modelo/saques:", err);
+    res.status(500).json({ erro: "Erro interno" });
   }
 });
 

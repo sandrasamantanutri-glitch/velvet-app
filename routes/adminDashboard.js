@@ -4304,6 +4304,15 @@ router.post("/modelo-pagamentos", authAdmin, upload.single("recibo"), async (req
       const pctModelo     = 1 - pctPlataforma - pctAgencia;
       const valorBruto    = pctModelo > 0 ? total / pctModelo : total;
 
+      const saquesDoMesRes = await db.query(`
+        SELECT id, valor, solicitado_em, processado_em
+        FROM saques
+        WHERE modelo_id = $1
+          AND status = 'pago'
+          AND DATE_TRUNC('month', processado_em AT TIME ZONE 'America/Sao_Paulo') = DATE_TRUNC('month', $2::date)
+        ORDER BY processado_em
+      `, [modeloIdNum, mesDate]);
+
       const dadosPDF = {
         ...rows[0],
         ...md,
@@ -4313,7 +4322,8 @@ router.post("/modelo-pagamentos", authAdmin, upload.single("recibo"), async (req
         chargebacks:     chargebacksVal,
         comissao_velvet: valorBruto * pctPlataforma,
         valor_liquido:   total - chargebacksVal,
-        pago_em:         null
+        pago_em:         null,
+        saques_do_mes:   saquesDoMesRes.rows
       };
       const pdfBuffer = await gerarReciboPDF(dadosPDF);
       const pdfKey = `recibos/${modeloIdNum}/${novoId}-recibo.pdf`;
@@ -4392,16 +4402,29 @@ router.get("/modelo-pagamentos/saldo/:modelo_id", authAdmin, async (req, res) =>
         AND status = 'pago'
     `, [modelo_id]);
 
+    const saquesRes = await db.query(`
+      SELECT
+        COALESCE(SUM(valor) FILTER (WHERE status = 'pago'),     0) AS saques_pagos,
+        COALESCE(SUM(valor) FILTER (WHERE status = 'pendente'), 0) AS saques_pendentes
+      FROM saques
+      WHERE modelo_id = $1
+        AND status IN ('pago', 'pendente')
+    `, [modelo_id]);
+
     const ganhosDisponiveis = Number(ganhosRes.rows[0].ganhos_disponiveis || 0);
     const ganhosPendentes   = Number(ganhosRes.rows[0].ganhos_pendentes || 0);
-    const pagos = Number(pagosRes.rows[0].pagos || 0);
-    const saldo = ganhosDisponiveis - pagos;
+    const pagos             = Number(pagosRes.rows[0].pagos || 0);
+    const saquesPagos       = Number(saquesRes.rows[0].saques_pagos || 0);
+    const saquesPendentes   = Number(saquesRes.rows[0].saques_pendentes || 0);
+    const saldo = ganhosDisponiveis - pagos - saquesPagos - saquesPendentes;
 
     res.json({
       ganhos: ganhosDisponiveis + ganhosPendentes,
       ganhos_disponiveis: ganhosDisponiveis,
       ganhos_pendentes: ganhosPendentes,
       pagos,
+      saques_pagos:     saquesPagos,
+      saques_pendentes: saquesPendentes,
       saldo
     });
   } catch (err) {
@@ -4792,8 +4815,44 @@ function gerarReciboPDF(p) {
       .text(`Forma: ${tipoPagamento}`, 65, pY + 33);
     doc.fillColor('black');
 
+    // ── Saques do mês (se houver) ──
+    let cursorY = pY + 65;
+    const saquesMes = Array.isArray(p.saques_do_mes) ? p.saques_do_mes : [];
+    if (saquesMes.length > 0) {
+      const saqY = cursorY;
+      doc.rect(50, saqY, W, 20).fill('#7B2CFF');
+      doc.fillColor('white').fontSize(9).font('Helvetica-Bold')
+        .text('DATA DO SAQUE', 65, saqY + 6)
+        .text('VALOR TRANSFERIDO', 380, saqY + 6, { width: 160, align: 'right' });
+      doc.fillColor('black');
+
+      let saqRowY = saqY + 20;
+      let totalSacado = 0;
+      saquesMes.forEach((sq, i) => {
+        if (i % 2 === 0) doc.rect(50, saqRowY, W, 18).fill('#f9f5ff');
+        const dataSaque = sq.processado_em
+          ? new Date(sq.processado_em).toLocaleDateString('pt-BR')
+          : new Date(sq.solicitado_em).toLocaleDateString('pt-BR');
+        doc.fillColor('#222').fontSize(9).font('Helvetica')
+          .text(dataSaque, 65, saqRowY + 4)
+          .text(`Saque #${String(sq.id).padStart(6,'0')}`, 200, saqRowY + 4)
+          .text(fmtBRL(sq.valor), 380, saqRowY + 4, { width: 160, align: 'right' });
+        totalSacado += Number(sq.valor || 0);
+        saqRowY += 18;
+      });
+
+      // Total sacado
+      doc.moveTo(50, saqRowY + 2).lineTo(545, saqRowY + 2).strokeColor('#7B2CFF').lineWidth(0.8).stroke();
+      doc.fontSize(10).font('Helvetica-Bold').fillColor('#7B2CFF')
+        .text('TOTAL SACADO NO MÊS:', 65, saqRowY + 8)
+        .text(fmtBRL(totalSacado), 380, saqRowY + 8, { width: 160, align: 'right' });
+      doc.fillColor('black');
+
+      cursorY = saqRowY + 34;
+    }
+
     // ── Rodapé ──
-    const fY = pY + 65;
+    const fY = cursorY;
     doc.moveTo(50, fY).lineTo(545, fY).strokeColor('#ddd').lineWidth(0.5).stroke();
     doc.fontSize(8).fillColor('#888').font('Helvetica')
       .text('Este documento comprova o repasse de receitas geradas na plataforma Velvet.', 50, fY + 8, { width: W, align: 'center' })
@@ -4871,6 +4930,14 @@ router.post("/modelo-pagamentos/:id/pagar", authAdmin, async (req, res) => {
 
     if (!pdfKey) {
       // Fallback: gera PDF agora (caso o registro não tenha gerado)
+      const saqFallbackRes = await db.query(`
+        SELECT id, valor, solicitado_em, processado_em
+        FROM saques
+        WHERE modelo_id = $1 AND status = 'pago'
+          AND DATE_TRUNC('month', processado_em AT TIME ZONE 'America/Sao_Paulo') = DATE_TRUNC('month', $2::date)
+        ORDER BY processado_em
+      `, [p.modelo_id, p.mes]);
+
       const dadosPDF = {
         ...p,
         valor_bruto:     valorBruto,
@@ -4879,7 +4946,8 @@ router.post("/modelo-pagamentos/:id/pagar", authAdmin, async (req, res) => {
         chargebacks:     chargebacksVal,
         comissao_velvet: comissao,
         valor_liquido:   liquido,
-        pago_em:         new Date()
+        pago_em:         new Date(),
+        saques_do_mes:   saqFallbackRes.rows
       };
       pdfBuffer = await gerarReciboPDF(dadosPDF);
       try {
@@ -6648,6 +6716,368 @@ router.delete("/restricoes-cliente/:id", authAdmin, async (req, res) => {
   } catch (err) {
     console.error("Erro remover restrição:", err);
     res.status(500).json({ erro: "Erro interno", details: err.message });
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SAQUES — solicitações de saque das modelos
+// ══════════════════════════════════════════════════════════════════════════════
+
+function gerarReciboSaquePDF(s) {
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ size: 'A4', margin: 50 });
+    const chunks = [];
+    doc.on('data', c => chunks.push(c));
+    doc.on('end', () => resolve(Buffer.concat(chunks)));
+    doc.on('error', reject);
+
+    const fmtBRL = v => `R$ ${Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const W = 495;
+    const saqueNum  = String(s.id).padStart(6, '0');
+    const dataEmissao  = new Date().toLocaleDateString('pt-BR');
+    const dataProcessado = s.processado_em
+      ? new Date(s.processado_em).toLocaleDateString('pt-BR')
+      : dataEmissao;
+    const nomeCompleto = s.nome_completo || s.nome_exibicao || s.modelo_nome || `Modelo #${s.modelo_id}`;
+    const cpf = s.titular_documento || '—';
+
+    let tipoPagamento = '—';
+    if ((s.pgto_tipo || '').toLowerCase() === 'pix' || s.chave_pix) {
+      tipoPagamento = `PIX — ${(s.pix_tipo || '').toUpperCase()}: ${s.chave_pix || '—'}`;
+    } else if (s.banco) {
+      tipoPagamento = `TED — Banco: ${s.banco} | Ag: ${s.agencia || '—'} | Conta: ${s.conta || '—'}`;
+    }
+
+    // Cabeçalho roxo
+    doc.rect(50, 50, W, 55).fill('#7B2CFF');
+    doc.fillColor('white').fontSize(16).font('Helvetica-Bold').text('VELVET ENTERTAINMENT LTDA', 65, 62);
+    doc.fontSize(9).font('Helvetica').text('CNPJ: 66.615.892/0001-43  •  contato@velvet.lat', 65, 82);
+    doc.fillColor('black');
+
+    // Título
+    doc.moveDown(3.5);
+    doc.fontSize(18).font('Helvetica-Bold').text('COMPROVANTE DE SAQUE', 50, 125, { width: W, align: 'center' });
+    doc.fontSize(10).font('Helvetica').fillColor('#555')
+      .text(`Nº ${saqueNum}  •  Emitido em ${dataEmissao}`, 50, 148, { width: W, align: 'center' });
+    doc.fillColor('black');
+
+    doc.moveTo(50, 168).lineTo(545, 168).strokeColor('#7B2CFF').lineWidth(1.5).stroke();
+
+    // Dados beneficiário
+    doc.rect(50, 178, W, 80).fill('#f9f5ff').stroke('#e0d4ff');
+    doc.fontSize(8).font('Helvetica-Bold').fillColor('#7B2CFF').text('BENEFICIÁRIO', 65, 188);
+    doc.fillColor('#222').fontSize(10).font('Helvetica-Bold').text(nomeCompleto, 65, 200);
+    doc.fontSize(9).font('Helvetica')
+      .text(`CPF/Doc: ${cpf}`, 65, 215)
+      .text(`ID Modelo: #${s.modelo_id}`, 65, 228);
+
+    // Emissor lado direito
+    doc.fontSize(8).font('Helvetica-Bold').fillColor('#7B2CFF').text('EMISSOR', 320, 188);
+    doc.fillColor('#222').fontSize(9).font('Helvetica')
+      .text('Velvet Entertainment Ltda', 320, 200)
+      .text('CNPJ: 66.615.892/0001-43', 320, 213)
+      .text('R Cel José Eusébio, 95 casa 13', 320, 226)
+      .text('Higienópolis — São Paulo/SP', 320, 239);
+    doc.fillColor('black');
+
+    // Box valor
+    const bY = 275;
+    doc.rect(50, bY, W, 70).fill('#f9f5ff').stroke('#e0d4ff');
+    doc.fontSize(8).font('Helvetica-Bold').fillColor('#7B2CFF').text('DETALHES DO SAQUE', 65, bY + 8);
+    doc.fillColor('#222').fontSize(9).font('Helvetica')
+      .text('Valor solicitado:', 65, bY + 24)
+      .text(fmtBRL(s.valor), 230, bY + 24);
+    if (s.saldo_disponivel_no_dia != null) {
+      doc.text('Saldo disponível no dia:', 65, bY + 40)
+         .text(fmtBRL(s.saldo_disponivel_no_dia), 230, bY + 40);
+    }
+
+    // Valor líquido em destaque
+    doc.moveTo(50, bY + 56).lineTo(545, bY + 56).strokeColor('#7B2CFF').lineWidth(0.8).stroke();
+    doc.fontSize(12).font('Helvetica-Bold').fillColor('#7B2CFF')
+      .text('VALOR TRANSFERIDO:', 65, bY + 62)
+      .text(fmtBRL(s.valor), 350, bY + 62, { width: 180, align: 'right' });
+    doc.fillColor('black');
+
+    // Dados do pagamento
+    const pY = bY + 90;
+    doc.rect(50, pY, W, 50).fill('#f0fff4').stroke('#c3e6cb');
+    doc.fontSize(8).font('Helvetica-Bold').fillColor('#27a745').text('DADOS DA TRANSFERÊNCIA', 65, pY + 7);
+    doc.fillColor('#222').fontSize(9).font('Helvetica')
+      .text(`Data: ${dataProcessado}`, 65, pY + 21)
+      .text(`Forma: ${tipoPagamento}`, 65, pY + 35);
+    doc.fillColor('black');
+
+    // Rodapé
+    const fY = pY + 70;
+    doc.moveTo(50, fY).lineTo(545, fY).strokeColor('#ddd').lineWidth(0.5).stroke();
+    doc.fontSize(8).fillColor('#888').font('Helvetica')
+      .text('Este documento comprova a transferência de fundos solicitada pela modelo na plataforma Velvet.', 50, fY + 8, { width: W, align: 'center' })
+      .text('Velvet Entertainment Ltda — CNPJ: 66.615.892/0001-43 — São Paulo/SP', 50, fY + 20, { width: W, align: 'center' })
+      .text(`Documento gerado automaticamente em ${dataEmissao}`, 50, fY + 32, { width: W, align: 'center' });
+
+    doc.end();
+  });
+}
+
+// Listar saques
+router.get("/saques", authAdmin, async (req, res) => {
+  try {
+    const { status, modelo_id, limit = 50, offset = 0 } = req.query;
+    const conds = [];
+    const params = [];
+
+    if (status) { params.push(status); conds.push(`s.status = $${params.length}`); }
+    if (modelo_id) { params.push(Number(modelo_id)); conds.push(`s.modelo_id = $${params.length}`); }
+
+    const where = conds.length ? `WHERE ${conds.join(' AND ')}` : '';
+    params.push(Number(limit), Number(offset));
+
+    const { rows } = await db.query(`
+      SELECT
+        s.*,
+        m.nome AS modelo_nome, m.nome_exibicao,
+        u.email AS modelo_email,
+        TO_CHAR(s.solicitado_em AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY HH24:MI') AS solicitado_fmt,
+        TO_CHAR(s.processado_em AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY HH24:MI') AS processado_fmt
+      FROM saques s
+      LEFT JOIN modelos m ON m.id = s.modelo_id
+      LEFT JOIN users   u ON u.id = m.user_id
+      ${where}
+      ORDER BY s.solicitado_em DESC
+      LIMIT $${params.length - 1} OFFSET $${params.length}
+    `, params);
+
+    const countRes = await db.query(
+      `SELECT COUNT(*) AS total FROM saques s ${where}`,
+      params.slice(0, params.length - 2)
+    );
+
+    res.json({ rows, total: Number(countRes.rows[0].total) });
+  } catch (err) {
+    console.error("Erro listar saques:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+// Detalhe saque
+router.get("/saques/:id", authAdmin, async (req, res) => {
+  try {
+    const { rows } = await db.query(`
+      SELECT s.*,
+        m.nome AS modelo_nome, m.nome_exibicao,
+        u.email AS modelo_email,
+        md.nome_completo, md.endereco, md.cidade, md.estado,
+        TO_CHAR(s.solicitado_em AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY HH24:MI') AS solicitado_fmt,
+        TO_CHAR(s.processado_em AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY HH24:MI') AS processado_fmt
+      FROM saques s
+      LEFT JOIN modelos m ON m.id = s.modelo_id
+      LEFT JOIN users   u ON u.id = m.user_id
+      LEFT JOIN modelos_dados md ON md.modelo_id = s.modelo_id
+      WHERE s.id = $1
+    `, [req.params.id]);
+
+    if (!rows.length) return res.status(404).json({ erro: 'Saque não encontrado' });
+    res.json(rows[0]);
+  } catch (err) {
+    console.error("Erro detalhe saque:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+// Processar saque (marcar como pago + upload comprovante + enviar email)
+router.post("/saques/:id/processar", authAdmin, upload.single("comprovante"), async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Buscar saque + dados da modelo
+    const { rows } = await db.query(`
+      SELECT s.*,
+        m.nome AS modelo_nome, m.nome_exibicao,
+        u.email AS modelo_email,
+        md.nome_completo, md.endereco, md.cidade, md.estado
+      FROM saques s
+      LEFT JOIN modelos m ON m.id = s.modelo_id
+      LEFT JOIN users   u ON u.id = m.user_id
+      LEFT JOIN modelos_dados md ON md.modelo_id = s.modelo_id
+      WHERE s.id = $1
+    `, [id]);
+
+    if (!rows.length) return res.status(404).json({ erro: 'Saque não encontrado' });
+    const s = rows[0];
+
+    if (s.status === 'pago') return res.status(400).json({ erro: 'Saque já processado' });
+    if (s.status === 'rejeitado') return res.status(400).json({ erro: 'Saque rejeitado, não pode ser processado' });
+
+    // Upload do comprovante (se enviado)
+    let comprovante_url = null;
+    if (req.file) {
+      try {
+        const key = `saques/${s.modelo_id}/${Date.now()}-comprovante-${req.file.originalname}`;
+        await s3Privado.putObject({
+          Bucket: process.env.R2_BUCKET_PRIVATE,
+          Key: key,
+          Body: req.file.buffer,
+          ContentType: req.file.mimetype
+        }).promise();
+        comprovante_url = key;
+      } catch (uploadErr) {
+        console.warn('Upload comprovante saque falhou:', uploadErr.message);
+      }
+    }
+
+    // Gerar PDF do recibo de saque
+    let recibo_pdf_url = null;
+    let pdfBuffer = null;
+    try {
+      pdfBuffer = await gerarReciboSaquePDF({ ...s, processado_em: new Date() });
+      const pdfKey = `saques/${s.modelo_id}/${id}-recibo-saque.pdf`;
+      await s3Privado.putObject({
+        Bucket: process.env.R2_BUCKET_PRIVATE,
+        Key: pdfKey,
+        Body: pdfBuffer,
+        ContentType: 'application/pdf'
+      }).promise();
+      recibo_pdf_url = pdfKey;
+    } catch (pdfErr) {
+      console.warn('Geração PDF saque falhou:', pdfErr.message);
+    }
+
+    // Atualizar DB
+    await db.query(`
+      UPDATE saques
+      SET status = 'pago',
+          processado_em  = NOW(),
+          admin_id       = $2,
+          comprovante_url = COALESCE($3, comprovante_url),
+          recibo_pdf_url  = COALESCE($4, recibo_pdf_url)
+      WHERE id = $1
+    `, [id, req.user.id, comprovante_url, recibo_pdf_url]);
+
+    // Enviar email com recibo + comprovante
+    if (s.modelo_email) {
+      try {
+        const fmtBRL = v => `R$ ${Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        const nomeModelo = s.nome_completo || s.nome_exibicao || s.modelo_nome || 'Modelo';
+        const saqueNum = String(s.id).padStart(6, '0');
+        const dataHoje = new Date().toLocaleDateString('pt-BR');
+
+        const anexos = [];
+        if (pdfBuffer) {
+          anexos.push({ filename: `recibo-saque-${saqueNum}.pdf`, content: pdfBuffer.toString('base64') });
+        }
+        // Comprovante de transferência
+        if (req.file) {
+          anexos.push({ filename: `comprovante-transferencia-${saqueNum}.${req.file.originalname.split('.').pop()}`, content: req.file.buffer.toString('base64') });
+        }
+
+        await _resendPagamentos.emails.send({
+          from: 'Velvet <contato@velvet.lat>',
+          to: s.modelo_email,
+          subject: `💜 Saque processado — ${fmtBRL(s.valor)}`,
+          html: `
+            <div style="font-family:Arial,Helvetica,sans-serif;background:#f0ebfa;padding:32px 16px;color:#2d1f3d;">
+              <div style="max-width:600px;margin:0 auto;">
+                <div style="background:linear-gradient(135deg,#7B2CFF 0%,#a94cff 100%);border-radius:14px 14px 0 0;padding:20px 32px;text-align:center;">
+                  <span style="color:#fff;font-size:20px;font-weight:800;letter-spacing:1px;">💜 Velvet</span>
+                </div>
+                <div style="background:#fff;padding:32px;border-radius:0 0 14px 14px;border:1px solid #e5d9ff;border-top:none;">
+                  <h2 style="color:#7B2CFF;margin:0 0 16px;">Olá, ${nomeModelo}!</h2>
+                  <p style="margin:0 0 16px;line-height:1.6;">O seu saque foi processado com sucesso. Segue o recibo e o comprovante de transferência em anexo.</p>
+                  <table style="width:100%;border-collapse:collapse;margin:20px 0;font-size:14px;">
+                    <tr style="background:#f9f5ff;">
+                      <td style="padding:10px 14px;font-weight:600;color:#7B2CFF;">Saque Nº</td>
+                      <td style="padding:10px 14px;">#${saqueNum}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:10px 14px;font-weight:600;color:#7B2CFF;">Data</td>
+                      <td style="padding:10px 14px;">${dataHoje}</td>
+                    </tr>
+                    <tr style="background:#f0fff4;">
+                      <td style="padding:12px 14px;font-weight:700;color:#27a745;font-size:15px;">Valor transferido</td>
+                      <td style="padding:12px 14px;font-weight:700;color:#27a745;font-size:15px;">${fmtBRL(s.valor)}</td>
+                    </tr>
+                  </table>
+                  <p style="margin:16px 0 0;font-size:13px;color:#888;">Em caso de dúvidas, contacte <a href="mailto:contato@velvet.lat" style="color:#7B2CFF;">contato@velvet.lat</a></p>
+                  <div style="margin-top:28px;padding-top:18px;border-top:1px solid #f0ebfa;text-align:center;">
+                    <p style="margin:0;color:#6b5a7d;">Equipe Velvet 💜</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `,
+          attachments: anexos
+        });
+      } catch (emailErr) {
+        console.warn('Email saque não enviado:', emailErr.message);
+      }
+    }
+
+    const recibo_pdf_signed_url = recibo_pdf_url
+      ? s3Privado.getSignedUrl('getObject', { Bucket: process.env.R2_BUCKET_PRIVATE, Key: recibo_pdf_url, Expires: 300 })
+      : null;
+
+    res.json({ ok: true, id: Number(id), recibo_pdf_signed_url });
+  } catch (err) {
+    console.error("Erro processar saque:", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+// Rejeitar saque
+router.post("/saques/:id/rejeitar", authAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { motivo } = req.body;
+
+    const { rows } = await db.query(
+      `UPDATE saques SET status='rejeitado', processado_em=NOW(), admin_id=$2, motivo_rejeicao=$3
+       WHERE id=$1 AND status='pendente' RETURNING *`,
+      [id, req.user.id, motivo || null]
+    );
+
+    if (!rows.length) return res.status(404).json({ erro: 'Saque não encontrado ou já processado' });
+
+    const s = rows[0];
+
+    // Notificar modelo por email
+    const modeloRes = await db.query(
+      `SELECT u.email, m.nome_exibicao, md.nome_completo
+       FROM modelos m LEFT JOIN users u ON u.id=m.user_id LEFT JOIN modelos_dados md ON md.modelo_id=m.id
+       WHERE m.id=$1`, [s.modelo_id]
+    );
+    if (modeloRes.rows[0]?.email) {
+      const me = modeloRes.rows[0];
+      const fmtBRL = v => `R$ ${Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      const nome = me.nome_completo || me.nome_exibicao || 'Modelo';
+      try {
+        await _resendPagamentos.emails.send({
+          from: 'Velvet <contato@velvet.lat>',
+          to: me.email,
+          subject: `Saque rejeitado — ${fmtBRL(s.valor)}`,
+          html: `
+            <div style="font-family:Arial,Helvetica,sans-serif;background:#f0ebfa;padding:32px 16px;color:#2d1f3d;">
+              <div style="max-width:600px;margin:0 auto;">
+                <div style="background:linear-gradient(135deg,#7B2CFF 0%,#a94cff 100%);border-radius:14px 14px 0 0;padding:20px 32px;text-align:center;">
+                  <span style="color:#fff;font-size:20px;font-weight:800;">💜 Velvet</span>
+                </div>
+                <div style="background:#fff;padding:32px;border-radius:0 0 14px 14px;border:1px solid #e5d9ff;border-top:none;">
+                  <h2 style="color:#7B2CFF;margin:0 0 16px;">Olá, ${nome}!</h2>
+                  <p>O seu saque no valor de <strong>${fmtBRL(s.valor)}</strong> não pôde ser processado.</p>
+                  ${motivo ? `<p style="background:#fff3cd;padding:12px;border-radius:8px;"><strong>Motivo:</strong> ${motivo}</p>` : ''}
+                  <p style="font-size:13px;color:#888;">Em caso de dúvidas, contacte <a href="mailto:contato@velvet.lat" style="color:#7B2CFF;">contato@velvet.lat</a></p>
+                </div>
+              </div>
+            </div>
+          `
+        });
+      } catch (_) {}
+    }
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("Erro rejeitar saque:", err);
+    res.status(500).json({ erro: "Erro interno" });
   }
 });
 

@@ -276,7 +276,6 @@ body {
       </a>
       <a class="nav-item" onclick="showSection('saques')">
         <i class="bi bi-arrow-up-circle"></i> Saques
-        <span class="badge-soon">Breve</span>
       </a>
       <a class="nav-item" onclick="showSection('chargebacks')">
         <i class="bi bi-exclamation-triangle"></i> Chargebacks
@@ -337,11 +336,7 @@ body {
 
     <!-- SAQUES -->
     <div class="section" id="secSaques">
-      <div class="page-header">
-        <h1>Histórico de Saques <span class="soon-tag" style="font-size:.75rem">Em Breve</span></h1>
-        <p>Esta funcionalidade estará disponível em breve</p>
-      </div>
-      <div class="empty-st"><i class="bi bi-clock-history"></i><p>Em desenvolvimento — disponível em breve!</p></div>
+      <div class="spin-wrap"><div class="spin"></div></div>
     </div>
 
     <!-- CHARGEBACKS -->
@@ -437,7 +432,7 @@ function showSection(name) {
 
 const loaders = {
   geral: loadGeral, pix: loadPix, cartao: loadCartao,
-  meubanco: loadMeubanco, chargebacks: loadChargebacks,
+  meubanco: loadMeubanco, saques: loadSaques, chargebacks: loadChargebacks,
   trafego: loadTrafego, assinantes: loadAssinantes,
 };
 const errMap = {
@@ -612,32 +607,147 @@ async function loadCartao(ym) {
 async function loadMeubanco() {
   const d = await api('/api/modelo/painel/meubanco');
   if (!d) return;
-  const { disponivel, pendente } = d;
+  const { disponivel, pendente, saques_pendentes } = d;
+  const temSaquePendente = (saques_pendentes || 0) > 0;
+  const podeSacar = disponivel >= 500 && !temSaquePendente;
+
+  let btnSaque = '';
+  if (temSaquePendente) {
+    btnSaque = `<button class="btn-saque" disabled style="opacity:.6">Saque em análise...</button>`;
+  } else if (disponivel >= 500) {
+    btnSaque = `<button class="btn-saque" onclick="abrirModalSaque(${disponivel})">Solicitar Saque</button>`;
+  } else {
+    btnSaque = `<button class="btn-saque" disabled>Solicitar Saque <small style="font-size:.7rem;opacity:.7">(mín. R$ 500)</small></button>`;
+  }
+
   document.getElementById('meubancoContent').innerHTML = `
     <div class="cards-grid-2">
       <div class="banco-main">
         <div class="bm-lbl"><i class="bi bi-bank2"></i> Saldo Disponível para Saque</div>
         <div class="bm-amt">${fmt(disponivel)}</div>
         <div class="bm-sub">Valores liberados prontos para retirada</div>
-        <button class="btn-saque" disabled>Solicitar Saque <span class="soon-tag">Em Breve</span></button>
+        ${btnSaque}
         ${disponivel > 0 && disponivel < 500 ? '<div style="margin-top:.6rem;font-size:.72rem;opacity:.8">Saldo mínimo: R$ 500,00</div>' : ''}
       </div>
       <div class="sc amber" style="display:flex;flex-direction:column;justify-content:center">
         <div class="sc-icon"><i class="bi bi-hourglass-split"></i></div>
         <div class="sc-lbl"><i class="bi bi-circle-fill" style="color:var(--hold);font-size:.45rem"></i> Saldo a Liberar</div>
         <div class="sc-val" style="color:var(--hold)">${fmt(pendente)}</div>
-        <div class="sc-sub">Últimos 30 dias — aguardando operadora</div>
+        <div class="sc-sub">Aguardando liberação da operadora de cartão</div>
       </div>
     </div>
     <div class="pend-info">
       <p><strong>O que são valores pendentes?</strong><br>
-      São valores pagos pelo cliente via cartão de crédito. Dependemos da operadora avaliar o pagamento, descartar fraude e liberar o valor — o que pode levar de 3 a 30 dias. Não se preocupe! A própria plataforma atualiza os ganhos pendentes para liberados automaticamente!</p>
+      São valores pagos pelo cliente via cartão de crédito. Dependemos da operadora avaliar o pagamento, descartar fraude e liberar o valor — o que pode levar de 3 a 30 dias. A plataforma atualiza automaticamente!</p>
     </div>
     <div class="tcard">
       <div class="tcard-hd"><h5><i class="bi bi-info-circle me-1" style="color:var(--purple)"></i> Informações de Saque</h5></div>
       <div class="info-row"><span class="ir-lbl">Valor mínimo</span><span class="ir-val">R$ 500,00</span></div>
-      <div class="info-row"><span class="ir-lbl">Prazo de processamento</span><span class="ir-val">48 horas úteis</span></div>
-      <div class="info-row"><span class="ir-lbl">Status</span><span class="soon-tag">Em Implantação</span></div>
+      <div class="info-row"><span class="ir-lbl">Prazo de processamento</span><span class="ir-val">até 48 horas úteis</span></div>
+      <div class="info-row"><span class="ir-lbl">Chave PIX</span><span class="ir-val" style="font-size:.8rem">Cadastrada em Meu Banco</span></div>
+    </div>
+  `;
+}
+
+// ── Modal de solicitar saque ──────────────────────────────────────────
+function abrirModalSaque(saldoDisp) {
+  const modal = document.createElement('div');
+  modal.id = 'modalSaque';
+  modal.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px`;
+  modal.innerHTML = `
+    <div style="background:var(--surface,#1a1a2e);border:1px solid var(--border,#333);border-radius:16px;padding:32px;max-width:420px;width:100%">
+      <h3 style="margin:0 0 8px;color:var(--purple-light,#a78bfa)"><i class="bi bi-arrow-up-circle"></i> Solicitar Saque</h3>
+      <p style="margin:0 0 20px;font-size:.88rem;opacity:.75">Saldo disponível: <strong>${fmt(saldoDisp)}</strong></p>
+      <label style="font-size:.85rem;font-weight:600;display:block;margin-bottom:6px">Valor a sacar (R$)</label>
+      <input id="inputValorSaque" type="number" min="500" max="${saldoDisp.toFixed(2)}" step="0.01" value="${saldoDisp.toFixed(2)}"
+        style="width:100%;padding:10px 14px;border-radius:8px;border:1px solid var(--border,#444);background:var(--bg,#0f0f1a);color:inherit;font-size:1rem;box-sizing:border-box">
+      <div id="saqueErro" style="color:#f87171;font-size:.82rem;margin-top:8px;display:none"></div>
+      <div style="display:flex;gap:12px;margin-top:24px">
+        <button onclick="document.getElementById('modalSaque').remove()"
+          style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border,#444);background:transparent;color:inherit;cursor:pointer">
+          Cancelar
+        </button>
+        <button id="btnConfirmarSaque" onclick="confirmarSaque(${saldoDisp})"
+          style="flex:1;padding:10px;border-radius:8px;border:none;background:#7B2CFF;color:#fff;font-weight:700;cursor:pointer">
+          Confirmar Saque
+        </button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
+async function confirmarSaque(saldoDisp) {
+  const btn = document.getElementById('btnConfirmarSaque');
+  const erroEl = document.getElementById('saqueErro');
+  const valor = parseFloat(document.getElementById('inputValorSaque').value);
+
+  erroEl.style.display = 'none';
+  if (!valor || valor < 500) { erroEl.textContent = 'Valor mínimo: R$ 500,00'; erroEl.style.display = 'block'; return; }
+  if (valor > saldoDisp + 0.01) { erroEl.textContent = 'Valor maior que o saldo disponível'; erroEl.style.display = 'block'; return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Enviando...';
+
+  const r = await fetch('/api/modelo/sacar', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+    body: JSON.stringify({ valor })
+  });
+  const data = await r.json();
+
+  if (!r.ok) {
+    erroEl.textContent = data.erro || 'Erro ao solicitar saque';
+    erroEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Confirmar Saque';
+    return;
+  }
+
+  document.getElementById('modalSaque').remove();
+  // Recarregar seção meu banco
+  loadedSections.delete('meubanco');
+  loadMeubanco();
+  // Recarregar saques
+  loadedSections.delete('saques');
+  loadSaques();
+
+  const toast = document.createElement('div');
+  toast.style.cssText = `position:fixed;bottom:24px;right:24px;background:#22c55e;color:#fff;padding:14px 22px;border-radius:12px;z-index:9999;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.3)`;
+  toast.textContent = '✓ Saque solicitado com sucesso!';
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 4000);
+}
+
+// ── SAQUES ───────────────────────────────────────────────────────────
+async function loadSaques() {
+  const d = await api('/api/modelo/saques');
+  if (!d) return;
+  const rows = d.rows || [];
+
+  const statusLabel = { pendente: '⏳ Pendente', pago: '✓ Pago', rejeitado: '✗ Rejeitado', processando: '🔄 Processando' };
+  const statusColor = { pendente: '#f59e0b', pago: '#22c55e', rejeitado: '#ef4444', processando: '#7B2CFF' };
+
+  const tbody = rows.length ? rows.map(r => `
+    <tr>
+      <td>${r.solicitado_fmt || '—'}</td>
+      <td style="font-weight:600">${fmt(r.valor)}</td>
+      <td><span style="color:${statusColor[r.status] || '#888'};font-weight:600">${statusLabel[r.status] || r.status}</span></td>
+      <td style="font-size:.8rem;opacity:.7">${r.processado_fmt || '—'}</td>
+      ${r.motivo_rejeicao ? `<td style="font-size:.8rem;color:#ef4444">${r.motivo_rejeicao}</td>` : '<td>—</td>'}
+    </tr>
+  `).join('') : `<tr><td colspan="5" style="text-align:center;opacity:.5;padding:24px">Nenhum saque ainda</td></tr>`;
+
+  document.getElementById('secSaques').innerHTML = `
+    <div class="page-header">
+      <h1><i class="bi bi-arrow-up-circle"></i> Histórico de Saques</h1>
+      <p>Seus pedidos de transferência</p>
+    </div>
+    <div class="table-resp">
+      <table class="dt">
+        <thead><tr><th>Solicitado em</th><th>Valor</th><th>Status</th><th>Processado em</th><th>Observação</th></tr></thead>
+        <tbody>${tbody}</tbody>
+      </table>
     </div>
   `;
 }
