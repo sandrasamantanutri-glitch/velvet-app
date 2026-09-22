@@ -4414,17 +4414,22 @@ window.loadAdminSaldo = async function() {
 };
 
 window.loadAdminHistoricoSaques = async function() {
-  const sel = document.getElementById('saqHistoricoSelector');
-  const mid = sel?.value;
-  const el  = document.getElementById('adminHistoricoContent');
-  if (!mid) { el.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:24px">Selecione uma modelo acima.</p>'; return; }
+  const mid    = document.getElementById('saqHistoricoSelector')?.value || '';
+  const status = document.getElementById('saqHistoricoStatus')?.value   || '';
+  const el     = document.getElementById('adminHistoricoContent');
 
   el.innerHTML = '<div class="spin-wrap"><div class="spin"></div></div>';
-  const d = await fetchJSON(`/admin/dashboard/saques-modelo/${mid}`).catch(() => null);
+
+  const qs = new URLSearchParams({ limit: 300 });
+  if (mid)    qs.set('modelo_id', mid);
+  if (status) qs.set('status', status);
+
+  const d = await fetchJSON(`/admin/dashboard/saques?${qs}`).catch(() => null);
   if (!d) { el.innerHTML = '<p style="color:#ef4444">Erro ao carregar histórico.</p>'; return; }
 
   const money = v => `R$ ${Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
   const rows  = d.rows || [];
+  const todasModelos = !mid;
 
   const statusBadge = {
     pendente:    '<span class="badge badge-warning">Pendente</span>',
@@ -4445,7 +4450,9 @@ window.loadAdminHistoricoSaques = async function() {
     const obs = r.status === 'rejeitado' && r.motivo_rejeicao
       ? `<span style="color:#ef4444;font-size:.8rem">${r.motivo_rejeicao}</span>`
       : '—';
+    const modeloCell = todasModelos ? `<td data-label="Modelo" style="font-size:.82rem;font-weight:600">${r.nome_exibicao || r.modelo_nome || '—'}</td>` : '';
     return `<tr>
+      ${modeloCell}
       <td data-label="Solicitado em" style="font-size:.82rem">${r.solicitado_fmt || '—'}</td>
       <td data-label="Valor" style="font-weight:600">${money(r.valor)}</td>
       <td data-label="Taxa">${taxaCell}</td>
@@ -4454,14 +4461,15 @@ window.loadAdminHistoricoSaques = async function() {
       <td data-label="Processado em" style="font-size:.8rem;color:var(--text-muted)">${r.processado_fmt || '—'}</td>
       <td data-label="Observação">${obs}</td>
     </tr>`;
-  }).join('') : `<tr><td colspan="7" class="empty-row">Nenhum saque encontrado</td></tr>`;
+  }).join('') : `<tr><td colspan="${todasModelos ? 8 : 7}" class="empty-row">Nenhum saque encontrado</td></tr>`;
 
+  const modeloTh = todasModelos ? '<th>Modelo</th>' : '';
   el.innerHTML = `
-    <p style="font-size:.82rem;color:var(--text-muted);margin-bottom:12px">${rows.length} registro(s)</p>
+    <p style="font-size:.82rem;color:var(--text-muted);margin-bottom:12px">${rows.length} registro(s)${d.total > rows.length ? ` de ${d.total}` : ''}</p>
     <div class="table-wrapper">
       <table class="table table-mob-card">
         <thead><tr>
-          <th>Solicitado em</th><th>Valor</th><th>Taxa</th><th>Recebido</th>
+          ${modeloTh}<th>Solicitado em</th><th>Valor</th><th>Taxa</th><th>Recebido</th>
           <th>Status</th><th>Processado em</th><th>Observação</th>
         </tr></thead>
         <tbody>${tbody}</tbody>

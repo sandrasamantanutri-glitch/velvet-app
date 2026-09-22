@@ -1067,7 +1067,14 @@
         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:20px">
           <h3 style="margin:0;flex:1">Histórico de Saques por Modelo</h3>
           <select id="saqHistoricoSelector" class="form-select" style="width:220px;padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:.88rem" onchange="loadAdminHistoricoSaques()">
-            <option value="">— Selecione a modelo —</option>
+            <option value="">— Todas as modelos —</option>
+          </select>
+          <select id="saqHistoricoStatus" class="form-select" style="width:160px;padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:.88rem" onchange="loadAdminHistoricoSaques()">
+            <option value="">Todos os status</option>
+            <option value="pendente">Pendentes</option>
+            <option value="pago">Pagos</option>
+            <option value="processando">Processando</option>
+            <option value="rejeitado">Rejeitados</option>
           </select>
           <button class="btn btn-ghost btn-sm" onclick="loadAdminHistoricoSaques()">↻ Atualizar</button>
         </div>

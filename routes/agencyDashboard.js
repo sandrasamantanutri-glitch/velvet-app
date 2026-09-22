@@ -231,30 +231,34 @@ router.get("/overview", authAgencia, async (req, res) => {
         ORDER BY total DESC
       `, [agenciaId]),
 
-      // TOP 5 — mesma lógica de "Total Modelo Liberado": PIX do mês + Stripe disponivel_em no mês já liberado
+      // TOP 5 — mesma lógica do admin: transacoes_agency direto, PIX created_at + Stripe disponivel_em no mês
       db.query(`
         SELECT
-          u.modelo_id,
+          t.modelo_id,
           COALESCE(m.nome_exibicao, m.nome) AS nome,
-          ROUND(COALESCE(SUM(u.valor_modelo), 0)::numeric, 2) AS ganhos_modelo,
-          ROUND(COALESCE(SUM(u.agency_fee), 0)::numeric, 2) AS ganhos_agencia,
-          (SELECT COUNT(*) FROM vw_vips_agencia v WHERE v.modelo_id = u.modelo_id AND v.ativo = true AND v.agencia_id = $1) AS assinantes
-        FROM (
-          SELECT modelo_id, valor_modelo, agency_fee
-          FROM vw_transacoes_agencia
-          WHERE agencia_id = $1 AND status = 'pago' AND gateway IS DISTINCT FROM 'stripe'
-            AND DATE_TRUNC('month', created_at AT TIME ZONE 'America/Sao_Paulo') = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
-          UNION ALL
-          SELECT modelo_id, valor_modelo, agency_fee
-          FROM vw_transacoes_agencia
-          WHERE agencia_id = $1 AND status = 'pago' AND gateway = 'stripe'
-            AND disponivel_em IS NOT NULL AND disponivel_em <= NOW()
-            AND EXTRACT(YEAR  FROM disponivel_em) = EXTRACT(YEAR  FROM NOW() AT TIME ZONE 'America/Sao_Paulo')
-            AND EXTRACT(MONTH FROM disponivel_em) = EXTRACT(MONTH FROM NOW() AT TIME ZONE 'America/Sao_Paulo')
-        ) u
-        JOIN modelos m ON m.id = u.modelo_id
-        GROUP BY u.modelo_id, m.nome_exibicao, m.nome
-        ORDER BY ganhos_modelo DESC
+          ROUND(COALESCE(SUM(t.valor_modelo), 0)::numeric, 2) AS ganhos_modelo,
+          ROUND(COALESCE(SUM(t.agency_fee), 0)::numeric, 2) AS ganhos_agencia,
+          MAX(t.created_at) AS atualizado_em,
+          (SELECT COUNT(*) FROM vw_vips_agencia v WHERE v.modelo_id = t.modelo_id AND v.ativo = true AND v.agencia_id = $1) AS assinantes
+        FROM transacoes_agency t
+        INNER JOIN modelos m ON m.id = t.modelo_id AND m.verificada = true AND m.ativo = true
+        WHERE t.modelo_id IS NOT NULL
+          AND t.agencia_id = $1
+          AND t.status = 'pago'
+          AND (
+            (
+              t.gateway IS DISTINCT FROM 'stripe'
+              AND DATE_TRUNC('month', t.created_at AT TIME ZONE 'America/Sao_Paulo') = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
+            ) OR (
+              t.gateway = 'stripe'
+              AND t.disponivel_em IS NOT NULL
+              AND t.disponivel_em <= NOW()
+              AND DATE(t.disponivel_em AT TIME ZONE 'UTC') >= DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')::date
+              AND DATE(t.disponivel_em AT TIME ZONE 'UTC') <= (DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo') + INTERVAL '1 month - 1 day')::date
+            )
+          )
+        GROUP BY t.modelo_id, m.nome_exibicao, m.nome
+        ORDER BY ganhos_modelo DESC, atualizado_em DESC
         LIMIT 5
       `, [agenciaId])
 

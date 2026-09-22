@@ -219,7 +219,7 @@ ORDER BY total DESC;
       db.query(`
         SELECT
           t.modelo_id,
-          m.nome,
+          COALESCE(m.nome_exibicao, m.nome) AS nome,
           ROUND(COALESCE(SUM(t.valor_modelo), 0)::numeric, 2) AS ganhos,
           MAX(t.created_at) AS atualizado_em,
           (
@@ -244,7 +244,7 @@ ORDER BY total DESC;
               AND DATE(t.disponivel_em AT TIME ZONE 'UTC') <= (DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo') + INTERVAL '1 month - 1 day')::date
             )
           )
-        GROUP BY t.modelo_id, m.nome
+        GROUP BY t.modelo_id, m.nome_exibicao, m.nome
         ORDER BY ganhos DESC, atualizado_em DESC
         LIMIT 5
       `)
