@@ -423,9 +423,39 @@ body {
 
 .updates-erro { color: #e33; }
 
-@media (max-width: 420px) {
-  .card-preview,
-  .card-preview-grid { width: 110px; }
+/* ===============================
+   TABLET (≤ 768px)
+=============================== */
+@media (max-width: 768px) {
+  .update-card { padding: 16px 18px; }
+  .card-preview, .card-preview-grid { width: 115px; }
+  .card-tag { font-size: 12px; }
+  .card-cta { padding: 12px 14px; }
+}
+
+/* ===============================
+   MOBILE (≤ 480px)
+=============================== */
+@media (max-width: 480px) {
+  .container { padding: 12px 10px 60px; }
+  .update-card { padding: 12px 12px; }
+  .card-preview, .card-preview-grid { width: 100px; }
   .card-titulo { font-size: 13px; }
-  .card-cta { font-size: 12px; padding: 9px 12px; }
+  .card-tag { font-size: 11px; padding: 2px 8px; }
+  .card-cta { font-size: 12px; padding: 10px 12px; }
+  .card-info { gap: 8px; }
+  .banner-capa { max-height: 180px; }
+}
+
+/* ===============================
+   MOBILE PEQUENO (≤ 360px)
+=============================== */
+@media (max-width: 360px) {
+  .update-card { padding: 10px; }
+  .card-preview, .card-preview-grid { width: 88px; }
+  .card-nome { font-size: 13px; }
+  .card-tag { font-size: 10px; padding: 2px 7px; }
+  .card-cta { font-size: 11px; padding: 9px 10px; }
+  .banner-capa { max-height: 140px; }
+  .filtro-tab { padding: 6px 10px; font-size: 11px; }
 }
