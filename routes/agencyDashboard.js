@@ -157,22 +157,21 @@ router.get("/overview", authAgencia, async (req, res) => {
           AND status = 'pago'
       `, [agenciaId]),
 
-      // FATURAMENTO MÊS — PIX do mês + Stripe disponivel_em no mês (UTC) já liberado (qualquer mês de compra)
+      // FATURAMENTO MÊS — mesma lógica do gráfico: PIX por created_at, Stripe por disponivel_em (ambos com timezone BR)
       db.query(`
-        SELECT
-          COALESCE(SUM(agency_fee) FILTER (WHERE
-            (gateway IS DISTINCT FROM 'stripe'
-              AND DATE_TRUNC('month', created_at AT TIME ZONE 'America/Sao_Paulo') = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo'))
-            OR
-            (gateway = 'stripe'
-              AND disponivel_em IS NOT NULL
-              AND disponivel_em <= NOW()
-              AND EXTRACT(YEAR  FROM disponivel_em) = EXTRACT(YEAR  FROM NOW() AT TIME ZONE 'America/Sao_Paulo')
-              AND EXTRACT(MONTH FROM disponivel_em) = EXTRACT(MONTH FROM NOW() AT TIME ZONE 'America/Sao_Paulo'))
-          ), 0) AS total
-        FROM vw_transacoes_agencia
-        WHERE agencia_id = $1
-          AND status = 'pago'
+        SELECT COALESCE(SUM(agency_fee), 0) AS total
+        FROM (
+          SELECT agency_fee
+          FROM vw_transacoes_agencia
+          WHERE agencia_id = $1 AND status = 'pago' AND gateway IS DISTINCT FROM 'stripe'
+            AND DATE_TRUNC('month', created_at AT TIME ZONE 'America/Sao_Paulo') = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
+          UNION ALL
+          SELECT agency_fee
+          FROM vw_transacoes_agencia
+          WHERE agencia_id = $1 AND status = 'pago' AND gateway = 'stripe'
+            AND disponivel_em IS NOT NULL AND disponivel_em <= NOW()
+            AND DATE_TRUNC('month', disponivel_em AT TIME ZONE 'America/Sao_Paulo') = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
+        ) t
       `, [agenciaId]),
 
       // FATURAMENTO 12 MESES — PIX por mês de compra, Stripe por mês UTC do disponivel_em
@@ -241,9 +240,8 @@ router.get("/overview", authAgencia, async (req, res) => {
           MAX(t.created_at) AS atualizado_em,
           (SELECT COUNT(*) FROM vw_vips_agencia v WHERE v.modelo_id = t.modelo_id AND v.ativo = true AND v.agencia_id = $1) AS assinantes
         FROM transacoes_agency t
-        INNER JOIN modelos m ON m.id = t.modelo_id AND m.verificada = true AND m.ativo = true
+        INNER JOIN modelos m ON m.id = t.modelo_id AND m.verificada = true AND m.ativo = true AND m.agencia_id = $1
         WHERE t.modelo_id IS NOT NULL
-          AND t.agencia_id = $1
           AND t.status = 'pago'
           AND (
             (
