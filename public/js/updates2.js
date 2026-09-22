@@ -27,15 +27,19 @@ function tf(key, fallback) {
   try { const v = t(key); return (v && v !== key) ? v : fallback; } catch (_) { return fallback; }
 }
 
+function getLang() {
+  return (localStorage.getItem("lang") || document.documentElement.lang || "pt").slice(0, 2).toLowerCase();
+}
+
 function langLabel(pt, en, es) {
-  const lang = (document.documentElement.lang || localStorage.getItem("lang") || "pt").slice(0, 2).toLowerCase();
+  const lang = getLang();
   if (lang === "en") return en;
   if (lang === "es") return es;
   return pt;
 }
 
 function getCapaUrl() {
-  const lang = (document.documentElement.lang || localStorage.getItem("lang") || "pt").slice(0, 2).toLowerCase();
+  const lang = getLang();
   if (lang === "en") return "/assets/capaen.png";
   if (lang === "es") return "/assets/capaes.png";
   return "/assets/capapt.png";
@@ -77,7 +81,7 @@ function renderCriadoras(criadoras) {
   if (!criadoras.length) { section.style.display = "none"; return; }
 
   section.style.display = "";
-  const titulo = langLabel("Criadoras com novidades", "Creators with updates", "Creadoras con novedades");
+  const titulo = langLabel("Influencers com novidades", "Creators with updates", "Influencers con novedades");
   const verTodas = langLabel("Ver todas", "See all", "Ver todas");
 
   document.getElementById("criadorasTitulo").textContent = "⚡ " + titulo;
@@ -113,7 +117,7 @@ function renderFiltros() {
   const labels = {
     todos:      langLabel("Todas",           "All",            "Todas"),
     oferta:     langLabel("Ofertas",          "Offers",         "Ofertas"),
-    fotos:      langLabel("Fotos e vídeos",   "Photos & videos","Fotos y vídeos"),
+    fotos:      langLabel("Conteúdos Feed",    "Feed content",   "Contenidos Feed"),
     chat:       langLabel("Chat",             "Chat",           "Chat"),
     assinatura: langLabel("Feed - VIP",       "Feed - VIP",   "Feed - VIP"),
   };
@@ -366,5 +370,14 @@ async function renderUpdates() {
 document.addEventListener("DOMContentLoaded", async () => {
   if (typeof whenI18nReady === "function") await whenI18nReady();
   renderUpdates();
-  window.addEventListener("languageChanged", () => renderUpdates());
+  window.addEventListener("languageChanged", () => {
+    renderBanner();
+    renderFiltros();
+    const titulo = langLabel("Influencers com novidades", "Creators with updates", "Influencers con novedades");
+    const el = document.getElementById("criadorasTitulo");
+    if (el) el.textContent = "⚡ " + titulo;
+    const verTodas = langLabel("Ver todas", "See all", "Ver todas");
+    const verTodasEl = document.querySelector(".criadoras-ver-todas");
+    if (verTodasEl) verTodasEl.textContent = verTodas + " →";
+  });
 });
