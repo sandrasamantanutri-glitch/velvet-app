@@ -4386,7 +4386,8 @@ window.loadAdminSaldo = async function() {
   if (!d) { el.innerHTML = '<p style="color:#ef4444">Erro ao carregar saldo.</p>'; return; }
 
   const money = v => `R$ ${Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
-  const pendente = Math.max(0, (d.ganhos_geral || 0) - (d.ganhos_liberados || 0));
+  const pendente = Math.max(0, (d.ganhos_geral || 0) - (d.ganhos_liberados_mes || 0));
+  const temPendente = (d.saques_pendentes || 0) > 0;
   el.innerHTML = `
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px">
       <div style="background:var(--bg-card,#f9f8ff);border-radius:12px;padding:16px 18px;border:1px solid var(--border)">
@@ -4395,21 +4396,17 @@ window.loadAdminSaldo = async function() {
         ${pendente > 0 ? `<div style="font-size:.72rem;color:#f59e0b;margin-top:4px">⏳ ${money(pendente)} aguardando liberação</div>` : ''}
       </div>
       <div style="background:var(--bg-card,#f9f8ff);border-radius:12px;padding:16px 18px;border:1px solid var(--border)">
-        <div style="font-size:.72rem;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">Ganhos Liberados</div>
-        <div style="font-size:1.3rem;font-weight:700;color:#16a34a">${money(d.ganhos_liberados)}</div>
+        <div style="font-size:.72rem;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">Ganhos Liberados (mês atual)</div>
+        <div style="font-size:1.3rem;font-weight:700;color:#16a34a">${money(d.ganhos_liberados_mes)}</div>
       </div>
+      ${temPendente ? `
       <div style="background:var(--bg-card,#f9f8ff);border-radius:12px;padding:16px 18px;border:1px solid var(--border)">
-        <div style="font-size:.72rem;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">Pagamentos Fechados</div>
-        <div style="font-size:1.3rem;font-weight:700;color:#ef4444">− ${money(d.pagamentos_fechados)}</div>
-      </div>
-      <div style="background:var(--bg-card,#f9f8ff);border-radius:12px;padding:16px 18px;border:1px solid var(--border)">
-        <div style="font-size:.72rem;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">Saques Comprometidos</div>
-        <div style="font-size:1.3rem;font-weight:700;color:#ef4444">− ${money(d.saques_comprometidos)}</div>
-      </div>
+        <div style="font-size:.72rem;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">Saque Pendente</div>
+        <div style="font-size:1.3rem;font-weight:700;color:#ef4444">− ${money(d.saques_pendentes)}</div>
+      </div>` : ''}
       <div style="background:linear-gradient(135deg,var(--purple,#7B2CFF),#a855f7);border-radius:12px;padding:16px 18px;border:none">
         <div style="font-size:.72rem;color:rgba(255,255,255,.8);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">Saldo Disponível</div>
         <div style="font-size:1.5rem;font-weight:800;color:#fff">${money(d.saldo_disponivel)}</div>
-        <div style="font-size:.7rem;color:rgba(255,255,255,.7);margin-top:2px">= Liberados − Fechados − Saques</div>
       </div>
     </div>
     <p style="font-size:.75rem;color:var(--text-muted);margin-top:12px;text-align:right">Atualizado em ${new Date().toLocaleTimeString('pt-BR')}</p>
