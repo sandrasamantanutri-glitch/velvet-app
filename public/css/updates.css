@@ -333,10 +333,10 @@ body {
 .card-preview {
   flex-shrink: 0;
   width: 130px;
-  min-height: 100px;
+  height: 130px;
   border-radius: 12px;
   overflow: hidden;
-  display: flex;
+  display: block;
 }
 
 .card-preview img {
@@ -344,7 +344,6 @@ body {
   height: 100%;
   object-fit: cover;
   display: block;
-  border-radius: 12px;
 }
 
 .card-preview--asset {

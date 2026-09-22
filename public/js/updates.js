@@ -328,6 +328,16 @@ function renderEvento(ev) {
 // ===============================
 // RENDER PRINCIPAL
 // ===============================
+let _eventosCache = null;
+
+function renderCards(eventos) {
+  const wrapper = document.getElementById("listaUpdates");
+  if (!wrapper) return;
+  renderCriadoras(extrairCriadoras(eventos));
+  wrapper.innerHTML = eventos.map(renderEvento).join("");
+  aplicarFiltro(filtroAtivo);
+}
+
 async function renderUpdates() {
   const wrapper = document.getElementById("listaUpdates");
   if (!wrapper) return;
@@ -352,10 +362,9 @@ async function renderUpdates() {
       return;
     }
 
-    renderCriadoras(extrairCriadoras(eventos));
-    wrapper.innerHTML = eventos.map(renderEvento).join("");
+    _eventosCache = eventos;
+    renderCards(eventos);
 
-    // Marca como visto
     fetch("/api/updates/marcar-visto", {
       method: "POST",
       headers: { Authorization: "Bearer " + token }
@@ -373,11 +382,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   window.addEventListener("languageChanged", () => {
     renderBanner();
     renderFiltros();
-    const titulo = langLabel("Influencers com novidades", "Creators with updates", "Influencers con novedades");
-    const el = document.getElementById("criadorasTitulo");
-    if (el) el.textContent = "⚡ " + titulo;
-    const verTodas = langLabel("Ver todas", "See all", "Ver todas");
-    const verTodasEl = document.querySelector(".criadoras-ver-todas");
-    if (verTodasEl) verTodasEl.textContent = verTodas + " →";
+    if (_eventosCache) renderCards(_eventosCache);
   });
 });
