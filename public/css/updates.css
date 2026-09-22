@@ -19,7 +19,7 @@ body {
   width: 100%;
   display: block;
   max-height: 260px;
-  object-fit: cover;
+  object-fit: contain;
   object-position: top;
 }
 
@@ -205,7 +205,7 @@ body {
   background: #fff;
   border-radius: 18px;
   border: 1px solid rgba(106,0,255,.08);
-  padding: 14px;
+  padding: 20px 50px 20px;
   margin-bottom: 12px;
   box-shadow: 0 2px 12px rgba(106,0,255,.05);
 }
@@ -259,7 +259,7 @@ body {
 
 .card-tag {
   margin-left: auto;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 700;
   padding: 3px 10px;
   border-radius: 20px;
@@ -276,7 +276,7 @@ body {
 /* Body: 2 colunas */
 .card-body {
   display: flex;
-  gap: 12px;
+  gap: 15px;
   align-items: stretch;
 }
 
@@ -285,7 +285,7 @@ body {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 20px;
 }
 
 .card-titulo {
@@ -306,11 +306,9 @@ body {
   align-items: center;
   justify-content: center;
   gap: 5px;
-  margin-top: auto;
-  padding: 10px 14px;
+  padding: 18px 14px;
   border-radius: 24px;
   border: none;
-  font-size: 13px;
   font-weight: 700;
   font-family: inherit;
   cursor: pointer;
@@ -334,11 +332,8 @@ body {
 /* Preview à direita */
 .card-preview {
   flex-shrink: 0;
-  width: 120px;
-  min-height: 110px;
   border-radius: 12px;
   overflow: hidden;
-  background: #1a1028;
   display: flex;
 }
 
@@ -367,6 +362,8 @@ body {
   z-index: 1;
   pointer-events: none;
   border-radius: 12px;
+  margin-right: 20px;
+  margin-top: -10px;
 }
 
 /* Grid 2 thumbnails */
@@ -426,24 +423,9 @@ body {
 
 .updates-erro { color: #e33; }
 
-/* Tablet */
-@media (max-width: 768px) {
-  .container { max-width: 100%; }
-  .card-preview,
-  .card-preview-grid { width: 115px; }
-}
-
-/* Mobile pequeno */
 @media (max-width: 420px) {
-  .container { padding: 12px 10px 60px; }
-  .update-card { padding: 12px 10px; border-radius: 14px; }
   .card-preview,
-  .card-preview-grid { width: 96px; min-height: 96px; }
+  .card-preview-grid { width: 110px; }
   .card-titulo { font-size: 13px; }
-  .card-subtexto { font-size: 11px; }
-  .card-cta { font-size: 11px; padding: 9px 10px; border-radius: 20px; }
-  .card-tag { font-size: 10px; padding: 2px 8px; }
-  .card-nome { font-size: 13px; }
-  .banner-capa { max-height: 180px; }
-  .filtro-tab { padding: 6px 11px; font-size: 11px; }
+  .card-cta { font-size: 12px; padding: 9px 12px; }
 }
