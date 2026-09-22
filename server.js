@@ -6433,6 +6433,10 @@ app.post("/api/admin/sync-social", auth, async (req, res) => {
 // FEED.HTML
 // ===========================
 
+let _feedModelosCache = null;
+let _feedModelosCacheAt = 0;
+const FEED_MODELOS_CACHE_TTL = 2 * 60 * 1000; // 2 min
+
 app.get("/api/modelos", auth, async (req, res) => {
   try {
     if (!["cliente", "modelo"].includes(req.user.role)) {
@@ -6440,185 +6444,152 @@ app.get("/api/modelos", auth, async (req, res) => {
     }
 
     const clienteId = req.user.role === "cliente" ? req.user.id : null;
-
     const generosValidos = ["mulher", "homem", "nao_binario"];
     const genero = generosValidos.includes(req.query.genero) ? req.query.genero : null;
     const busca = req.query.q ? String(req.query.q).trim() : null;
 
-    const result = await db.query(`
-      SELECT
-        m.id AS modelo_id,
-        m.nome_exibicao,
-        m.avatar,
-        m.capa,
-        m.bio,
-        md2.genero,
-        md2.instagram,
-        md2.tiktok,
-        md2.foto_instagram,
-        md2.foto_tiktok,
-        md2.seguidores_instagram,
-        md2.seguidores_tiktok,
-        md2.classificacao_conteudo,
+    // ── 1. Dados base (cacheados 2 min, sem dados específicos do cliente) ──
+    let baseModelos;
+    const cacheValido = _feedModelosCache && Date.now() - _feedModelosCacheAt < FEED_MODELOS_CACHE_TTL;
 
-        COALESCE(r.ganhos_mes, 0) AS ganhos_total,
-
-        ver.verificado_em AS aprovado_em,
-
-        CASE
-          WHEN ver.verificado_em >= NOW() - INTERVAL '14 days'
-          THEN true ELSE false
-        END AS is_new,
-
-        -- responsiva: >70% das msgs de clientes respondidas nos últimos 7 dias
-        CASE
-          WHEN COALESCE(resp.total_recebidas, 0) >= 5
-           AND COALESCE(resp.total_respondidas, 0)::float
-             / NULLIF(resp.total_recebidas, 0) >= 0.7
-          THEN true ELSE false
-        END AS responsiva,
-
-        -- ativa no conteúdo: postou nos últimos 7 dias ou tem conteúdo premium
-        CASE
-          WHEN COALESCE(cont.recente, 0) > 0 OR COALESCE(cont.premium, 0) > 0
-          THEN true ELSE false
-        END AS ativa_conteudo,
-
-        COALESCE(cont.premium, 0) AS total_premium,
-
-        -- recomendada para este cliente (tem interação prévia ou assinatura ativa)
-        CASE
-          WHEN $1::int IS NOT NULL AND (
-            COALESCE(inter.msgs, 0) > 0
-            OR COALESCE(assin.ativa, false) = true
-          )
-          THEN true ELSE false
-        END AS recomendada
-
-      FROM modelos m
-
-      LEFT JOIN modelos_dados md2
-        ON md2.modelo_id = m.id
-       AND md2.ativo = true
-
-      JOIN LATERAL (
-        SELECT status, verificado_em
-        FROM modelos_verificacao
-        WHERE modelo_id = m.id
-        ORDER BY verificado_em DESC
-        LIMIT 1
-      ) ver ON true
-
-      LEFT JOIN LATERAL (
-        SELECT SUM(valor_modelo) AS ganhos_mes
-        FROM transacoes_agency t
-        WHERE t.modelo_id = m.id
-          AND t.status = 'pago'
-          AND DATE_TRUNC('month', t.created_at AT TIME ZONE 'America/Sao_Paulo') = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
-      ) r ON true
-
-      LEFT JOIN LATERAL (
-        SELECT COUNT(*) AS total
-        FROM vip_subscriptions v
-        WHERE v.modelo_id = m.id AND v.ativo = true AND v.expiration_at > NOW()
-      ) fas ON true
-
-      LEFT JOIN LATERAL (
+    if (cacheValido) {
+      baseModelos = _feedModelosCache;
+    } else {
+      const result = await db.query(`
         SELECT
-          COUNT(*) FILTER (WHERE sender = 'cliente') AS total_recebidas,
-          COUNT(*) FILTER (
-            WHERE sender = 'modelo'
-            AND EXISTS (
-              SELECT 1 FROM messages m2
-              WHERE m2.modelo_id = m.id
-                AND m2.cliente_id = messages.cliente_id
-                AND m2.sender = 'cliente'
-                AND m2.created_at < messages.created_at
-                AND m2.created_at >= NOW() - INTERVAL '7 days'
-            )
-          ) AS total_respondidas
-        FROM messages
-        WHERE modelo_id = m.id
-          AND created_at >= NOW() - INTERVAL '7 days'
-          AND deletada IS NOT TRUE
-      ) resp ON true
+          m.id AS modelo_id,
+          m.nome_exibicao,
+          m.avatar,
+          m.capa,
+          m.bio,
+          md2.genero,
+          md2.instagram,
+          md2.tiktok,
+          md2.foto_instagram,
+          md2.foto_tiktok,
+          md2.seguidores_instagram,
+          md2.seguidores_tiktok,
+          md2.classificacao_conteudo,
+          COALESCE(r.ganhos_mes, 0) AS ganhos_total,
+          ver.verificado_em AS aprovado_em,
+          CASE WHEN ver.verificado_em >= NOW() - INTERVAL '14 days' THEN true ELSE false END AS is_new,
+          CASE
+            WHEN COALESCE(resp.total_recebidas, 0) >= 5
+              AND COALESCE(resp.total_respondidas, 0)::float / NULLIF(resp.total_recebidas, 0) >= 0.7
+            THEN true ELSE false
+          END AS responsiva,
+          CASE
+            WHEN COALESCE(cont.recente, 0) > 0 OR COALESCE(cont.premium, 0) > 0
+            THEN true ELSE false
+          END AS ativa_conteudo,
+          COALESCE(cont.premium, 0) AS total_premium
+        FROM modelos m
+        LEFT JOIN modelos_dados md2 ON md2.modelo_id = m.id AND md2.ativo = true
+        JOIN LATERAL (
+          SELECT status, verificado_em FROM modelos_verificacao
+          WHERE modelo_id = m.id ORDER BY verificado_em DESC LIMIT 1
+        ) ver ON true
+        LEFT JOIN LATERAL (
+          SELECT SUM(valor_modelo) AS ganhos_mes FROM transacoes_agency t
+          WHERE t.modelo_id = m.id AND t.status = 'pago'
+            AND DATE_TRUNC('month', t.created_at AT TIME ZONE 'America/Sao_Paulo') = DATE_TRUNC('month', NOW() AT TIME ZONE 'America/Sao_Paulo')
+        ) r ON true
+        LEFT JOIN LATERAL (
+          SELECT
+            COUNT(DISTINCT mc.cliente_id) AS total_recebidas,
+            COUNT(DISTINCT mr.cliente_id) AS total_respondidas
+          FROM messages mc
+          LEFT JOIN messages mr ON mr.modelo_id = m.id
+            AND mr.cliente_id = mc.cliente_id
+            AND mr.sender = 'modelo'
+            AND mr.created_at > mc.created_at
+            AND mr.created_at >= NOW() - INTERVAL '7 days'
+          WHERE mc.modelo_id = m.id
+            AND mc.sender = 'cliente'
+            AND mc.created_at >= NOW() - INTERVAL '7 days'
+            AND mc.deletada IS NOT TRUE
+        ) resp ON true
+        LEFT JOIN LATERAL (
+          SELECT
+            COUNT(*) FILTER (WHERE criado_em >= NOW() - INTERVAL '7 days') AS recente,
+            COUNT(*) FILTER (WHERE tipo_conteudo = 'venda' AND preco > 0) AS premium
+          FROM conteudos WHERE modelo_id = m.id
+        ) cont ON true
+        WHERE ver.status = 'aprovado' AND m.feed = true AND m.ativo = true
+      `);
+      baseModelos = result.rows;
+      _feedModelosCache = baseModelos;
+      _feedModelosCacheAt = Date.now();
+    }
 
-      LEFT JOIN LATERAL (
-        SELECT
-          COUNT(*) FILTER (WHERE criado_em >= NOW() - INTERVAL '7 days') AS recente,
-          COUNT(*) FILTER (WHERE tipo_conteudo = 'venda' AND preco > 0) AS premium
-        FROM conteudos
-        WHERE modelo_id = m.id
-      ) cont ON true
+    // ── 2. Cópia + filtros em memória ──────────────────────────────────────
+    let modelos = baseModelos.map(m => ({ ...m }));
+    if (genero) modelos = modelos.filter(m => m.genero === genero);
+    if (busca) {
+      const q = busca.toLowerCase();
+      modelos = modelos.filter(m => (m.nome_exibicao || "").toLowerCase().includes(q));
+    }
 
-      LEFT JOIN LATERAL (
-        SELECT COUNT(*) AS msgs
-        FROM messages
-        WHERE modelo_id = m.id AND cliente_id = $1
-          AND deletada IS NOT TRUE
-        LIMIT 1
-      ) inter ON ($1::int IS NOT NULL)
-
-      LEFT JOIN LATERAL (
-        SELECT true AS ativa
-        FROM vip_subscriptions
-        WHERE modelo_id = m.id AND cliente_id = $1
-          AND ativo = true AND expiration_at > NOW()
-        LIMIT 1
-      ) assin ON ($1::int IS NOT NULL)
-
-      WHERE ver.status = 'aprovado'
-        AND m.feed = true
-        AND m.ativo = true
-        AND ($2::text IS NULL OR md2.genero = $2)
-        AND ($3::text IS NULL OR m.nome_exibicao ILIKE '%' || $3 || '%')
-        AND NOT EXISTS (
-          SELECT 1 FROM cliente_modelo_restricoes r2
-          JOIN clientes c2 ON c2.id = r2.cliente_id
-          WHERE c2.user_id = $1 AND r2.modelo_id = m.id
-        )
-    `,
-    [clienteId, genero, busca]
-    );
-
-    const modelos = result.rows;
+    // ── 3. Status online (Map em memória, sempre fresco) ──────────────────
     const onlineIds = new Set(onlineModelos.keys());
+    modelos.forEach(m => { m.online = onlineIds.has(Number(m.modelo_id)); });
 
-    // marca online
-    modelos.forEach(m => {
-      m.online = onlineIds.has(Number(m.modelo_id));
-    });
+    // ── 4. Personalização (3 queries rápidas paralelas por cliente) ────────
+    if (clienteId && modelos.length > 0) {
+      const modeloIds = modelos.map(m => Number(m.modelo_id));
+      const [interRes, assinRes, restricoesRes] = await Promise.all([
+        db.query(
+          `SELECT DISTINCT modelo_id FROM messages
+           WHERE cliente_id = $1 AND modelo_id = ANY($2::int[]) AND deletada IS NOT TRUE`,
+          [clienteId, modeloIds]
+        ),
+        db.query(
+          `SELECT DISTINCT modelo_id FROM vip_subscriptions
+           WHERE cliente_id = $1 AND modelo_id = ANY($2::int[]) AND ativo = true AND expiration_at > NOW()`,
+          [clienteId, modeloIds]
+        ),
+        db.query(
+          `SELECT r2.modelo_id FROM cliente_modelo_restricoes r2
+           JOIN clientes c2 ON c2.id = r2.cliente_id WHERE c2.user_id = $1`,
+          [clienteId]
+        ),
+      ]);
+      const interSet     = new Set(interRes.rows.map(r => Number(r.modelo_id)));
+      const assinSet     = new Set(assinRes.rows.map(r => Number(r.modelo_id)));
+      const restricoesSet = new Set(restricoesRes.rows.map(r => Number(r.modelo_id)));
 
-    // seções
-    const online      = modelos.filter(m => m.online);
-    const novas       = modelos.filter(m => m.is_new);
-    const emAlta      = [...modelos].sort((a, b) => b.ganhos_total - a.ganhos_total).slice(0, 20);
+      modelos = modelos.filter(m => !restricoesSet.has(Number(m.modelo_id)));
+      modelos.forEach(m => {
+        m.recomendada = interSet.has(Number(m.modelo_id)) || assinSet.has(Number(m.modelo_id));
+      });
+    } else {
+      modelos.forEach(m => { m.recomendada = false; });
+    }
+
+    // ── 5. Montar seções ──────────────────────────────────────────────────
+    const online       = modelos.filter(m => m.online);
+    const novas        = modelos.filter(m => m.is_new);
+    const emAlta       = [...modelos].sort((a, b) => b.ganhos_total - a.ganhos_total).slice(0, 20);
     const recomendadas = clienteId
       ? modelos.filter(m => m.recomendada)
       : [...modelos].sort(() => Math.random() - 0.5).slice(0, 10);
 
-    // badges top1/2/3 na seção em alta
     emAlta.forEach((m, i) => {
       if (i === 0) m.top1 = true;
       if (i === 1) m.top2 = true;
       if (i === 2) m.top3 = true;
     });
 
-    // Secção "Descubra mais": modelos sem nenhum badge de destaque
     const idsDestaque = new Set([
       ...online.map(m => m.modelo_id),
       ...novas.map(m => m.modelo_id),
       ...emAlta.map(m => m.modelo_id),
-      ...recomendadas.map(m => m.modelo_id)
+      ...recomendadas.map(m => m.modelo_id),
     ]);
     const descubraMais = modelos
-      .filter(m =>
-        !idsDestaque.has(m.modelo_id) &&
-        !m.online &&
-        !m.ativa_conteudo &&
-        !m.is_new
-      )
-      .sort((a, b) => (a.nome_exibicao || "").localeCompare(b.nome_exibicao || "", "pt-BR"));
+      .filter(m => !idsDestaque.has(m.modelo_id) && !m.online && !m.ativa_conteudo && !m.is_new)
+      .sort((a, b) => (a.nome_exibicao || "").localeCompare(b.nome_exibicao || "", "pt-BR"))
+      .slice(0, 30);
 
     res.json({ online, novas, emAlta, recomendadas, descubraMais });
 

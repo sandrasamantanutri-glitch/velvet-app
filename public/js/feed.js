@@ -21,6 +21,22 @@ function getFeedText(key, fallback = "") {
 // ===============================
 // RENDER CARD
 // ===============================
+// Lazy load de imagens via IntersectionObserver
+const _lazyObserver = typeof IntersectionObserver !== "undefined"
+  ? new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (!entry.isIntersecting) return;
+        const el = entry.target;
+        const bg = el.dataset.bg;
+        if (bg) {
+          el.style.backgroundImage = `url('${bg}')`;
+          delete el.dataset.bg;
+        }
+        _lazyObserver.unobserve(el);
+      });
+    }, { rootMargin: "200px" })
+  : null;
+
 function criarCard(modelo) {
   const card = document.createElement("div");
   card.className = "modelo-card";
@@ -41,8 +57,13 @@ function criarCard(modelo) {
   if (modelo.is_new)            badges.push(`<span class="badge badge-new">${t("feed.badge_nova")}</span>`);
   if (modelo.total_premium > 0) badges.push(`<span class="badge badge-premium">${t("feed.badge_premium")}</span>`);
 
+  // data-bg para lazy load; cards "acima da dobra" (online, em alta) carregam direto
+  const fotoAttr = _lazyObserver
+    ? `data-bg="${foto}"`
+    : `style="background-image:url('${foto}')"`;
+
   card.innerHTML = `
-    <div class="modelo-foto" style="background-image:url('${foto}')">
+    <div class="modelo-foto" ${fotoAttr}>
       <div class="modelo-foto-overlay"></div>
       ${badgeRank}
       <div class="card-badges">${badges.join("")}</div>
@@ -55,6 +76,11 @@ function criarCard(modelo) {
       <div class="modelo-bio">${modelo.bio || ""}</div>
     </div>
   `;
+
+  if (_lazyObserver) {
+    const fotoEl = card.querySelector(".modelo-foto");
+    if (fotoEl) _lazyObserver.observe(fotoEl);
+  }
 
   card.onclick = () => {
     const modeloId = Number(modelo.modelo_id);
@@ -87,7 +113,7 @@ function renderSecao(containerId, modelos, emptyMsg) {
 let feedFiltroGenero = "";
 let feedFiltroBusca = "";
 
-window.renderFeed = async function () {
+window.renderFeed = async function (prefetchedResponse) {
   const wrapper = document.getElementById("listaModelos");
   if (!wrapper) return;
 
@@ -98,9 +124,10 @@ window.renderFeed = async function () {
     if (feedFiltroGenero) params.set("genero", feedFiltroGenero);
     if (feedFiltroBusca) params.set("q", feedFiltroBusca);
 
-    const res = await fetch("/api/modelos?" + params.toString(), {
-      headers: { Authorization: "Bearer " + token }
-    });
+    // Usa a response pré-buscada se não houver filtros ativos, senão faz novo fetch
+    const res = (prefetchedResponse && !feedFiltroGenero && !feedFiltroBusca)
+      ? await prefetchedResponse
+      : await fetch("/api/modelos?" + params.toString(), { headers: { Authorization: "Bearer " + token } });
 
     if (!res.ok) throw new Error("Erro ao buscar modelos");
 
@@ -185,11 +212,14 @@ function initFiltrosFeed() {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
-  // aguarda i18n carregar antes de renderizar os textos dos badges/seções
-  if (typeof whenI18nReady === "function") await whenI18nReady();
   initFiltrosFeed();
-  window.renderFeed();
 
-  // re-renderiza se o usuário trocar o idioma com o feed aberto
+  // Inicia o fetch da API e o carregamento do i18n em paralelo
+  const fetchFeed = fetch("/api/modelos", { headers: { Authorization: "Bearer " + token } });
+  if (typeof whenI18nReady === "function") await whenI18nReady();
+
+  // Renderiza passando a promise já em andamento (não dispara 2º fetch)
+  window.renderFeed(fetchFeed);
+
   window.addEventListener("languageChanged", () => window.renderFeed());
 });
