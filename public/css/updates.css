@@ -1,186 +1,412 @@
 body {
   font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background: #f1f1f1;
+  background: #f4f3f9;
   color: #1E1E26;
   margin: 0;
   padding: 0;
   width: 100%;
 }
 
-.container {
-  max-width: 720px;
-  margin: 0 auto;
-  padding: 90px 16px 40px;
+/* ===============================
+   BANNER
+=============================== */
+.updates-banner {
+  width: 100%;
+  padding-top: calc(64px + env(safe-area-inset-top, 0px));
 }
 
-.updates-titulo {
-  font-size: 20px;
-  font-weight: 700;
-  color: #1E1E26;
-  margin: 0 0 20px 4px;
+.banner-capa {
+  width: 100%;
+  display: block;
+  max-height: 260px;
+  object-fit: contain;
+  object-position: top;
 }
 
 /* ===============================
-   CARD DE EVENTO
+   CONTAINER
 =============================== */
-.update-card {
+.container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 16px 14px 60px;
+}
+
+/* ===============================
+   CRIADORAS COM NOVIDADES
+=============================== */
+.criadoras-section {
+  margin: 16px 0 14px;
   background: #fff;
   border-radius: 16px;
-  border: 1px solid #e6e6e6;
-  padding: 16px;
-  margin-bottom: 16px;
+  padding: 14px 14px 10px;
+  box-shadow: 0 2px 12px rgba(106,0,255,.06);
 }
 
-.update-header {
+.criadoras-header {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 10px;
+  justify-content: space-between;
+  margin-bottom: 12px;
 }
 
-.update-avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  object-fit: cover;
-  flex-shrink: 0;
-}
-
-.update-nome {
+.criadoras-titulo {
+  font-size: 13px;
   font-weight: 700;
-  font-size: 14px;
   color: #1E1E26;
 }
 
-.update-tag {
-  margin-left: auto;
+.criadoras-ver-todas {
+  font-size: 12px;
+  font-weight: 600;
+  color: #7b2cff;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.criadoras-scroll {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+.criadoras-scroll::-webkit-scrollbar { display: none; }
+
+.criadora-item {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  min-width: 58px;
+}
+
+.criadora-avatar-wrap {
+  position: relative;
+  width: 54px;
+  height: 54px;
+}
+
+.criadora-avatar {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2.5px solid #7b2cff;
+}
+
+.criadora-dot {
+  position: absolute;
+  bottom: 1px;
+  right: 1px;
+  width: 11px;
+  height: 11px;
+  background: #22c55e;
+  border: 2px solid #fff;
+  border-radius: 50%;
+}
+
+.criadora-nome {
+  font-size: 10px;
+  font-weight: 600;
+  color: #333;
+  text-align: center;
+  max-width: 58px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.criadora-mais .criadora-avatar-wrap-inner {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  border: 2px dashed #bdb4ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  color: #7b2cff;
+  background: #f3eeff;
+}
+
+/* ===============================
+   FILTROS
+=============================== */
+.filtros-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0 14px;
+  position: relative;
+}
+
+.filtro-tabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  flex: 1;
+  padding-bottom: 2px;
+}
+.filtro-tabs::-webkit-scrollbar { display: none; }
+
+.filtro-tab {
+  flex-shrink: 0;
+  padding: 7px 14px;
+  border-radius: 20px;
+  border: 1.5px solid #e0d8f5;
+  background: #fff;
+  color: #666;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .18s;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.filtro-tab.active {
+  background: #7b2cff;
+  color: #fff;
+  border-color: #7b2cff;
+}
+
+.filtro-tab:not(.active):hover {
+  border-color: #a78bfa;
+  color: #7b2cff;
+}
+
+.filtro-sort {
+  flex-shrink: 0;
+  padding: 7px 11px;
+  border-radius: 20px;
+  border: 1.5px solid #e0d8f5;
+  background: #fff;
+  color: #555;
   font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ===============================
+   CARD DE EVENTO — novo layout
+=============================== */
+.update-card {
+  background: #fff;
+  border-radius: 18px;
+  border: 1px solid rgba(106,0,255,.08);
+  padding: 20px 50px 20px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 12px rgba(106,0,255,.05);
+}
+
+/* Header: avatar + nome + tempo + tag */
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.card-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 2px solid #f0ebff;
+}
+
+.card-nome-wrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.card-nome {
+  font-weight: 700;
+  font-size: 14px;
+  color: #1E1E26;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card-verificado {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  fill: #7b2cff;
+}
+
+.card-tempo {
+  font-size: 11px;
+  color: #aaa;
+  flex-shrink: 0;
+  margin-left: 2px;
+}
+
+.card-tag {
+  margin-left: auto;
+  font-size: 14px;
   font-weight: 700;
   padding: 3px 10px;
   border-radius: 20px;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
-.update-tag--vip {
-  background: rgba(106, 0, 255, 0.12);
-  color: #6a00ff;
+.tag--vip       { background: #d4cbfd; color: #6418ed; }
+.tag--premium   { background: #ebe994; color: #4a1faa; }
+.tag--chat      { background: #edcbc7;; color: #e84a2a; }
+.tag--oferta    {background: #e3d4df; color: #d0288c; }
+.tag--nova-pub  { background: #c6e4cf; color: #16a34a; }
+
+/* Body: 2 colunas */
+.card-body {
+  display: flex;
+  gap: 15px;
+  align-items: stretch;
 }
 
-.update-tag--premium {
-  background: rgba(30, 30, 38, 0.08);
-  color: #1E1E26;
+.card-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
-.update-tag--chat {
-  background: rgba(255, 80, 0, 0.12);
-  color: #ff5000;
-}
-
-.update-tag--oferta {
-  background: rgba(0, 200, 100, 0.12);
-  color: #00a050;
-}
-
-.update-texto {
+.card-titulo {
   font-size: 14px;
-  color: #1E1E26;
-  margin-bottom: 8px;
-}
-
-.update-descricao {
-  font-size: 13px;
-  color: #555;
-  margin-bottom: 4px;
-}
-
-.update-preco {
-  font-size: 13px;
   font-weight: 700;
   color: #1E1E26;
-  margin-bottom: 8px;
+  line-height: 1.35;
 }
 
-/* ===============================
-   GRID DE MINIATURAS
-=============================== */
-.update-midias {
-  position: relative;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
+.card-subtexto {
+  font-size: 12px;
+  color: #71638d;
+  line-height: 1.5;
+}
+
+.card-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 18px 14px;
+  border-radius: 24px;
+  border: none;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  text-decoration: none;
+  transition: opacity .18s;
+}
+
+.card-cta:hover { opacity: .85; }
+
+.card-cta--fill {
+  background: linear-gradient(100deg, #7b2cff, #b53cf0);
+  color: #fff;
+}
+
+.card-cta--outline {
+  background: transparent;
+  color: #7b2cff;
+  border: 1.5px solid #7b2cff;
+}
+
+/* Preview à direita */
+.card-preview {
+  flex-shrink: 0;
   border-radius: 12px;
   overflow: hidden;
-  margin-bottom: 10px;
+  display: flex;
 }
 
-.update-midias img {
+.card-preview img {
   width: 100%;
-  height: 90px;
+  height: 100%;
   object-fit: cover;
   display: block;
-  background: #ddd;
-}
-
-/* Placeholder bloqueado — sem nenhuma URL exposta */
-.update-midias-locked-placeholder {
-  position: relative;
-  height: 90px;
   border-radius: 12px;
-  margin-bottom: 10px;
-  background: linear-gradient(135deg, #2a2a2a 25%, #3a3a3a 50%, #2a2a2a 75%);
 }
 
-.update-midias-locked-placeholder::after {
-  content: "🔒";
+.card-preview--asset {
+  position: relative;
+}
+
+.card-preview-overlay {
   position: absolute;
   inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 28px;
-}
-
-.update-tempo {
-  font-size: 12px;
-  color: #999;
-  margin-bottom: 10px;
-}
-
-.update-lock-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: #777;
-  margin-bottom: 10px;
-}
-
-.update-cta {
-  display: inline-block;
-  width: 100%;
-  box-sizing: border-box;
-  text-align: center;
-  background: #6a00ff;
+  font-weight: 800;
   color: #fff;
-  font-size: 14px;
+  text-shadow: 0 2px 8px rgba(0,0,0,.45);
+  z-index: 1;
+  pointer-events: none;
+  border-radius: 12px;
+  margin-right: 20px;
+  margin-top: -10px;
+}
+
+/* Grid 2 thumbnails */
+.card-preview-grid {
+  flex-shrink: 0;
+  width: 130px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px;
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+}
+
+.card-thumb {
+  position: relative;
+  aspect-ratio: 1;
+  background: #2a1550;
+  overflow: hidden;
+}
+
+.card-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.card-thumb--locked img {
+  filter: blur(6px) brightness(.6);
+}
+
+.card-thumb-extra-badge {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(20,0,50,.55);
+  color: #fff;
+  font-size: 15px;
   font-weight: 700;
-  padding: 11px 0;
-  border: none;
-  border-radius: 24px;
-  cursor: pointer;
-  text-decoration: none;
-}
-
-.update-cta:hover {
-  background: #5800d6;
-}
-
-.update-cta--secundario {
-  background: #fff;
-  color: #6a00ff;
-  border: 1px solid #6a00ff;
-}
-
-.update-cta--secundario:hover {
-  background: rgba(106, 0, 255, 0.06);
+  pointer-events: none;
 }
 
 /* ===============================
@@ -195,16 +421,11 @@ body {
   font-size: 15px;
 }
 
-.updates-erro {
-  color: #e33;
-}
+.updates-erro { color: #e33; }
 
-@media (max-width: 600px) {
-  .container {
-    padding: 80px 12px 40px;
-  }
-
-  .update-midias img {
-    height: 70px;
-  }
+@media (max-width: 420px) {
+  .card-preview,
+  .card-preview-grid { width: 110px; }
+  .card-titulo { font-size: 13px; }
+  .card-cta { font-size: 12px; padding: 9px 12px; }
 }
