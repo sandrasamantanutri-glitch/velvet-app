@@ -115,8 +115,7 @@ function renderFiltros() {
     oferta:     langLabel("Ofertas",          "Offers",         "Ofertas"),
     fotos:      langLabel("Fotos e vídeos",   "Photos & videos","Fotos y vídeos"),
     chat:       langLabel("Chat",             "Chat",           "Chat"),
-    assinatura: langLabel("Assinatura",       "Subscription",   "Suscripción"),
-    mencoes:    langLabel("Menções",          "Mentions",       "Menciones"),
+    assinatura: langLabel("Feed - VIP",       "Feed - VIP",   "Feed - VIP"),
   };
 
   tabs.innerHTML = Object.entries(labels).map(([key, label]) =>
@@ -145,7 +144,6 @@ function aplicarFiltro(filtro) {
     else if (filtro === "fotos") visible = tipo === "feed" || tipo === "premium";
     else if (filtro === "chat")  visible = tipo === "chat";
     else if (filtro === "assinatura") visible = tipo === "feed";
-    // "todos" e "mencoes" → mostra tudo
     card.style.display = visible ? "" : "none";
   });
 }
@@ -284,7 +282,7 @@ function renderEventoChat(ev) {
           <div class="card-titulo">${titulo}</div>
           <div class="card-subtexto">${subtexto}</div>
           <a class="card-cta card-cta--outline" href="/chatc.html?modelo_id=${ev.modelo_id}">
-            ${tf("updates.cta_chat", "Ver no chat")} →
+            ${tf("updates.cta_chat", "Ver no chat")}
           </a>
         </div>
         ${previewHTML(ev)}
@@ -305,7 +303,7 @@ function renderEventoOferta(ev) {
           <div class="card-titulo">${titulo}</div>
           <div class="card-subtexto">${subtexto}</div>
           <a class="card-cta card-cta--outline" href="/perfil.html?modelo_id=${ev.modelo_id}">
-            ${tf("updates.cta_oferta", "Ver oferta")} →
+            ${tf("updates.cta_oferta", "Ver oferta")}
           </a>
         </div>
         ${previewHTML(ev)}
