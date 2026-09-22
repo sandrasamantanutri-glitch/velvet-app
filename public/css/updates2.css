@@ -259,7 +259,7 @@ body {
 
 .card-tag {
   margin-left: auto;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 700;
   padding: 3px 10px;
   border-radius: 20px;
@@ -267,11 +267,11 @@ body {
   flex-shrink: 0;
 }
 
-.tag--vip       { background: #ede9ff; color: #6418ed; }
-.tag--premium   { background: #f3f0ff; color: #4a1faa; }
-.tag--chat      { background: #fff0ee; color: #e84a2a; }
-.tag--oferta    { background: #fff0f8; color: #d0288c; }
-.tag--nova-pub  { background: #f0fdf4; color: #16a34a; }
+.tag--vip       { background: #d4cbfd; color: #6418ed; }
+.tag--premium   { background: #ebe994; color: #4a1faa; }
+.tag--chat      { background: #edcbc7;; color: #e84a2a; }
+.tag--oferta    {background: #e3d4df; color: #d0288c; }
+.tag--nova-pub  { background: #c6e4cf; color: #16a34a; }
 
 /* Body: 2 colunas */
 .card-body {
@@ -285,7 +285,7 @@ body {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 20px;
 }
 
 .card-titulo {
@@ -362,7 +362,7 @@ body {
   z-index: 1;
   pointer-events: none;
   border-radius: 12px;
-  margin-right: 60px;
+  margin-right: 20px;
   margin-top: -10px;
 }
 
