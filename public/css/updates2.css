@@ -205,7 +205,7 @@ body {
   background: #fff;
   border-radius: 18px;
   border: 1px solid rgba(106,0,255,.08);
-  padding: 14px 14px 12px;
+  padding: 20px 50px 20px;
   margin-bottom: 12px;
   box-shadow: 0 2px 12px rgba(106,0,255,.05);
 }
@@ -276,7 +276,7 @@ body {
 /* Body: 2 colunas */
 .card-body {
   display: flex;
-  gap: 12px;
+  gap: 15px;
   align-items: stretch;
 }
 
@@ -306,11 +306,9 @@ body {
   align-items: center;
   justify-content: center;
   gap: 5px;
-  margin-top: auto;
-  padding: 10px 14px;
+  padding: 18px 14px;
   border-radius: 24px;
   border: none;
-  font-size: 13px;
   font-weight: 700;
   font-family: inherit;
   cursor: pointer;
