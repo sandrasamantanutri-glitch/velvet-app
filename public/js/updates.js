@@ -28,7 +28,7 @@ function tf(key, fallback) {
 }
 
 function getLang() {
-  return (localStorage.getItem("idioma") || document.documentElement.lang || "pt").slice(0, 2).toLowerCase();
+  return (localStorage.getItem("lang") || document.documentElement.lang || "pt").slice(0, 2).toLowerCase();
 }
 
 function langLabel(pt, en, es) {
