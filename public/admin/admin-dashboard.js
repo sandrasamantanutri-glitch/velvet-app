@@ -4252,10 +4252,8 @@ pageLoaders['saques-modelos'] = async function () {
     const formData = new FormData();
     if (fileInput.files[0]) formData.append('comprovante', fileInput.files[0]);
 
-    const token = localStorage.getItem('admin_token') || localStorage.getItem('token') || '';
-    const r = await fetch(`/admin/dashboard/saques/${saqueId}/processar`, {
+    const r = await authFetch(`/admin/dashboard/saques/${saqueId}/processar`, {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}` },
       body: formData
     });
     const data = await r.json();
@@ -4314,10 +4312,9 @@ pageLoaders['saques-modelos'] = async function () {
     btn.disabled = true;
     btn.textContent = 'Rejeitando...';
 
-    const token = localStorage.getItem('admin_token') || localStorage.getItem('token') || '';
-    fetch(`/admin/dashboard/saques/${saqueId}/rejeitar`, {
+    authFetch(`/admin/dashboard/saques/${saqueId}/rejeitar`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ motivo })
     }).then(r => r.json()).then(data => {
       if (data.ok) {
@@ -4333,8 +4330,7 @@ pageLoaders['saques-modelos'] = async function () {
   };
 
   window.verReciboPdf = async function(saqueId) {
-    const token = localStorage.getItem('admin_token') || localStorage.getItem('token') || '';
-    const r = await fetch(`/admin/dashboard/saques/${saqueId}`, { headers: { Authorization: `Bearer ${token}` } });
+    const r = await authFetch(`/admin/dashboard/saques/${saqueId}`);
     const data = await r.json();
     if (data.recibo_pdf_signed_url) {
       window.open(data.recibo_pdf_signed_url, '_blank');
