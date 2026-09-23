@@ -4,7 +4,7 @@
   "description": "Backend Velvet - ambiente de teste",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "node generate-sitemap.js && node server.js",
     "backup": "node scripts/backup-r2.js",
     "backup:images": "node scripts/backup-images.js",
     "backup:media": "node scripts/backup-media.js",
