@@ -1,11 +1,28 @@
-User-agent: *
-Disallow: /feed.html
-Disallow: /chat.html
-Disallow: /dashboard/
-Disallow: /agencias/
-Disallow: /admin/
 
+User-agent: *
+
+# Bloquear tudo por padrão
+Disallow: /
+
+# Páginas públicas
+Allow: /$
+Allow: /index.html
+Allow: /perfil.html
+Allow: /about.html
+Allow: /privacy.html
+Allow: /terms.html
+Allow: /contato.html
+Allow: /me.html
+Allow: /silvatalents.html
+
+# Recursos necessários para apresentar as páginas
+Allow: /assets/
+Allow: /css/
+Allow: /js/
+Allow: /icons/
+Allow: /docs/
+Allow: /entrada/
+Allow: /locales/
+
+# Sitemap
 Sitemap: https://www.velvet.lat/sitemap.xml
-allow: /
-allow: /index.html
-allow: /me.html
