@@ -7,9 +7,12 @@ const BASE_URL = 'https://www.velvet.lat';
 const HTML_DIR = path.join(__dirname);        // pasta raiz do projecto
 const OUTPUT   = path.join(__dirname, 'public', 'sitemap.xml');
 
-// Ficheiros/pastas a ignorar
 const PUBLIC_PAGES = [
-  '/'
+  '/',
+  '/about.html',
+  '/terms.html',
+  '/privacy.html',
+  '/contato.html'
 ];
 // ────────────────────────────────────────────────────────────────
 
