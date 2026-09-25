@@ -170,7 +170,7 @@ app.use(helmet({
         "https://res.cloudinary.com",
         "https://*.r2.dev",
         "https://cdn.jsdelivr.net",
-        "https://assinatura.esocial.seg.br",
+        "https://app.zapsign.com.br",
         "https://api.frankfurter.app",
          "https://formspree.io"
       ],
@@ -179,7 +179,7 @@ app.use(helmet({
         "https://js.stripe.com",
         "https://hooks.stripe.com",
         "https://iframe.videodelivery.net",
-        "https://assinatura.esocial.seg.br"
+        "https://app.zapsign.com.br"
       ],
       objectSrc: ["'none'"],
       baseUri: ["'self'"],
@@ -309,77 +309,80 @@ app.use((req, res, next) => {
 // WEBHOOK ZAPSIGN — Contrato assinado
 // ===============================
 
-app.post("/api/webhook/esocialsign", express.raw({ type: "application/json" }), async (req, res) => {
+app.post("/api/webhook/zapsign", express.json(), async (req, res) => {
   try {
-    // Validar assinatura HMAC-SHA256
-    const secret = process.env.ESOCIALSIGN_WEBHOOK_SECRET;
-    if (secret) {
-      const crypto = require("crypto");
-      const sig = req.headers["x-webhook-signature"] || req.headers["x-signature"] || "";
-      const expected = crypto.createHmac("sha256", secret).update(req.body).digest("hex");
-      if (sig !== expected && `sha256=${sig}` !== expected) {
-        console.warn("[eSocialSign Webhook] Assinatura HMAC inválida");
-        return res.status(401).json({ erro: "Assinatura inválida" });
-      }
-    }
+    console.log("[ZapSign Webhook]", JSON.stringify(req.body).slice(0, 400));
+    const event = req.body;
 
-    const event = JSON.parse(req.body.toString());
-    console.log("[eSocialSign Webhook]", JSON.stringify(event).slice(0, 400));
+    // ZapSign envia: { event_type: "sign_doc" | "signer_signed" | ..., document: { token, ... }, signer: { token, ... } }
+    const eventType = event?.event_type || event?.type || "";
+    const docToken = event?.document?.token || event?.doc?.token || event?.token || null;
+    const signerStatus = event?.signer?.status || event?.document?.status || "";
 
-    // eSocial Sign envia: { event: "envelope.completed", data: { envelope: { id, ... } } }
-    const eventName = event?.event || "";
-    const envelopeId = event?.data?.envelope?.id || event?.envelope?.id || null;
+    // Considera assinatura completa quando o documento fica "signed" ou o signatário "signed"
+    const foiAssinado =
+      eventType === "sign_doc" ||
+      eventType === "signer_signed" ||
+      signerStatus === "signed" ||
+      event?.document?.status === "signed";
 
-    if (eventName !== "envelope.completed" || !envelopeId) {
+    if (!foiAssinado || !docToken) {
       return res.status(200).json({ ok: true, ignorado: true });
     }
 
+    // Actualiza a modelo correspondente
     const upd = await db.query(
       `UPDATE modelos
           SET contrato_assinado = true,
               contrato_assinado_em = NOW()
-        WHERE contrato_submission_id = $1
+        WHERE contrato_token = $1
        RETURNING id`,
-      [String(envelopeId)]
+      [docToken]
     );
 
     if (upd.rowCount === 0) {
-      console.warn(`[eSocialSign] Webhook: nenhuma modelo com envelope_id ${envelopeId}`);
+      console.warn(`[ZapSign] Webhook: nenhuma modelo com token ${docToken}`);
       return res.status(200).json({ ok: true });
     }
 
     const modeloId = upd.rows[0].id;
-    console.log(`[eSocialSign] Contrato assinado — modelo id ${modeloId}`);
+    console.log(`[ZapSign] Contrato assinado — modelo id ${modeloId}`);
 
-    descarregarPDFAssinadoESocial(String(envelopeId), modeloId)
-      .then(async (pdfR2Key) => {
-        try {
-          const mInfo = await db.query(
-            `SELECT m.nome_completo, m.nome_exibicao, u.email, m.contrato_assinado_em
-               FROM modelos m
-               JOIN users u ON u.id = m.user_id
-              WHERE m.id = $1`,
-            [modeloId]
-          );
-          const info = mInfo.rows[0] || {};
-          await enviarEmailNotificacaoContratoAssinado({
-            nomeCompleto:  info.nome_completo,
-            nomeExibicao:  info.nome_exibicao,
-            emailModelo:   info.email,
-            modeloId,
-            assinadoEm:    info.contrato_assinado_em,
-            pdfR2Key
-          });
-          console.log(`[eSocialSign] Notificação de contrato assinado enviada`);
-        } catch (emailErr) {
-          console.warn(`[eSocialSign Webhook] Falha ao enviar email: ${emailErr.message}`);
-        }
-      })
-      .catch(err => console.warn(`[eSocialSign Webhook] Falha ao descarregar PDF: ${err.message}`));
+    // Descarregar o PDF assinado do ZapSign e guardar no R2, depois notificar admin
+    if (typeof descarregarPDFAssinadoZapSign === "function") {
+      descarregarPDFAssinadoZapSign(docToken, modeloId)
+        .then(async (pdfR2Key) => {
+          try {
+            // Buscar dados da modelo para o email de notificação
+            const mInfo = await db.query(
+              `SELECT m.nome_completo, m.nome_exibicao, u.email, m.contrato_assinado_em
+                 FROM modelos m
+                 JOIN users u ON u.id = m.user_id
+                WHERE m.id = $1`,
+              [modeloId]
+            );
+            const info = mInfo.rows[0] || {};
+            await enviarEmailNotificacaoContratoAssinado({
+              nomeCompleto:  info.nome_completo,
+              nomeExibicao:  info.nome_exibicao,
+              emailModelo:   info.email,
+              modeloId,
+              assinadoEm:    info.contrato_assinado_em,
+              pdfR2Key
+            });
+            console.log(`[ZapSign] Notificação de contrato assinado enviada para contato@velvet.lat`);
+          } catch (emailErr) {
+            console.warn(`[ZapSign Webhook] Falha ao enviar email de notificação: ${emailErr.message}`);
+          }
+        })
+        .catch(err =>
+          console.warn(`[ZapSign Webhook] Falha ao descarregar PDF: ${err.message}`)
+        );
+    }
 
     res.status(200).json({ ok: true });
   } catch (err) {
-    console.error("[SynexisSign Webhook] Erro:", err);
+    console.error("[ZapSign Webhook] Erro:", err);
     res.status(500).json({ erro: "Erro interno" });
   }
 });
@@ -15633,7 +15636,7 @@ app.post("/api/chat/cliente/marcar-lido/:modelo_id", authCliente, async (req, re
 });
 
 // ===========================
-// CONTRATO DIGITAL — Synexis Sign
+// CONTRATO DIGITAL — ZapSign
 // ===========================
 
 // Gera o buffer do PDF do contrato v2.0 (23 seções) para envio ao ZapSign
@@ -15912,114 +15915,78 @@ function gerarContratoPDFBuffer(dados) {
     doc.font("Helvetica").fontSize(9)
        .text(`Nome: ${dados.nome || "________________________________"}`, col2, doc.y + 4, { width: metade })
        .text(`E-mail: ${dados.email || "______________________________"}`, col2, doc.y, { width: metade })
-       .text("Assinatura Eletrônica: [Synexis Sign]", col2, doc.y, { width: metade });
+       .text("Assinatura Eletrônica: [ZapSign]", col2, doc.y, { width: metade });
 
     doc.end();
   });
 }
 
-// Cache do token eSocial Sign (válido 30 dias)
-let _esocialToken = null;
-let _esocialTokenExpiry = 0;
-
-async function getESocialToken() {
-  if (_esocialToken && Date.now() < _esocialTokenExpiry) return _esocialToken;
+// Envia PDF para ZapSign e devolve { token, signerToken, signUrl }
+async function enviarContratoZapSign(pdfBuffer, nomeModelo, emailModelo) {
+  const base64Pdf = pdfBuffer.toString("base64");
+  const isSandbox = process.env.ZAPSIGN_SANDBOX === "true";
+  const apiBase = isSandbox
+    ? "https://sandbox.api.zapsign.com.br/api/v1"
+    : "https://api.zapsign.com.br/api/v1";
+  const appBase = isSandbox
+    ? "https://sandbox.app.zapsign.com.br"
+    : "https://app.zapsign.com.br";
   const resp = await axios.post(
-    "https://assinatura.esocial.seg.br/api/v1/auth/token",
+    `${apiBase}/docs/`,
     {
-      email: process.env.ESOCIALSIGN_EMAIL,
-      password: process.env.ESOCIALSIGN_PASSWORD,
-      device_name: process.env.ESOCIALSIGN_DEVICE_NAME || "velvet-app-prod"
+      name: `Contrato Velvet — ${nomeModelo}`,
+      base64_pdf: base64Pdf,
+      signers: [
+        {
+          name: nomeModelo,
+          email: emailModelo,
+          auth_mode: "assinaturaTela",
+          send_automatic_email: false
+        }
+      ],
+      lang: "pt-br",
+      disable_signer_emails: true
     },
-    { headers: { "Content-Type": "application/json", "Accept": "application/json" }, timeout: 15000 }
+    {
+      headers: {
+        Authorization: `Bearer ${process.env.ZAPSIGN_API_TOKEN}`,
+        "Content-Type": "application/json"
+      },
+      timeout: 30000
+    }
   );
-  // Sanctum pode retornar string pura, ou { token }, ou { access_token }, ou { data: { token } }
-  const raw = resp.data;
-  const token = typeof raw === "string" ? raw.trim()
-    : raw?.token || raw?.access_token || raw?.data?.token || raw?.data?.access_token;
-  if (!token) {
-    console.error("[eSocialSign] Resposta de auth:", JSON.stringify(raw).slice(0, 300));
-    throw new Error("eSocial Sign não retornou token");
-  }
-  _esocialToken = token;
-  _esocialTokenExpiry = Date.now() + 29 * 24 * 60 * 60 * 1000; // 29 dias
-  return token;
+  const doc = resp.data;
+  const signer = doc.signers?.[0];
+  if (!signer) throw new Error("ZapSign não retornou signatário");
+  const signUrl = `${appBase}/verificar/${signer.token}`;
+  return {
+    token: doc.token,
+    signerToken: signer.token,
+    signUrl
+  };
 }
 
-// Cria envelope no eSocial Sign e devolve { submissionId, signUrl }
-async function enviarContratoESocial(pdfBuffer, nomeModelo, emailModelo) {
-  const apiBase = "https://assinatura.esocial.seg.br/api/v1";
-  const token = await getESocialToken();
-  const headers = { "Authorization": `Bearer ${token}`, "Accept": "application/json" };
-
-  // 1. Criar envelope
-  const envResp = await axios.post(
-    `${apiBase}/envelopes`,
-    {
-      title: `Contrato Velvet — ${nomeModelo}`,
-      security_level: "email",
-      document_type: "contract",
-      signing_order: "parallel"
-    },
-    { headers: { ...headers, "Content-Type": "application/json" }, timeout: 15000 }
-  );
-  const envelopeId = envResp.data?.envelope?.id || envResp.data?.id;
-  if (!envelopeId) throw new Error("eSocial Sign não retornou ID do envelope");
-
-  // 2. Anexar documento (PDF como multipart)
-  const FormData = require("form-data");
-  const form = new FormData();
-  form.append("file", pdfBuffer, { filename: "contrato-velvet.pdf", contentType: "application/pdf" });
-  form.append("name", "Contrato de Parceria Velvet");
-  await axios.post(
-    `${apiBase}/envelopes/${envelopeId}/documents`,
-    form,
-    { headers: { ...headers, ...form.getHeaders() }, timeout: 30000 }
-  );
-
-  // 3. Adicionar signatário
-  const sigResp = await axios.post(
-    `${apiBase}/envelopes/${envelopeId}/signatories`,
-    { name: nomeModelo, email: emailModelo },
-    { headers: { ...headers, "Content-Type": "application/json" }, timeout: 15000 }
-  );
-  const signatoryId = sigResp.data?.signatory?.id || sigResp.data?.id;
-  const signUrl = sigResp.data?.signatory?.sign_url || sigResp.data?.sign_url ||
-    `https://assinatura.esocial.seg.br/assinar/${envelopeId}`;
-
-  // 4. Enviar para assinatura
-  await axios.post(
-    `${apiBase}/envelopes/${envelopeId}/send`,
-    {},
-    { headers: { ...headers, "Content-Type": "application/json" }, timeout: 15000 }
-  );
-
-  console.log(`[eSocialSign] Envelope ${envelopeId} criado para ${emailModelo}`);
-  return { submissionId: String(envelopeId), submitterId: String(signatoryId || envelopeId), signUrl };
-}
-
-// Descarrega o PDF assinado do eSocial Sign e guarda no R2 privado
-async function descarregarPDFAssinadoESocial(envelopeId, modeloId) {
+// Descarrega o PDF assinado do ZapSign e guarda no R2 privado
+// Devolve a key do R2 ou null se falhar
+async function descarregarPDFAssinadoZapSign(docToken, modeloId) {
   try {
-    const apiBase = "https://assinatura.esocial.seg.br/api/v1";
-    const token = await getESocialToken();
-    const headers = { "Authorization": `Bearer ${token}`, "Accept": "application/json" };
+    if (!process.env.ZAPSIGN_API_TOKEN) return null;
 
-    const docsResp = await axios.get(
-      `${apiBase}/envelopes/${envelopeId}/documents`,
-      { headers, timeout: 15000 }
+    const zapDoc = await axios.get(
+      `https://api.zapsign.com.br/api/v1/docs/${docToken}/`,
+      {
+        headers: { Authorization: `Bearer ${process.env.ZAPSIGN_API_TOKEN}` },
+        timeout: 15000
+      }
     );
 
-    const docs = docsResp.data?.documents || docsResp.data;
-    const docEntry = Array.isArray(docs) ? docs[0] : null;
-    const downloadUrl = docEntry?.download_url || docEntry?.url;
-    if (!downloadUrl) {
-      console.warn(`[eSocialSign] Envelope ${envelopeId} não tem PDF ainda`);
+    const signedFileUrl = zapDoc.data?.signed_file || zapDoc.data?.original_file || null;
+    if (!signedFileUrl) {
+      console.warn(`[ZapSign] Documento ${docToken} não tem signed_file ainda`);
       return null;
     }
 
-    const pdfResp = await axios.get(downloadUrl, {
-      headers,
+    const pdfResp = await axios.get(signedFileUrl, {
       responseType: "arraybuffer",
       timeout: 30000
     });
@@ -16038,6 +16005,7 @@ async function descarregarPDFAssinadoESocial(envelopeId, modeloId) {
       [r2Key, modeloId]
     );
 
+    // Se a modelo já submeteu a verificação, actualizar também esse registo
     await db.query(
       `UPDATE modelos_verificacao
           SET contrato_pdf_url = $1
@@ -16046,10 +16014,10 @@ async function descarregarPDFAssinadoESocial(envelopeId, modeloId) {
       [r2Key, modeloId]
     );
 
-    console.log(`[eSocialSign] PDF assinado guardado em R2: ${r2Key}`);
+    console.log(`[ZapSign] PDF assinado guardado em R2: ${r2Key}`);
     return r2Key;
   } catch (err) {
-    console.warn(`[eSocialSign] Erro ao descarregar PDF assinado: ${err.message}`);
+    console.warn(`[ZapSign] Erro ao descarregar PDF assinado: ${err.message}`);
     return null;
   }
 }
@@ -16060,48 +16028,61 @@ app.get("/api/verificacao/contrato/status", auth, async (req, res) => {
   try {
     const userId = req.user.id;
     const modeloRes = await db.query(
-      `SELECT id, contrato_assinado, contrato_sign_url, contrato_assinado_em,
-              contrato_submission_id, contrato_submitter_id,
-              contrato_pdf_url
+      `SELECT id, contrato_assinado, contrato_sign_url, contrato_assinado_em, contrato_token, contrato_signer_token
          FROM modelos WHERE user_id = $1`,
       [userId]
     );
     if (modeloRes.rowCount === 0) return res.status(404).json({ erro: "Modelo não encontrado" });
     const m = modeloRes.rows[0];
 
+    // Buscar contrato_pdf_url também para sabermos se precisamos baixar
+    const pdfRes = await db.query(
+      "SELECT contrato_pdf_url FROM modelos WHERE id = $1",
+      [m.id]
+    );
+    const jaTemPdf = !!pdfRes.rows[0]?.contrato_pdf_url;
+
+    // Se já marcado como assinado — devolve direto (mas se não temos PDF, tentar baixar)
     if (m.contrato_assinado) {
-      if (!m.contrato_pdf_url && m.contrato_submission_id) {
-        descarregarPDFAssinadoESocial(m.contrato_submission_id, m.id).catch(() => {});
+      if (!jaTemPdf && m.contrato_token) {
+        // PDF ainda não foi descarregado — tentar agora
+        descarregarPDFAssinadoZapSign(m.contrato_token, m.id).catch(() => {});
       }
       return res.json({ assinado: true, assinado_em: m.contrato_assinado_em });
     }
 
-    // Pollar eSocial Sign pelo status do envelope
-    if (m.contrato_submission_id && process.env.ESOCIALSIGN_EMAIL) {
+    // Se tem signer_token, pollar ZapSign para ver se já assinou
+    if (m.contrato_signer_token && process.env.ZAPSIGN_API_TOKEN) {
       try {
-        const token = await getESocialToken();
-        const envResp = await axios.get(
-          `https://assinatura.esocial.seg.br/api/v1/envelopes/${m.contrato_submission_id}`,
-          { headers: { "Authorization": `Bearer ${token}`, "Accept": "application/json" }, timeout: 10000 }
+        const zapResp = await axios.get(
+          `https://api.zapsign.com.br/api/v1/signers/${m.contrato_signer_token}/`,
+          {
+            headers: { Authorization: `Bearer ${process.env.ZAPSIGN_API_TOKEN}` },
+            timeout: 10000
+          }
         );
-        const envelope = envResp.data?.envelope || envResp.data;
-        if (envelope?.status === "completed" || envelope?.completed_at) {
+        const status = zapResp.data?.status;
+        if (status === "signed") {
+          // Actualiza BD
           await db.query(
             "UPDATE modelos SET contrato_assinado = true, contrato_assinado_em = NOW() WHERE id = $1",
             [m.id]
           );
-          descarregarPDFAssinadoESocial(m.contrato_submission_id, m.id).catch(() => {});
+          // Baixar o PDF assinado e guardar no R2
+          if (m.contrato_token) {
+            await descarregarPDFAssinadoZapSign(m.contrato_token, m.id);
+          }
           return res.json({ assinado: true, assinado_em: new Date().toISOString() });
         }
       } catch (pollErr) {
-        console.warn("[eSocialSign] Erro ao pollar status:", pollErr.message);
+        console.warn("[ZapSign] Erro ao pollar status:", pollErr.message);
       }
     }
 
     return res.json({
       assinado: false,
       sign_url: m.contrato_sign_url || null,
-      tem_contrato: !!m.contrato_submission_id
+      tem_contrato: !!m.contrato_token
     });
   } catch (err) {
     console.error("Erro ao verificar status contrato:", err);
@@ -16110,7 +16091,7 @@ app.get("/api/verificacao/contrato/status", auth, async (req, res) => {
 });
 
 // POST /api/verificacao/contrato
-// Cria submission no Synexis Sign e devolve URL de assinatura
+// Gera o contrato PDF, envia ao ZapSign, guarda tokens, devolve URL de assinatura
 const contratoLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 5,
@@ -16124,8 +16105,9 @@ app.post("/api/verificacao/contrato", auth, contratoLimiter, async (req, res) =>
       return res.status(403).json({ erro: "Apenas modelos podem assinar o contrato" });
     }
 
+    // Buscar dados da modelo
     const modeloRes = await db.query(
-      `SELECT m.id, m.contrato_assinado, m.contrato_sign_url, m.contrato_submission_id,
+      `SELECT m.id, m.contrato_assinado, m.contrato_sign_url, m.contrato_token,
               md.nome_completo,
               u.email
          FROM modelos m
@@ -16137,12 +16119,13 @@ app.post("/api/verificacao/contrato", auth, contratoLimiter, async (req, res) =>
     if (modeloRes.rowCount === 0) return res.status(404).json({ erro: "Modelo não encontrada" });
     const m = modeloRes.rows[0];
 
+    // Se já assinou — devolve URL existente
     if (m.contrato_assinado) {
       return res.json({ ok: true, ja_assinado: true });
     }
 
-    // Se já tem submission criada — devolve URL existente
-    if (m.contrato_submission_id && m.contrato_sign_url) {
+    // Se já tem documento criado no ZapSign — devolve URL existente
+    if (m.contrato_token && m.contrato_sign_url) {
       return res.json({ ok: true, sign_url: m.contrato_sign_url });
     }
 
@@ -16150,33 +16133,42 @@ app.post("/api/verificacao/contrato", auth, contratoLimiter, async (req, res) =>
       return res.status(400).json({ erro: "Preencha primeiro os dados pessoais (Passo 2) antes de assinar o contrato." });
     }
 
-    if (!process.env.ESOCIALSIGN_EMAIL) {
-      return res.status(500).json({ erro: "eSocial Sign não configurado. Contacte o suporte." });
-    }
-
+    // Data formatada em português
     const hoje = new Date();
     const dataHoje = hoje.toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
-    const pdfBuffer = await gerarContratoPDFBuffer({ nome: m.nome_completo, email: m.email, dataHoje });
 
-    const { submissionId, submitterId, signUrl } = await enviarContratoESocial(
+    // Gerar PDF
+    const pdfBuffer = await gerarContratoPDFBuffer({
+      nome: m.nome_completo,
+      email: m.email,
+      dataHoje
+    });
+
+    // Enviar ao ZapSign
+    if (!process.env.ZAPSIGN_API_TOKEN) {
+      return res.status(500).json({ erro: "ZapSign não configurado. Contacte o suporte." });
+    }
+
+    const { token, signerToken, signUrl } = await enviarContratoZapSign(
       pdfBuffer,
       m.nome_completo,
       m.email
     );
 
+    // Guardar tokens no BD
     await db.query(
       `UPDATE modelos
-          SET contrato_submission_id = $1,
-              contrato_submitter_id = $2,
+          SET contrato_token = $1,
+              contrato_signer_token = $2,
               contrato_sign_url = $3
         WHERE id = $4`,
-      [submissionId, submitterId, signUrl, m.id]
+      [token, signerToken, signUrl, m.id]
     );
 
-    console.log(`[CONTRATO] Modelo ${m.id} — eSocial Sign envelope ${submissionId}`);
+    console.log(`[CONTRATO] Modelo ${m.id} — ZapSign doc ${token}`);
     res.json({ ok: true, sign_url: signUrl });
   } catch (err) {
-    console.error("Erro ao criar contrato eSocial Sign:", err.response?.data || err.message);
+    console.error("Erro ao criar contrato ZapSign:", err.response?.data || err.message);
     res.status(500).json({ erro: "Erro ao gerar contrato. Tente novamente." });
   }
 });
@@ -16251,7 +16243,7 @@ app.post("/api/verificacao", auth, uploadVerificacaoLimiter, uploadVerificacao.f
       // MODELO
       if (role === "modelo") {
         const modeloRes = await db.query(
-          "SELECT id, contrato_pdf_url FROM modelos WHERE user_id = $1",
+          "SELECT id, contrato_assinado, contrato_pdf_url FROM modelos WHERE user_id = $1",
           [userId]
         );
 
@@ -16259,7 +16251,15 @@ app.post("/api/verificacao", auth, uploadVerificacaoLimiter, uploadVerificacao.f
           return res.status(400).json({ erro: "Modelo não encontrado" });
         }
 
-        const { id: modeloId, contrato_pdf_url } = modeloRes.rows[0];
+        const { id: modeloId, contrato_assinado, contrato_pdf_url } = modeloRes.rows[0];
+
+        // Verificar se o contrato foi assinado antes de aceitar documentos
+        if (!contrato_assinado) {
+          return res.status(403).json({
+            erro: "CONTRACT_NOT_SIGNED",
+            message: "O contrato de parceria ainda não foi assinado. Conclua o Passo 3 antes de enviar os documentos."
+          });
+        }
 
         await db.query(
           `
@@ -17603,11 +17603,3 @@ db.query("ALTER TABLE modelo_dados_bancarios ADD COLUMN IF NOT EXISTS motivo_ped
 
 db.query("ALTER TABLE saques ADD COLUMN IF NOT EXISTS taxa_saque NUMERIC(10,2) NOT NULL DEFAULT 0")
   .catch(err => console.error("Migração taxa_saque:", err.message));
-
-
-// Migração: colunas Synexis Sign (substitui ZapSign)
-db.query(`
-  ALTER TABLE modelos
-    ADD COLUMN IF NOT EXISTS contrato_submission_id TEXT,
-    ADD COLUMN IF NOT EXISTS contrato_submitter_id TEXT
-`).catch(err => console.error("Migração Synexis Sign cols:", err.message));
