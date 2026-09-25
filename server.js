@@ -15909,24 +15909,31 @@ function gerarContratoPDFBuffer(dados) {
 // Cria uma submission no Synexis Sign e devolve { submissionId, submitterId, signUrl }
 async function enviarContratoSynexis(pdfBuffer, nomeModelo, emailModelo) {
   const apiBase = "https://app.synexissign.com/api";
-
-  const form = new FormData();
-  form.append("document[name]", `Contrato Velvet — ${nomeModelo}`);
-  form.append("document[file]", pdfBuffer, {
-    filename: "contrato-velvet.pdf",
-    contentType: "application/pdf"
-  });
-  form.append("submitters[][name]", nomeModelo);
-  form.append("submitters[][email]", emailModelo);
-  form.append("send_email", "false");
+  const base64Pdf = pdfBuffer.toString("base64");
 
   const resp = await axios.post(
     `${apiBase}/submissions`,
-    form,
+    {
+      name: `Contrato Velvet — ${nomeModelo}`,
+      documents: [
+        {
+          name: "contrato-velvet.pdf",
+          file: `data:application/pdf;base64,${base64Pdf}`
+        }
+      ],
+      submitters: [
+        {
+          name: nomeModelo,
+          email: emailModelo,
+          role: "Velvet"
+        }
+      ],
+      send_email: false
+    },
     {
       headers: {
         "X-Auth-Token": process.env.SYNEXISSIGN_API_TOKEN,
-        ...form.getHeaders()
+        "Content-Type": "application/json"
       },
       timeout: 30000
     }
