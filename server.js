@@ -16199,7 +16199,7 @@ app.post("/api/verificacao", auth, uploadVerificacaoLimiter, uploadVerificacao.f
       // MODELO
       if (role === "modelo") {
         const modeloRes = await db.query(
-          "SELECT id, contrato_assinado, contrato_pdf_url FROM modelos WHERE user_id = $1",
+          "SELECT id, contrato_pdf_url FROM modelos WHERE user_id = $1",
           [userId]
         );
 
@@ -16207,15 +16207,7 @@ app.post("/api/verificacao", auth, uploadVerificacaoLimiter, uploadVerificacao.f
           return res.status(400).json({ erro: "Modelo não encontrado" });
         }
 
-        const { id: modeloId, contrato_assinado, contrato_pdf_url } = modeloRes.rows[0];
-
-        // Verificar se o contrato foi assinado antes de aceitar documentos
-        if (!contrato_assinado) {
-          return res.status(403).json({
-            erro: "CONTRACT_NOT_SIGNED",
-            message: "O contrato de parceria ainda não foi assinado. Conclua o Passo 3 antes de enviar os documentos."
-          });
-        }
+        const { id: modeloId, contrato_pdf_url } = modeloRes.rows[0];
 
         await db.query(
           `
