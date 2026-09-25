@@ -170,7 +170,7 @@ app.use(helmet({
         "https://res.cloudinary.com",
         "https://*.r2.dev",
         "https://cdn.jsdelivr.net",
-        "https://app.synexissign.com",
+        "https://assinatura.esocial.seg.br",
         "https://api.frankfurter.app",
          "https://formspree.io"
       ],
@@ -179,7 +179,7 @@ app.use(helmet({
         "https://js.stripe.com",
         "https://hooks.stripe.com",
         "https://iframe.videodelivery.net",
-        "https://app.synexissign.com"
+        "https://assinatura.esocial.seg.br"
       ],
       objectSrc: ["'none'"],
       baseUri: ["'self'"],
@@ -309,16 +309,28 @@ app.use((req, res, next) => {
 // WEBHOOK ZAPSIGN — Contrato assinado
 // ===============================
 
-app.post("/api/webhook/synexissign", express.json(), async (req, res) => {
+app.post("/api/webhook/esocialsign", express.raw({ type: "application/json" }), async (req, res) => {
   try {
-    console.log("[SynexisSign Webhook]", JSON.stringify(req.body).slice(0, 400));
-    const event = req.body;
+    // Validar assinatura HMAC-SHA256
+    const secret = process.env.ESOCIALSIGN_WEBHOOK_SECRET;
+    if (secret) {
+      const crypto = require("crypto");
+      const sig = req.headers["x-webhook-signature"] || req.headers["x-signature"] || "";
+      const expected = crypto.createHmac("sha256", secret).update(req.body).digest("hex");
+      if (sig !== expected && `sha256=${sig}` !== expected) {
+        console.warn("[eSocialSign Webhook] Assinatura HMAC inválida");
+        return res.status(401).json({ erro: "Assinatura inválida" });
+      }
+    }
 
-    // Synexis envia: { event: "submission.completed", data: { submission: { id, ... } } }
+    const event = JSON.parse(req.body.toString());
+    console.log("[eSocialSign Webhook]", JSON.stringify(event).slice(0, 400));
+
+    // eSocial Sign envia: { event: "envelope.completed", data: { envelope: { id, ... } } }
     const eventName = event?.event || "";
-    const submissionId = event?.data?.submission?.id || event?.submission?.id || null;
+    const envelopeId = event?.data?.envelope?.id || event?.envelope?.id || null;
 
-    if (eventName !== "submission.completed" || !submissionId) {
+    if (eventName !== "envelope.completed" || !envelopeId) {
       return res.status(200).json({ ok: true, ignorado: true });
     }
 
@@ -328,18 +340,18 @@ app.post("/api/webhook/synexissign", express.json(), async (req, res) => {
               contrato_assinado_em = NOW()
         WHERE contrato_submission_id = $1
        RETURNING id`,
-      [String(submissionId)]
+      [String(envelopeId)]
     );
 
     if (upd.rowCount === 0) {
-      console.warn(`[SynexisSign] Webhook: nenhuma modelo com submission_id ${submissionId}`);
+      console.warn(`[eSocialSign] Webhook: nenhuma modelo com envelope_id ${envelopeId}`);
       return res.status(200).json({ ok: true });
     }
 
     const modeloId = upd.rows[0].id;
-    console.log(`[SynexisSign] Contrato assinado — modelo id ${modeloId}`);
+    console.log(`[eSocialSign] Contrato assinado — modelo id ${modeloId}`);
 
-    descarregarPDFAssinadoSynexis(String(submissionId), modeloId)
+    descarregarPDFAssinadoESocial(String(envelopeId), modeloId)
       .then(async (pdfR2Key) => {
         try {
           const mInfo = await db.query(
@@ -358,12 +370,12 @@ app.post("/api/webhook/synexissign", express.json(), async (req, res) => {
             assinadoEm:    info.contrato_assinado_em,
             pdfR2Key
           });
-          console.log(`[SynexisSign] Notificação de contrato assinado enviada`);
+          console.log(`[eSocialSign] Notificação de contrato assinado enviada`);
         } catch (emailErr) {
-          console.warn(`[SynexisSign Webhook] Falha ao enviar email: ${emailErr.message}`);
+          console.warn(`[eSocialSign Webhook] Falha ao enviar email: ${emailErr.message}`);
         }
       })
-      .catch(err => console.warn(`[SynexisSign Webhook] Falha ao descarregar PDF: ${err.message}`));
+      .catch(err => console.warn(`[eSocialSign Webhook] Falha ao descarregar PDF: ${err.message}`));
 
     res.status(200).json({ ok: true });
   } catch (err) {
@@ -15906,71 +15918,97 @@ function gerarContratoPDFBuffer(dados) {
   });
 }
 
-// Cria uma submission no Synexis Sign e devolve { submissionId, submitterId, signUrl }
-async function enviarContratoSynexis(pdfBuffer, nomeModelo, emailModelo) {
-  const apiBase = "https://app.synexissign.com/api";
-  const base64Pdf = pdfBuffer.toString("base64");
+// Cache do token eSocial Sign (válido 30 dias)
+let _esocialToken = null;
+let _esocialTokenExpiry = 0;
 
+async function getESocialToken() {
+  if (_esocialToken && Date.now() < _esocialTokenExpiry) return _esocialToken;
   const resp = await axios.post(
-    `${apiBase}/submissions`,
+    "https://assinatura.esocial.seg.br/api/v1/auth/token",
     {
-      name: `Contrato Velvet — ${nomeModelo}`,
-      documents: [
-        {
-          name: "contrato-velvet.pdf",
-          file: `data:application/pdf;base64,${base64Pdf}`
-        }
-      ],
-      submitters: [
-        {
-          name: nomeModelo,
-          email: emailModelo,
-          role: "Velvet"
-        }
-      ],
-      send_email: false
+      email: process.env.ESOCIALSIGN_EMAIL,
+      password: process.env.ESOCIALSIGN_PASSWORD,
+      device_name: process.env.ESOCIALSIGN_DEVICE_NAME || "velvet-app-prod"
     },
-    {
-      headers: {
-        "X-Auth-Token": process.env.SYNEXISSIGN_API_TOKEN,
-        "Content-Type": "application/json"
-      },
-      timeout: 30000
-    }
+    { headers: { "Content-Type": "application/json", "Accept": "application/json" }, timeout: 15000 }
   );
-
-  const submitters = resp.data?.submitters || resp.data;
-  const submitter = Array.isArray(submitters) ? submitters[0] : null;
-  if (!submitter) throw new Error("Synexis não retornou signatário");
-
-  const submissionId = submitter.submission_id || resp.data?.submission?.id || resp.data?.id;
-  const submitterId = submitter.id;
-  const signUrl = submitter.embed_src || `https://app.synexissign.com/s/${submitter.slug}`;
-
-  return { submissionId: String(submissionId), submitterId: String(submitterId), signUrl };
+  const token = resp.data?.token || resp.data?.access_token;
+  if (!token) throw new Error("eSocial Sign não retornou token");
+  _esocialToken = token;
+  _esocialTokenExpiry = Date.now() + 29 * 24 * 60 * 60 * 1000; // 29 dias
+  return token;
 }
 
-// Descarrega o PDF assinado do Synexis Sign e guarda no R2 privado
-async function descarregarPDFAssinadoSynexis(submissionId, modeloId) {
+// Cria envelope no eSocial Sign e devolve { submissionId, signUrl }
+async function enviarContratoESocial(pdfBuffer, nomeModelo, emailModelo) {
+  const apiBase = "https://assinatura.esocial.seg.br/api/v1";
+  const token = await getESocialToken();
+  const headers = { "Authorization": `Bearer ${token}`, "Accept": "application/json" };
+
+  // 1. Criar envelope
+  const envResp = await axios.post(
+    `${apiBase}/envelopes`,
+    { title: `Contrato Velvet — ${nomeModelo}`, security_level: "email" },
+    { headers: { ...headers, "Content-Type": "application/json" }, timeout: 15000 }
+  );
+  const envelopeId = envResp.data?.envelope?.id || envResp.data?.id;
+  if (!envelopeId) throw new Error("eSocial Sign não retornou ID do envelope");
+
+  // 2. Anexar documento (PDF como multipart)
+  const FormData = require("form-data");
+  const form = new FormData();
+  form.append("file", pdfBuffer, { filename: "contrato-velvet.pdf", contentType: "application/pdf" });
+  form.append("name", "Contrato de Parceria Velvet");
+  await axios.post(
+    `${apiBase}/envelopes/${envelopeId}/documents`,
+    form,
+    { headers: { ...headers, ...form.getHeaders() }, timeout: 30000 }
+  );
+
+  // 3. Adicionar signatário
+  const sigResp = await axios.post(
+    `${apiBase}/envelopes/${envelopeId}/signatories`,
+    { name: nomeModelo, email: emailModelo },
+    { headers: { ...headers, "Content-Type": "application/json" }, timeout: 15000 }
+  );
+  const signatoryId = sigResp.data?.signatory?.id || sigResp.data?.id;
+  const signUrl = sigResp.data?.signatory?.sign_url || sigResp.data?.sign_url ||
+    `https://assinatura.esocial.seg.br/assinar/${envelopeId}`;
+
+  // 4. Enviar para assinatura
+  await axios.post(
+    `${apiBase}/envelopes/${envelopeId}/send`,
+    {},
+    { headers: { ...headers, "Content-Type": "application/json" }, timeout: 15000 }
+  );
+
+  console.log(`[eSocialSign] Envelope ${envelopeId} criado para ${emailModelo}`);
+  return { submissionId: String(envelopeId), submitterId: String(signatoryId || envelopeId), signUrl };
+}
+
+// Descarrega o PDF assinado do eSocial Sign e guarda no R2 privado
+async function descarregarPDFAssinadoESocial(envelopeId, modeloId) {
   try {
-    if (!process.env.SYNEXISSIGN_API_TOKEN) return null;
+    const apiBase = "https://assinatura.esocial.seg.br/api/v1";
+    const token = await getESocialToken();
+    const headers = { "Authorization": `Bearer ${token}`, "Accept": "application/json" };
 
     const docsResp = await axios.get(
-      `https://app.synexissign.com/api/submissions/${submissionId}/documents`,
-      {
-        headers: { "X-Auth-Token": process.env.SYNEXISSIGN_API_TOKEN },
-        timeout: 15000
-      }
+      `${apiBase}/envelopes/${envelopeId}/documents`,
+      { headers, timeout: 15000 }
     );
 
     const docs = docsResp.data?.documents || docsResp.data;
     const docEntry = Array.isArray(docs) ? docs[0] : null;
-    if (!docEntry?.url) {
-      console.warn(`[SynexisSign] Submission ${submissionId} não tem documento ainda`);
+    const downloadUrl = docEntry?.download_url || docEntry?.url;
+    if (!downloadUrl) {
+      console.warn(`[eSocialSign] Envelope ${envelopeId} não tem PDF ainda`);
       return null;
     }
 
-    const pdfResp = await axios.get(docEntry.url, {
+    const pdfResp = await axios.get(downloadUrl, {
+      headers,
       responseType: "arraybuffer",
       timeout: 30000
     });
@@ -15997,10 +16035,10 @@ async function descarregarPDFAssinadoSynexis(submissionId, modeloId) {
       [r2Key, modeloId]
     );
 
-    console.log(`[SynexisSign] PDF assinado guardado em R2: ${r2Key}`);
+    console.log(`[eSocialSign] PDF assinado guardado em R2: ${r2Key}`);
     return r2Key;
   } catch (err) {
-    console.warn(`[SynexisSign] Erro ao descarregar PDF assinado: ${err.message}`);
+    console.warn(`[eSocialSign] Erro ao descarregar PDF assinado: ${err.message}`);
     return null;
   }
 }
@@ -16022,34 +16060,30 @@ app.get("/api/verificacao/contrato/status", auth, async (req, res) => {
 
     if (m.contrato_assinado) {
       if (!m.contrato_pdf_url && m.contrato_submission_id) {
-        descarregarPDFAssinadoSynexis(m.contrato_submission_id, m.id).catch(() => {});
+        descarregarPDFAssinadoESocial(m.contrato_submission_id, m.id).catch(() => {});
       }
       return res.json({ assinado: true, assinado_em: m.contrato_assinado_em });
     }
 
-    // Pollar Synexis pelo status do submitter
-    if (m.contrato_submitter_id && process.env.SYNEXISSIGN_API_TOKEN) {
+    // Pollar eSocial Sign pelo status do envelope
+    if (m.contrato_submission_id && process.env.ESOCIALSIGN_EMAIL) {
       try {
-        const synResp = await axios.get(
-          `https://app.synexissign.com/api/submitters/${m.contrato_submitter_id}`,
-          {
-            headers: { "X-Auth-Token": process.env.SYNEXISSIGN_API_TOKEN },
-            timeout: 10000
-          }
+        const token = await getESocialToken();
+        const envResp = await axios.get(
+          `https://assinatura.esocial.seg.br/api/v1/envelopes/${m.contrato_submission_id}`,
+          { headers: { "Authorization": `Bearer ${token}`, "Accept": "application/json" }, timeout: 10000 }
         );
-        const submitter = synResp.data;
-        if (submitter?.status === "completed" || submitter?.completed_at) {
+        const envelope = envResp.data?.envelope || envResp.data;
+        if (envelope?.status === "completed" || envelope?.completed_at) {
           await db.query(
             "UPDATE modelos SET contrato_assinado = true, contrato_assinado_em = NOW() WHERE id = $1",
             [m.id]
           );
-          if (m.contrato_submission_id) {
-            descarregarPDFAssinadoSynexis(m.contrato_submission_id, m.id).catch(() => {});
-          }
+          descarregarPDFAssinadoESocial(m.contrato_submission_id, m.id).catch(() => {});
           return res.json({ assinado: true, assinado_em: new Date().toISOString() });
         }
       } catch (pollErr) {
-        console.warn("[SynexisSign] Erro ao pollar status:", pollErr.message);
+        console.warn("[eSocialSign] Erro ao pollar status:", pollErr.message);
       }
     }
 
@@ -16105,15 +16139,15 @@ app.post("/api/verificacao/contrato", auth, contratoLimiter, async (req, res) =>
       return res.status(400).json({ erro: "Preencha primeiro os dados pessoais (Passo 2) antes de assinar o contrato." });
     }
 
-    if (!process.env.SYNEXISSIGN_API_TOKEN) {
-      return res.status(500).json({ erro: "Synexis Sign não configurado. Contacte o suporte." });
+    if (!process.env.ESOCIALSIGN_EMAIL) {
+      return res.status(500).json({ erro: "eSocial Sign não configurado. Contacte o suporte." });
     }
 
     const hoje = new Date();
     const dataHoje = hoje.toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
     const pdfBuffer = await gerarContratoPDFBuffer({ nome: m.nome_completo, email: m.email, dataHoje });
 
-    const { submissionId, submitterId, signUrl } = await enviarContratoSynexis(
+    const { submissionId, submitterId, signUrl } = await enviarContratoESocial(
       pdfBuffer,
       m.nome_completo,
       m.email
@@ -16128,10 +16162,10 @@ app.post("/api/verificacao/contrato", auth, contratoLimiter, async (req, res) =>
       [submissionId, submitterId, signUrl, m.id]
     );
 
-    console.log(`[CONTRATO] Modelo ${m.id} — Synexis submission ${submissionId}`);
+    console.log(`[CONTRATO] Modelo ${m.id} — eSocial Sign envelope ${submissionId}`);
     res.json({ ok: true, sign_url: signUrl });
   } catch (err) {
-    console.error("Erro ao criar contrato Synexis:", err.response?.data || err.message);
+    console.error("Erro ao criar contrato eSocial Sign:", err.response?.data || err.message);
     res.status(500).json({ erro: "Erro ao gerar contrato. Tente novamente." });
   }
 });
