@@ -1,6 +1,7 @@
 // ============================================================
 // contrato-assinatura.js
-// Gestão do passo 3 do onboarding: assinatura do contrato ZapSign
+// Gestão do passo 4 do onboarding: assinatura do contrato ZapSign
+// O contrato só fica disponível após o envio dos documentos (passo 3)
 // ============================================================
 
 (function () {
@@ -18,7 +19,6 @@
   const linkAssinaturaExterno  = document.getElementById("linkAssinaturaExterno");
   const contratoPollingMsg = document.getElementById("contratoPollingMsg");
   const contratoErro       = document.getElementById("contratoErro");
-  const secaoDocumentos    = document.getElementById("secaoDocumentos");
 
   if (!secaoContrato) return; // Só corre em conta.html
 
@@ -39,27 +39,26 @@
     contratoErro.style.display = "none";
   }
 
-  function bloquearDocumentos() {
-    if (!secaoDocumentos) return;
-    secaoDocumentos.style.opacity = "0.4";
-    secaoDocumentos.style.pointerEvents = "none";
-    secaoDocumentos.style.userSelect = "none";
-    // Adicionar overlay de bloqueio se não existir
-    if (!secaoDocumentos.querySelector(".bloqueio-overlay")) {
+  function bloquearContrato() {
+    if (!secaoContrato) return;
+    secaoContrato.style.opacity = "0.4";
+    secaoContrato.style.pointerEvents = "none";
+    secaoContrato.style.userSelect = "none";
+    if (!secaoContrato.querySelector(".bloqueio-overlay")) {
       const overlay = document.createElement("div");
       overlay.className = "bloqueio-overlay";
-      overlay.innerHTML = `<p class="bloqueio-msg">🔒 Assina o contrato (Passo 3) antes de enviar os documentos</p>`;
-      secaoDocumentos.style.position = "relative";
-      secaoDocumentos.appendChild(overlay);
+      overlay.innerHTML = `<p class="bloqueio-msg">🔒 Envia os documentos de identidade (Passo 3) antes de assinar o contrato</p>`;
+      secaoContrato.style.position = "relative";
+      secaoContrato.appendChild(overlay);
     }
   }
 
-  function desbloquearDocumentos() {
-    if (!secaoDocumentos) return;
-    secaoDocumentos.style.opacity = "";
-    secaoDocumentos.style.pointerEvents = "";
-    secaoDocumentos.style.userSelect = "";
-    const overlay = secaoDocumentos.querySelector(".bloqueio-overlay");
+  function desbloquearContrato() {
+    if (!secaoContrato) return;
+    secaoContrato.style.opacity = "";
+    secaoContrato.style.pointerEvents = "";
+    secaoContrato.style.userSelect = "";
+    const overlay = secaoContrato.querySelector(".bloqueio-overlay");
     if (overlay) overlay.remove();
   }
 
@@ -71,33 +70,22 @@
       const d = new Date(assinadoEm);
       contratoAssinadoData.textContent = `Assinado em ${d.toLocaleDateString("pt-BR")} às ${d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`;
     }
-    desbloquearDocumentos();
-    // Rolar suavemente para a secção de documentos
-    setTimeout(() => {
-      if (secaoDocumentos) {
-        secaoDocumentos.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
-    }, 600);
   }
 
   function mostrarFormularioAssinatura(signUrl) {
     if (contratoLoadingMsg) contratoLoadingMsg.style.display = "none";
 
-    // Tentar iframe primeiro
     if (iframeContrato && contratoIframeWrap) {
-      // ZapSign suporta iframe — usar URL com ?iframe=true
       const iframeUrl = signUrl + (signUrl.includes("?") ? "&" : "?") + "iframe=true";
       iframeContrato.src = iframeUrl;
       contratoIframeWrap.classList.remove("hidden");
     }
 
-    // Link externo como fallback/alternativa
     if (linkAssinaturaExterno && contratoAcoesExternas) {
       linkAssinaturaExterno.href = signUrl;
       contratoAcoesExternas.classList.remove("hidden");
     }
 
-    // Iniciar polling de confirmação
     iniciarPolling();
   }
 
@@ -138,11 +126,28 @@
     const token = localStorage.getItem("token");
     if (!token) return;
 
-    // Bloquear documentos por defeito
-    bloquearDocumentos();
+    // Verificar se os documentos já foram enviados
+    try {
+      const docResp = await fetch("/api/verificacao/status", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (docResp.ok) {
+        const docData = await docResp.json();
+        const docEnviados = docData.status && docData.status !== "pendente";
+        if (!docEnviados) {
+          bloquearContrato();
+          return;
+        }
+      }
+    } catch (_) {
+      // Se falhar a verificação, bloquear por precaução
+      bloquearContrato();
+      return;
+    }
+
+    desbloquearContrato();
 
     try {
-      // Verificar estado actual do contrato
       const statusResp = await fetch("/api/verificacao/contrato/status", {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -155,12 +160,10 @@
       const statusData = await statusResp.json();
 
       if (statusData.assinado) {
-        // Já assinou — mostrar banner e desbloquear documentos
         mostrarContratoAssinado(statusData.assinado_em);
         return;
       }
 
-      // Se já tem URL de assinatura gerada mas ainda não assinou
       if (statusData.sign_url) {
         mostrarFormularioAssinatura(statusData.sign_url);
         return;
@@ -182,7 +185,6 @@
 
       if (!criarResp.ok) {
         if (contratoLoadingMsg) contratoLoadingMsg.style.display = "none";
-        // Se o problema é dados pessoais em falta — não mostrar secção de contrato ainda
         if (criarData.erro && criarData.erro.includes("dados pessoais")) {
           secaoContrato.style.display = "none";
         } else {
@@ -207,18 +209,21 @@
     }
   }
 
-  // Aguardar que os dados pessoais sejam guardados para iniciar
-  // O aceite-termos.js emite um evento customizado "termosAceitos" quando os termos são confirmados
-  // O areaUsuario.js deve emitir "dadosPessoaisGuardados" após salvar dados pessoais
-  // Mas também corremos init() directamente para quem já passou essas etapas
+  // Ouvir evento emitido após envio bem-sucedido dos documentos
+  document.addEventListener("documentosEnviados", () => {
+    init();
+    setTimeout(() => {
+      secaoContrato.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 400);
+  });
 
   // Ouvir evento do passo anterior (dados pessoais guardados)
   document.addEventListener("dadosPessoaisGuardados", () => {
-    init();
+    // Apenas bloquear — docs ainda não foram enviados
+    bloquearContrato();
   });
 
   // Correr init() assim que a página carrega (para quem já passou os passos anteriores)
-  // Só corremos se a secção de contrato está visível (não bloqueada)
   init();
 
 })();
