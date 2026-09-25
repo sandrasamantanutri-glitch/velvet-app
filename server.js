@@ -15924,12 +15924,18 @@ function gerarContratoPDFBuffer(dados) {
 // Envia PDF para ZapSign e devolve { token, signerToken, signUrl }
 async function enviarContratoZapSign(pdfBuffer, nomeModelo, emailModelo) {
   const base64Pdf = pdfBuffer.toString("base64");
+  const isSandbox = process.env.ZAPSIGN_SANDBOX === "true";
+  const apiBase = isSandbox
+    ? "https://sandbox.api.zapsign.com.br/api/v1"
+    : "https://api.zapsign.com.br/api/v1";
+  const appBase = isSandbox
+    ? "https://sandbox.app.zapsign.com.br"
+    : "https://app.zapsign.com.br";
   const resp = await axios.post(
-    "https://api.zapsign.com.br/api/v1/docs/",
+    `${apiBase}/docs/`,
     {
       name: `Contrato Velvet — ${nomeModelo}`,
       base64_pdf: base64Pdf,
-      sandbox: process.env.ZAPSIGN_SANDBOX === "true",
       signers: [
         {
           name: nomeModelo,
@@ -15952,7 +15958,7 @@ async function enviarContratoZapSign(pdfBuffer, nomeModelo, emailModelo) {
   const doc = resp.data;
   const signer = doc.signers?.[0];
   if (!signer) throw new Error("ZapSign não retornou signatário");
-  const signUrl = `https://app.zapsign.com.br/verificar/${signer.token}`;
+  const signUrl = `${appBase}/verificar/${signer.token}`;
   return {
     token: doc.token,
     signerToken: signer.token,
