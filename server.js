@@ -15955,7 +15955,13 @@ async function enviarContratoESocial(pdfBuffer, nomeModelo, emailModelo) {
   // 1. Criar envelope
   const envResp = await axios.post(
     `${apiBase}/envelopes`,
-    { title: `Contrato Velvet — ${nomeModelo}`, security_level: "email" },
+    {
+      title: `Contrato Velvet — ${nomeModelo}`,
+      security_level: "email",
+      document_type: "contract",
+      evidence_profile: "basic",
+      signing_order: "simultaneous"
+    },
     { headers: { ...headers, "Content-Type": "application/json" }, timeout: 15000 }
   );
   const envelopeId = envResp.data?.envelope?.id || envResp.data?.id;
