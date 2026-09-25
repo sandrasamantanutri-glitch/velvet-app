@@ -15933,8 +15933,14 @@ async function getESocialToken() {
     },
     { headers: { "Content-Type": "application/json", "Accept": "application/json" }, timeout: 15000 }
   );
-  const token = resp.data?.token || resp.data?.access_token;
-  if (!token) throw new Error("eSocial Sign não retornou token");
+  // Sanctum pode retornar string pura, ou { token }, ou { access_token }, ou { data: { token } }
+  const raw = resp.data;
+  const token = typeof raw === "string" ? raw.trim()
+    : raw?.token || raw?.access_token || raw?.data?.token || raw?.data?.access_token;
+  if (!token) {
+    console.error("[eSocialSign] Resposta de auth:", JSON.stringify(raw).slice(0, 300));
+    throw new Error("eSocial Sign não retornou token");
+  }
   _esocialToken = token;
   _esocialTokenExpiry = Date.now() + 29 * 24 * 60 * 60 * 1000; // 29 dias
   return token;
