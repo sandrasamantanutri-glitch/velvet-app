@@ -757,7 +757,7 @@ formPessoais?.addEventListener("submit", async (e) => {
 
     // Scroll suave para o passo seguinte (contrato) após breve pausa
     setTimeout(() => {
-      document.getElementById("secaoContrato")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      document.getElementById("secaoDocumentos")?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 800);
 
   } catch (err) {
