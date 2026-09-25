@@ -15900,7 +15900,7 @@ function gerarContratoPDFBuffer(dados) {
     doc.font("Helvetica").fontSize(9)
        .text(`Nome: ${dados.nome || "________________________________"}`, col2, doc.y + 4, { width: metade })
        .text(`E-mail: ${dados.email || "______________________________"}`, col2, doc.y, { width: metade })
-       .text("Assinatura Eletrônica: [ZapSign]", col2, doc.y, { width: metade });
+       .text("Assinatura Eletrônica: [Synexis Sign]", col2, doc.y, { width: metade });
 
     doc.end();
   });
