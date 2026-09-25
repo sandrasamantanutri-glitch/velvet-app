@@ -15907,27 +15907,26 @@ function gerarContratoPDFBuffer(dados) {
 }
 
 // Cria uma submission no Synexis Sign e devolve { submissionId, submitterId, signUrl }
-async function enviarContratoSynexis(nomeModelo, emailModelo) {
+async function enviarContratoSynexis(pdfBuffer, nomeModelo, emailModelo) {
   const apiBase = "https://app.synexissign.com/api";
-  const templateId = process.env.SYNEXISSIGN_TEMPLATE_ID;
-  if (!templateId) throw new Error("SYNEXISSIGN_TEMPLATE_ID não configurado");
+
+  const form = new FormData();
+  form.append("document[name]", `Contrato Velvet — ${nomeModelo}`);
+  form.append("document[file]", pdfBuffer, {
+    filename: "contrato-velvet.pdf",
+    contentType: "application/pdf"
+  });
+  form.append("submitters[][name]", nomeModelo);
+  form.append("submitters[][email]", emailModelo);
+  form.append("send_email", "false");
 
   const resp = await axios.post(
     `${apiBase}/submissions`,
-    {
-      template_id: templateId,
-      send_email: false,
-      submitters: [
-        {
-          name: nomeModelo,
-          email: emailModelo
-        }
-      ]
-    },
+    form,
     {
       headers: {
         "X-Auth-Token": process.env.SYNEXISSIGN_API_TOKEN,
-        "Content-Type": "application/json"
+        ...form.getHeaders()
       },
       timeout: 30000
     }
@@ -15937,7 +15936,7 @@ async function enviarContratoSynexis(nomeModelo, emailModelo) {
   const submitter = Array.isArray(submitters) ? submitters[0] : null;
   if (!submitter) throw new Error("Synexis não retornou signatário");
 
-  const submissionId = submitter.submission_id || resp.data?.submission?.id;
+  const submissionId = submitter.submission_id || resp.data?.submission?.id || resp.data?.id;
   const submitterId = submitter.id;
   const signUrl = submitter.embed_src || `https://app.synexissign.com/s/${submitter.slug}`;
 
@@ -16103,7 +16102,12 @@ app.post("/api/verificacao/contrato", auth, contratoLimiter, async (req, res) =>
       return res.status(500).json({ erro: "Synexis Sign não configurado. Contacte o suporte." });
     }
 
+    const hoje = new Date();
+    const dataHoje = hoje.toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
+    const pdfBuffer = await gerarContratoPDFBuffer({ nome: m.nome_completo, email: m.email, dataHoje });
+
     const { submissionId, submitterId, signUrl } = await enviarContratoSynexis(
+      pdfBuffer,
       m.nome_completo,
       m.email
     );
