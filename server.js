@@ -15907,28 +15907,22 @@ function gerarContratoPDFBuffer(dados) {
 }
 
 // Cria uma submission no Synexis Sign e devolve { submissionId, submitterId, signUrl }
-async function enviarContratoSynexis(pdfBuffer, nomeModelo, emailModelo) {
+async function enviarContratoSynexis(nomeModelo, emailModelo) {
   const apiBase = "https://app.synexissign.com/api";
-  const base64Pdf = pdfBuffer.toString("base64");
+  const templateId = process.env.SYNEXISSIGN_TEMPLATE_ID;
+  if (!templateId) throw new Error("SYNEXISSIGN_TEMPLATE_ID não configurado");
 
   const resp = await axios.post(
     `${apiBase}/submissions`,
     {
-      name: `Contrato Velvet — ${nomeModelo}`,
-      documents: [
-        {
-          name: "contrato-velvet.pdf",
-          file: `data:application/pdf;base64,${base64Pdf}`
-        }
-      ],
+      template_id: templateId,
+      send_email: false,
       submitters: [
         {
           name: nomeModelo,
-          email: emailModelo,
-          role: "Velvet"
+          email: emailModelo
         }
-      ],
-      send_email: false
+      ]
     },
     {
       headers: {
@@ -16109,12 +16103,7 @@ app.post("/api/verificacao/contrato", auth, contratoLimiter, async (req, res) =>
       return res.status(500).json({ erro: "Synexis Sign não configurado. Contacte o suporte." });
     }
 
-    const hoje = new Date();
-    const dataHoje = hoje.toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
-    const pdfBuffer = await gerarContratoPDFBuffer({ nome: m.nome_completo, email: m.email, dataHoje });
-
     const { submissionId, submitterId, signUrl } = await enviarContratoSynexis(
-      pdfBuffer,
       m.nome_completo,
       m.email
     );
