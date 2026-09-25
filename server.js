@@ -15959,8 +15959,8 @@ async function enviarContratoESocial(pdfBuffer, nomeModelo, emailModelo) {
       title: `Contrato Velvet — ${nomeModelo}`,
       security_level: "email",
       document_type: "contract",
-      evidence_profile: "basic",
-      signing_order: "simultaneous"
+      evidence_profile: "P1",
+      signing_order: "parallel"
     },
     { headers: { ...headers, "Content-Type": "application/json" }, timeout: 15000 }
   );
