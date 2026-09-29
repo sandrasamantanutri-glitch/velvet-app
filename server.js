@@ -16055,7 +16055,9 @@ app.get("/api/verificacao/contrato/status", auth, async (req, res) => {
 
     return res.json({
       assinado: false,
-      sign_url: m.contrato_sign_url || null,
+      // Só devolve o link se pertencer ao Synexis; links antigos do ZapSign ficam de fora
+      // (o iframe é bloqueado pelo CSP) e o frontend gera um contrato novo
+      sign_url: m.contrato_submission_id ? (m.contrato_sign_url || null) : null,
       tem_contrato: !!m.contrato_submission_id
     });
   } catch (err) {
