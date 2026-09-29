@@ -171,6 +171,8 @@ app.use(helmet({
         "https://*.r2.dev",
         "https://cdn.jsdelivr.net",
         "https://app.synexissign.com",
+        "https://app.zapsign.com.br",
+        "https://api.zapsign.com.br",
         "https://api.frankfurter.app",
          "https://formspree.io"
       ],
@@ -179,7 +181,8 @@ app.use(helmet({
         "https://js.stripe.com",
         "https://hooks.stripe.com",
         "https://iframe.videodelivery.net",
-        "https://app.synexissign.com"
+        "https://app.synexissign.com",
+        "https://app.zapsign.com.br"
       ],
       objectSrc: ["'none'"],
       baseUri: ["'self'"],
@@ -309,16 +312,16 @@ app.use((req, res, next) => {
 // WEBHOOK ZAPSIGN — Contrato assinado
 // ===============================
 
-app.post("/api/webhook/synexissign", express.json(), async (req, res) => {
+app.post("/api/webhook/zapsign", express.json(), async (req, res) => {
   try {
-    console.log("[SynexisSign Webhook]", JSON.stringify(req.body).slice(0, 400));
+    console.log("[ZapSign Webhook]", JSON.stringify(req.body).slice(0, 400));
     const event = req.body;
 
-    // Synexis envia: { event: "submission.completed", data: { submission: { id, ... } } }
-    const eventName = event?.event || "";
-    const submissionId = event?.data?.submission?.id || event?.submission?.id || null;
+    // ZapSign envia: { event_type: "doc_signed", token: "<doc token>", status: "signed", ... }
+    const eventName = event?.event_type || "";
+    const submissionId = event?.token || null;
 
-    if (eventName !== "submission.completed" || !submissionId) {
+    if (eventName !== "doc_signed" || !submissionId) {
       return res.status(200).json({ ok: true, ignorado: true });
     }
 
@@ -326,20 +329,20 @@ app.post("/api/webhook/synexissign", express.json(), async (req, res) => {
       `UPDATE modelos
           SET contrato_assinado = true,
               contrato_assinado_em = NOW()
-        WHERE contrato_submission_id = $1
+        WHERE contrato_token = $1
        RETURNING id`,
       [String(submissionId)]
     );
 
     if (upd.rowCount === 0) {
-      console.warn(`[SynexisSign] Webhook: nenhuma modelo com submission_id ${submissionId}`);
+      console.warn(`[ZapSign] Webhook: nenhuma modelo com contrato_token ${submissionId}`);
       return res.status(200).json({ ok: true });
     }
 
     const modeloId = upd.rows[0].id;
-    console.log(`[SynexisSign] Contrato assinado — modelo id ${modeloId}`);
+    console.log(`[ZapSign] Contrato assinado — modelo id ${modeloId}`);
 
-    descarregarPDFAssinadoSynexis(String(submissionId), modeloId)
+    descarregarPDFAssinadoZapSign(String(submissionId), modeloId)
       .then(async (pdfR2Key) => {
         try {
           const mInfo = await db.query(
@@ -358,16 +361,16 @@ app.post("/api/webhook/synexissign", express.json(), async (req, res) => {
             assinadoEm:    info.contrato_assinado_em,
             pdfR2Key
           });
-          console.log(`[SynexisSign] Notificação de contrato assinado enviada`);
+          console.log(`[ZapSign] Notificação de contrato assinado enviada`);
         } catch (emailErr) {
-          console.warn(`[SynexisSign Webhook] Falha ao enviar email: ${emailErr.message}`);
+          console.warn(`[ZapSign Webhook] Falha ao enviar email: ${emailErr.message}`);
         }
       })
-      .catch(err => console.warn(`[SynexisSign Webhook] Falha ao descarregar PDF: ${err.message}`));
+      .catch(err => console.warn(`[ZapSign Webhook] Falha ao descarregar PDF: ${err.message}`));
 
     res.status(200).json({ ok: true });
   } catch (err) {
-    console.error("[SynexisSign Webhook] Erro:", err);
+    console.error("[ZapSign Webhook] Erro:", err);
     res.status(500).json({ erro: "Erro interno" });
   }
 });
@@ -15621,7 +15624,7 @@ app.post("/api/chat/cliente/marcar-lido/:modelo_id", authCliente, async (req, re
 });
 
 // ===========================
-// CONTRATO DIGITAL — Synexis Sign
+// CONTRATO DIGITAL — ZapSign
 // ===========================
 
 // Gera o buffer do PDF do contrato v2.0 (23 seções) para envio ao ZapSign
@@ -15900,77 +15903,65 @@ function gerarContratoPDFBuffer(dados) {
     doc.font("Helvetica").fontSize(9)
        .text(`Nome: ${dados.nome || "________________________________"}`, col2, doc.y + 4, { width: metade })
        .text(`E-mail: ${dados.email || "______________________________"}`, col2, doc.y, { width: metade })
-       .text("Assinatura Eletrônica: [Synexis Sign]", col2, doc.y, { width: metade });
+       .text("Assinatura Eletrônica: [ZapSign]", col2, doc.y, { width: metade });
 
     doc.end();
   });
 }
 
-// Cria uma submission no Synexis Sign e devolve { submissionId, submitterId, signUrl }
-async function enviarContratoSynexis(pdfBuffer, nomeModelo, emailModelo) {
-  const apiBase = "https://app.synexissign.com/api";
-  const base64Pdf = pdfBuffer.toString("base64");
-
+// Cria um documento no ZapSign e devolve { docToken, signerToken, signUrl }
+async function enviarContratoZapSign(pdfBuffer, nomeModelo, emailModelo) {
   const resp = await axios.post(
-    `${apiBase}/submissions`,
+    "https://api.zapsign.com.br/api/v1/docs/",
     {
       name: `Contrato Velvet — ${nomeModelo}`,
-      documents: [
-        {
-          name: "contrato-velvet.pdf",
-          file: `data:application/pdf;base64,${base64Pdf}`
-        }
-      ],
-      submitters: [
+      base64_pdf: pdfBuffer.toString("base64"),
+      lang: "pt-br",
+      signers: [
         {
           name: nomeModelo,
           email: emailModelo,
-          role: "Velvet"
+          auth_mode: "assinaturaTela",
+          send_automatic_email: false
         }
-      ],
-      send_email: false
+      ]
     },
     {
       headers: {
-        "X-Auth-Token": process.env.SYNEXISSIGN_API_TOKEN,
+        Authorization: `Bearer ${process.env.ZAPSIGN_API_TOKEN}`,
         "Content-Type": "application/json"
       },
       timeout: 30000
     }
   );
 
-  const submitters = resp.data?.submitters || resp.data;
-  const submitter = Array.isArray(submitters) ? submitters[0] : null;
-  if (!submitter) throw new Error("Synexis não retornou signatário");
+  const signer = resp.data?.signers?.[0];
+  if (!resp.data?.token || !signer?.token) throw new Error("ZapSign não retornou documento/signatário");
 
-  const submissionId = submitter.submission_id || resp.data?.submission?.id || resp.data?.id;
-  const submitterId = submitter.id;
-  const signUrl = submitter.embed_src || `https://app.synexissign.com/s/${submitter.slug}`;
-
-  return { submissionId: String(submissionId), submitterId: String(submitterId), signUrl };
+  const signUrl = signer.sign_url || `https://app.zapsign.com.br/verificar/${signer.token}`;
+  return { docToken: resp.data.token, signerToken: signer.token, signUrl };
 }
 
-// Descarrega o PDF assinado do Synexis Sign e guarda no R2 privado
-async function descarregarPDFAssinadoSynexis(submissionId, modeloId) {
+// Descarrega o PDF assinado do ZapSign e guarda no R2 privado
+async function descarregarPDFAssinadoZapSign(docToken, modeloId) {
   try {
-    if (!process.env.SYNEXISSIGN_API_TOKEN) return null;
+    if (!process.env.ZAPSIGN_API_TOKEN) return null;
 
-    const docsResp = await axios.get(
-      `https://app.synexissign.com/api/submissions/${submissionId}/documents`,
+    const docResp = await axios.get(
+      `https://api.zapsign.com.br/api/v1/docs/${docToken}/`,
       {
-        headers: { "X-Auth-Token": process.env.SYNEXISSIGN_API_TOKEN },
+        headers: { Authorization: `Bearer ${process.env.ZAPSIGN_API_TOKEN}` },
         timeout: 15000
       }
     );
 
-    const docs = docsResp.data?.documents || docsResp.data;
-    const docEntry = Array.isArray(docs) ? docs[0] : null;
-    if (!docEntry?.url) {
-      console.warn(`[SynexisSign] Submission ${submissionId} não tem documento ainda`);
+    const signedUrl = docResp.data?.signed_file;
+    if (!signedUrl) {
+      console.warn(`[ZapSign] Documento ${docToken} ainda sem PDF assinado`);
       return null;
     }
 
-    const pdfResp = await axios.get(docEntry.url, {
+    const pdfResp = await axios.get(signedUrl, {
       responseType: "arraybuffer",
       timeout: 30000
     });
@@ -15997,10 +15988,10 @@ async function descarregarPDFAssinadoSynexis(submissionId, modeloId) {
       [r2Key, modeloId]
     );
 
-    console.log(`[SynexisSign] PDF assinado guardado em R2: ${r2Key}`);
+    console.log(`[ZapSign] PDF assinado guardado em R2: ${r2Key}`);
     return r2Key;
   } catch (err) {
-    console.warn(`[SynexisSign] Erro ao descarregar PDF assinado: ${err.message}`);
+    console.warn(`[ZapSign] Erro ao descarregar PDF assinado: ${err.message}`);
     return null;
   }
 }
@@ -16012,8 +16003,7 @@ app.get("/api/verificacao/contrato/status", auth, async (req, res) => {
     const userId = req.user.id;
     const modeloRes = await db.query(
       `SELECT id, contrato_assinado, contrato_sign_url, contrato_assinado_em,
-              contrato_submission_id, contrato_submitter_id,
-              contrato_pdf_url
+              contrato_token, contrato_pdf_url
          FROM modelos WHERE user_id = $1`,
       [userId]
     );
@@ -16021,44 +16011,39 @@ app.get("/api/verificacao/contrato/status", auth, async (req, res) => {
     const m = modeloRes.rows[0];
 
     if (m.contrato_assinado) {
-      if (!m.contrato_pdf_url && m.contrato_submission_id) {
-        descarregarPDFAssinadoSynexis(m.contrato_submission_id, m.id).catch(() => {});
+      if (!m.contrato_pdf_url && m.contrato_token) {
+        descarregarPDFAssinadoZapSign(m.contrato_token, m.id).catch(() => {});
       }
       return res.json({ assinado: true, assinado_em: m.contrato_assinado_em });
     }
 
-    // Pollar Synexis pelo status do submitter
-    if (m.contrato_submitter_id && process.env.SYNEXISSIGN_API_TOKEN) {
+    // Pollar ZapSign pelo status do documento
+    if (m.contrato_token && process.env.ZAPSIGN_API_TOKEN) {
       try {
-        const synResp = await axios.get(
-          `https://app.synexissign.com/api/submitters/${m.contrato_submitter_id}`,
+        const zapResp = await axios.get(
+          `https://api.zapsign.com.br/api/v1/docs/${m.contrato_token}/`,
           {
-            headers: { "X-Auth-Token": process.env.SYNEXISSIGN_API_TOKEN },
+            headers: { Authorization: `Bearer ${process.env.ZAPSIGN_API_TOKEN}` },
             timeout: 10000
           }
         );
-        const submitter = synResp.data;
-        if (submitter?.status === "completed" || submitter?.completed_at) {
+        if (zapResp.data?.status === "signed") {
           await db.query(
             "UPDATE modelos SET contrato_assinado = true, contrato_assinado_em = NOW() WHERE id = $1",
             [m.id]
           );
-          if (m.contrato_submission_id) {
-            descarregarPDFAssinadoSynexis(m.contrato_submission_id, m.id).catch(() => {});
-          }
+          descarregarPDFAssinadoZapSign(m.contrato_token, m.id).catch(() => {});
           return res.json({ assinado: true, assinado_em: new Date().toISOString() });
         }
       } catch (pollErr) {
-        console.warn("[SynexisSign] Erro ao pollar status:", pollErr.message);
+        console.warn("[ZapSign] Erro ao pollar status:", pollErr.message);
       }
     }
 
     return res.json({
       assinado: false,
-      // Só devolve o link se pertencer ao Synexis; links antigos do ZapSign ficam de fora
-      // (o iframe é bloqueado pelo CSP) e o frontend gera um contrato novo
-      sign_url: m.contrato_submission_id ? (m.contrato_sign_url || null) : null,
-      tem_contrato: !!m.contrato_submission_id
+      sign_url: m.contrato_sign_url || null,
+      tem_contrato: !!m.contrato_token
     });
   } catch (err) {
     console.error("Erro ao verificar status contrato:", err);
@@ -16067,7 +16052,7 @@ app.get("/api/verificacao/contrato/status", auth, async (req, res) => {
 });
 
 // POST /api/verificacao/contrato
-// Cria submission no Synexis Sign e devolve URL de assinatura
+// Cria documento no ZapSign e devolve URL de assinatura
 const contratoLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 5,
@@ -16082,7 +16067,7 @@ app.post("/api/verificacao/contrato", auth, contratoLimiter, async (req, res) =>
     }
 
     const modeloRes = await db.query(
-      `SELECT m.id, m.contrato_assinado, m.contrato_sign_url, m.contrato_submission_id,
+      `SELECT m.id, m.contrato_assinado, m.contrato_sign_url, m.contrato_token,
               md.nome_completo,
               u.email
          FROM modelos m
@@ -16099,7 +16084,7 @@ app.post("/api/verificacao/contrato", auth, contratoLimiter, async (req, res) =>
     }
 
     // Se já tem submission criada — devolve URL existente
-    if (m.contrato_submission_id && m.contrato_sign_url) {
+    if (m.contrato_token && m.contrato_sign_url) {
       return res.json({ ok: true, sign_url: m.contrato_sign_url });
     }
 
@@ -16107,15 +16092,15 @@ app.post("/api/verificacao/contrato", auth, contratoLimiter, async (req, res) =>
       return res.status(400).json({ erro: "Preencha primeiro os dados pessoais (Passo 2) antes de assinar o contrato." });
     }
 
-    if (!process.env.SYNEXISSIGN_API_TOKEN) {
-      return res.status(500).json({ erro: "Synexis Sign não configurado. Contacte o suporte." });
+    if (!process.env.ZAPSIGN_API_TOKEN) {
+      return res.status(500).json({ erro: "ZapSign não configurado. Contacte o suporte." });
     }
 
     const hoje = new Date();
     const dataHoje = hoje.toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
     const pdfBuffer = await gerarContratoPDFBuffer({ nome: m.nome_completo, email: m.email, dataHoje });
 
-    const { submissionId, submitterId, signUrl } = await enviarContratoSynexis(
+    const { docToken, signerToken, signUrl } = await enviarContratoZapSign(
       pdfBuffer,
       m.nome_completo,
       m.email
@@ -16123,17 +16108,17 @@ app.post("/api/verificacao/contrato", auth, contratoLimiter, async (req, res) =>
 
     await db.query(
       `UPDATE modelos
-          SET contrato_submission_id = $1,
-              contrato_submitter_id = $2,
+          SET contrato_token = $1,
+              contrato_signer_token = $2,
               contrato_sign_url = $3
         WHERE id = $4`,
-      [submissionId, submitterId, signUrl, m.id]
+      [docToken, signerToken, signUrl, m.id]
     );
 
-    console.log(`[CONTRATO] Modelo ${m.id} — Synexis submission ${submissionId}`);
+    console.log(`[CONTRATO] Modelo ${m.id} — ZapSign doc ${docToken}`);
     res.json({ ok: true, sign_url: signUrl });
   } catch (err) {
-    console.error("Erro ao criar contrato Synexis:", err.response?.data || err.message);
+    console.error("Erro ao criar contrato ZapSign:", err.response?.data || err.message);
     res.status(500).json({ erro: "Erro ao gerar contrato. Tente novamente." });
   }
 });
@@ -17562,7 +17547,7 @@ db.query("ALTER TABLE saques ADD COLUMN IF NOT EXISTS taxa_saque NUMERIC(10,2) N
   .catch(err => console.error("Migração taxa_saque:", err.message));
 
 
-// Migração: colunas Synexis Sign (substitui ZapSign)
+// Migração: colunas Synexis Sign (legado, não usadas — o contrato usa ZapSign)
 db.query(`
   ALTER TABLE modelos
     ADD COLUMN IF NOT EXISTS contrato_submission_id TEXT,

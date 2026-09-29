@@ -75,12 +75,8 @@
   function mostrarFormularioAssinatura(signUrl) {
     if (contratoLoadingMsg) contratoLoadingMsg.style.display = "none";
 
-    if (iframeContrato && contratoIframeWrap) {
-      const iframeUrl = signUrl + (signUrl.includes("?") ? "&" : "?") + "iframe=true";
-      iframeContrato.src = iframeUrl;
-      contratoIframeWrap.classList.remove("hidden");
-    }
-
+    // O ZapSign não carrega em iframe (ecrã preto): a assinatura abre num separador novo
+    // e o polling abaixo detecta quando o contrato for assinado.
     if (linkAssinaturaExterno && contratoAcoesExternas) {
       linkAssinaturaExterno.href = signUrl;
       contratoAcoesExternas.classList.remove("hidden");
