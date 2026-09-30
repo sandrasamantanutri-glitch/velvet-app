@@ -55,6 +55,7 @@ const authModelo = require("./middleware/authModelo");
 const auth = require("./middleware/auth");
 
 const crypto = require("crypto");
+const contratoTextos = require("./contrato-textos");
 const axios = require("axios");
 const PDFDocument = require("pdfkit");
 
@@ -15556,10 +15557,19 @@ app.post("/api/chat/cliente/marcar-lido/:modelo_id", authCliente, async (req, re
 // CONTRATO DIGITAL — assinatura própria (canvas + R2)
 // ===========================
 
-// Gera o buffer do PDF do contrato v2.0 (23 seções) para leitura/assinatura
+// Carimbo/assinatura da Velvet (representante legal) — opcional; se o arquivo faltar usa a linha em branco
+let CARIMBO_VELVET = null;
+try { CARIMBO_VELVET = require("fs").readFileSync(require("path").join(__dirname, "assets", "carimbo-velvet.png")); }
+catch (_) { console.warn("[CONTRATO] assets/carimbo-velvet.png não encontrado — usando linha em branco"); }
+
+// Gera o buffer do PDF do contrato v2.0 (23 seções) no idioma pedido (pt/es/en)
 function gerarContratoPDFBuffer(dados) {
-  // dados: { nome, email, dataHoje }
+  // dados: { nome, email, dataHoje, lang, assinaturaPng?, certificado? }
   return new Promise((resolve, reject) => {
+    const lang = contratoTextos.normalizarIdioma(dados.lang);
+    const T = contratoTextos.meta[lang];
+    const blocos = contratoTextos.blocos[lang];
+
     const doc = new PDFDocument({ size: "A4", margin: 60, bufferPages: true });
     const chunks = [];
     doc.on("data", c => chunks.push(c));
@@ -15593,262 +15603,85 @@ function gerarContratoPDFBuffer(dados) {
 
     // ── Cabeçalho ────────────────────────────────────────────────────
     doc.font("Helvetica-Bold").fontSize(13)
-       .text("TERMOS E CONDIÇÕES PARA CRIADORES DE CONTEÚDO", L, L, { width: W, align: "center" });
+       .text(T.titulo1, L, L, { width: W, align: "center" });
     doc.font("Helvetica-Bold").fontSize(11)
-       .text("PLATAFORMA VELVET", L, doc.y, { width: W, align: "center" });
+       .text(T.titulo2, L, doc.y, { width: W, align: "center" });
     doc.moveDown(0.3);
     doc.font("Helvetica").fontSize(8)
-       .text(`Versão 2.0  |  ${dados.dataHoje}`, L, doc.y, { width: W, align: "center" });
+       .text(T.versao(dados.dataHoje), L, doc.y, { width: W, align: "center" });
     doc.moveDown(0.5);
     doc.moveTo(L, doc.y).lineTo(L + W, doc.y).stroke();
     doc.moveDown(0.5);
 
-    // ── PREÂMBULO ────────────────────────────────────────────────────
+    // ── Preâmbulo + cláusulas ───────────────────────────────────────
     doc.font("Helvetica-Bold").fontSize(9)
-       .text("PREÂMBULO", L, doc.y, { width: W });
+       .text(T.preambulo, L, doc.y, { width: W });
     doc.font("Helvetica").fontSize(9).moveDown(0.2);
-    corpo(`Este instrumento ("Contrato" ou "Termos") é celebrado entre a Velvet Entertainment Ltda., CNPJ nº 66.615.892/0001-43, com sede na Rua Cel. José Eusébio, nº 95, Casa 13, Higienópolis, São Paulo/SP ("VELVET" ou "Plataforma") e o(a) usuário(a) que se cadastra como Criador(a) de Conteúdo ("Criador(a)"), regendo integralmente a relação entre as partes para utilização da Plataforma Velvet.`);
-    corpo(`Ao concluir o cadastro, marcar a caixa de aceite eletrônico ou utilizar a Plataforma na qualidade de Criador(a), o(a) usuário(a) manifesta concordância integral, livre e informada com todos os termos aqui estabelecidos, na versão vigente na data do aceite. A Velvet mantém registro eletrônico do aceite, incluindo: identificação do usuário, data e hora, endereço IP, identificador de sessão, versão dos Termos aceita e hash do documento vigente.`);
 
-    // ── 1. DEFINIÇÕES ────────────────────────────────────────────────
-    secao("1. DEFINIÇÕES");
-    item(`"Plataforma": sistema digital Velvet, incluindo aplicativo, website, APIs, ferramentas e infraestrutura correlata, disponibilizada para publicação, monetização e distribuição de conteúdo.`);
-    item(`"Criador(a)": pessoa física maior de 18 anos que, mediante cadastro aprovado, publica, disponibiliza e monetiza Conteúdo na Plataforma.`);
-    item(`"Assinante" ou "Usuário": consumidor que acessa Conteúdo publicado por Criadores mediante pagamento de assinatura, compra avulsa ou outra modalidade disponível.`);
-    item(`"Conteúdo": qualquer material publicado pelo(a) Criador(a), incluindo imagens, fotografias, vídeos, áudios, textos, transmissões ao vivo e demais formatos disponíveis na Plataforma.`);
-    item(`"Participante": qualquer pessoa física que apareça, seja identificável ou participe de qualquer forma em Conteúdo publicado pelo(a) Criador(a), além do(a) próprio(a) Criador(a).`);
-    item(`"Chargeback": contestação de cobrança iniciada pelo titular do meio de pagamento junto à instituição financeira ou bandeira, resultando em reversão potencial de valores.`);
-    item(`"Gateway": empresa processadora de pagamentos utilizada pela Velvet para processamento de transações.`);
-
-    // ── 2. ELEGIBILIDADE E VERIFICAÇÃO ───────────────────────────────
-    secao("2. ELEGIBILIDADE, VERIFICAÇÃO DE IDENTIDADE E MAIORIDADE (KYC)");
-    sub("2.1. Requisitos de Elegibilidade");
-    corpo("O(A) Criador(a) declara e garante, sob as penas da lei, que:");
-    item("a) é pessoa física com capacidade civil plena;");
-    item("b) possui idade igual ou superior a 18 (dezoito) anos na data do cadastro e durante toda a vigência deste Contrato;");
-    item("c) não está impedido(a) por lei, decisão judicial ou regulamentação aplicável de utilizar serviços digitais, publicar conteúdo ou exercer atividade de criador(a) de conteúdo em plataformas digitais;");
-    item("d) atua de forma lícita, em conformidade com a legislação brasileira vigente.");
-    sub("2.2. Verificação de Identidade e Maioridade (KYC)");
-    corpo("O cadastro como Criador(a) na Velvet está condicionado à aprovação mediante processo obrigatório de verificação de identidade (Know Your Customer — KYC), em conformidade com a Lei n.º 15.211/2025, o Decreto n.º 12.880/2026 e demais normas regulatórias vigentes.");
-    corpo("Para aprovação da conta, o(a) Criador(a) deverá, obrigatoriamente:");
-    item("a) fornecer dados completos de identificação, incluindo nome completo, data de nascimento e endereço residencial;");
-    item("b) enviar fotografias nítidas do documento de identidade oficial com foto (frente e verso);");
-    item("c) enviar selfie segurando o próprio documento de identidade, de forma que rosto e documento sejam claramente visíveis e legíveis;");
-    item("d) ter os dados e documentos aprovados pela equipe de verificação da Velvet antes de qualquer atividade de publicação ou monetização.");
-    corpo("A conta somente será ativada após aprovação do KYC. A autodeclaração de maioridade não substitui o processo de verificação documental obrigatório. A Velvet poderá, a qualquer tempo, solicitar atualização de documentos ou revalidação de identidade, sob pena de suspensão ou encerramento da conta.");
-    sub("2.3. Proibição Absoluta de Participação de Menores");
-    corpo("É expressamente vedada, sob qualquer circunstância, a publicação de Conteúdo em que apareça pessoa menor de 18 anos, ainda que apenas parcialmente identificável, haja referência ou alusão à participação de menor, ou seja utilizado figurino, cenário ou linguagem que sugira a participação de menor em contexto sexual. A violação configura falta gravíssima, ensejará encerramento imediato e definitivo da conta, comunicação imediata às autoridades competentes e responsabilização civil e criminal do(a) Criador(a).");
-
-    // ── 3. NATUREZA DA RELAÇÃO ───────────────────────────────────────
-    secao("3. NATUREZA DA RELAÇÃO");
-    corpo("3.1. O(A) Criador(a) atua como prestador(a) de serviços autônomo(a), sem vínculo empregatício, societário, associativo ou de representação comercial que implique subordinação à Velvet.");
-    corpo("3.2. A Velvet não determina horários de publicação, não controla a jornada do(a) Criador(a), não dirige pessoalmente a execução de seu trabalho e não exige exclusividade na prestação de serviços.");
-    corpo("3.3. O(A) Criador(a) é livre para definir seu ritmo, horários, temas e formato de Conteúdo, desde que observadas as disposições deste Contrato e a legislação vigente.");
-
-    // ── 4. CADASTRO, CONTA E SEGURANÇA ──────────────────────────────
-    secao("4. CADASTRO, CONTA E SEGURANÇA");
-    corpo("4.1. O(A) Criador(a) é responsável por:");
-    item("a) fornecer informações cadastrais verdadeiras, completas e atualizadas;");
-    item("b) manter a confidencialidade de suas credenciais de acesso;");
-    item("c) não compartilhar, ceder, vender, alugar ou transferir sua conta a terceiros;");
-    item("d) não permitir acesso de terceiros à sua conta, ainda que temporariamente;");
-    item("e) comunicar à Velvet imediatamente qualquer acesso não autorizado ou suspeita de comprometimento da conta;");
-    item("f) encerrar sessões abertas em dispositivos de terceiros.");
-    corpo("4.2. O(A) Criador(a) é responsável por todas as ações realizadas através de sua conta, independentemente de quem as tenha executado.");
-    sub("4.3. Exceção — Agências Parceiras Autorizadas");
-    corpo("As vedações dos itens 4.1.c) e 4.1.d) não se aplicam quando o(a) Criador(a) optar por ser gerenciado(a) por Agência Parceira formalmente autorizada pela Velvet, observadas as seguintes condições:");
-    item("a) a Agência Parceira deve estar previamente cadastrada, aprovada e autorizada pela Velvet;");
-    item("b) o(a) Criador(a) deve formalizar, junto à Velvet, a autorização de gestão pela respectiva Agência Parceira através do mecanismo disponível na Plataforma;");
-    item("c) mesmo com gestão por Agência Parceira, o(a) Criador(a) permanece titular da conta e mantém responsabilidade integral por todo o Conteúdo publicado;");
-    item("d) a autorização de acesso pela Agência Parceira poderá ser revogada pelo(a) Criador(a) a qualquer tempo, mediante comunicação à Velvet;");
-    item("e) a Velvet não se responsabiliza por atos praticados por Agências Parceiras no gerenciamento de contas de Criadores.");
-    corpo("4.4. A Velvet poderá exigir verificação adicional de identidade a qualquer tempo, incluindo autenticação em dois fatores ou outros mecanismos de segurança.");
-    corpo("4.5. É expressamente proibido: criar conta com identidade de outra pessoa; utilizar fotografias ou dados de terceiros como se fossem próprios; criar múltiplas contas para burlar suspensão; utilizar documentos falsos ou adulterados.");
-
-    // ── 5. CONTEÚDO PUBLICADO ────────────────────────────────────────
-    secao("5. CONTEÚDO PUBLICADO — DECLARAÇÕES E GARANTIAS");
-    corpo("Ao publicar qualquer Conteúdo, o(a) Criador(a) declara e garante que:");
-    item("a) detém todos os direitos necessários sobre o Conteúdo, incluindo direitos autorais, de imagem e de personalidade;");
-    item("b) o Conteúdo não viola direitos de terceiros, incluindo direitos autorais, marcas, privacidade, honra e imagem;");
-    item("c) o Conteúdo não infringe a legislação brasileira ou de jurisdições aplicáveis;");
-    item("d) obteve todos os consentimentos e autorizações necessários de todos os Participantes;");
-    item("e) nenhum Participante é menor de 18 anos;");
-    item("f) possui documentação comprobatória de todos os itens acima e a manterá pelo prazo mínimo de 5 (cinco) anos.");
-
-    // ── 6. CONSENTIMENTO DE PARTICIPANTES ───────────────────────────
-    secao("6. CONSENTIMENTO DE PARTICIPANTES");
-    corpo("6.1. Antes de publicar qualquer Conteúdo que envolva Participante, o(a) Criador(a) é exclusivamente responsável por obter, documentar e manter:");
-    item("a) consentimento livre, prévio, expresso, informado e inequívoco para participação;");
-    item("b) autorização específica para gravação, publicação, monetização e armazenamento digital do Conteúdo;");
-    item("c) autorização para criação de thumbnails, previews e materiais derivados;");
-    item("d) comprovação da maioridade do Participante, mediante documento de identidade com foto;");
-    item("e) identificação suficiente do Participante para comprovação da autorização.");
-    corpo("6.2. A autorização deve ser obtida de forma documentada, preferencialmente por escrito, com data anterior à publicação do Conteúdo. A documentação deve ser conservada pelo prazo mínimo de 5 (cinco) anos e apresentada à Velvet quando solicitado, no prazo de 48 horas.");
-    corpo("6.3. O(A) Criador(a) não poderá, sob nenhuma circunstância, alegar que Participante não autorizou a publicação com a finalidade de afastar sua responsabilidade perante a Velvet ou solicitar indenização da Velvet decorrente de reclamação do Participante.");
-
-    // ── 7. CONTEÚDO PROIBIDO ─────────────────────────────────────────
-    secao("7. CONTEÚDO PROIBIDO");
-    corpo("É expressamente proibida a publicação de Conteúdo que:");
-    item("a) envolva, represente, sugira ou aluda à participação de pessoa menor de 18 anos em contexto sexual ou erótico;");
-    item("b) contenha violência real, não consensual ou praticada sem autorização de todos os envolvidos;");
-    item("c) seja ilegal nos termos da legislação brasileira;");
-    item("d) constitua discurso de ódio, incitação à violência ou discriminação;");
-    item("e) viole direitos autorais, marcas ou demais direitos de propriedade intelectual de terceiros;");
-    item("f) seja obtido mediante fraude, coerção, ameaça ou ausência de consentimento válido;");
-    item("g) identifique ou exponha dados pessoais de terceiros sem autorização;");
-    item("h) simule ou envolva material relacionado a abuso sexual infantil (CSAM), ainda que fictício.");
-
-    // ── 8. RESPONSABILIDADE, MODERAÇÃO E NOTICE & TAKEDOWN ──────────
-    secao("8. RESPONSABILIDADE PELO CONTEÚDO, MODERAÇÃO E NOTICE AND TAKEDOWN");
-    corpo("8.1. O(A) Criador(a) é exclusivamente responsável por todo o Conteúdo que publicar, incluindo sua licitude, veracidade e conformidade com este Contrato e a legislação aplicável.");
-    corpo("8.2. A Velvet poderá adotar mecanismos automatizados ou humanos de análise, moderação, verificação, remoção e bloqueio de Conteúdos e contas, a seu exclusivo critério. A realização ou ausência de análise prévia não constitui garantia de aprovação, licitude ou conformidade do Conteúdo publicado.");
-    corpo("8.3. Diante de denúncia ou suspeita de violação de direitos autorais, publicação de Conteúdo sem consentimento de Participante, participação de menor, ou violação de qualquer disposição deste Contrato, a Velvet poderá, sem aviso prévio: bloquear preventivamente o Conteúdo; solicitar documentação ao(à) Criador(a) no prazo de 48 horas; manter o Conteúdo indisponível durante a análise; fornecer informações às autoridades competentes quando legalmente obrigada; e encerrar a conta em casos de violação grave ou comprovada.");
-
-    // ── 9. LICENÇA DE CONTEÚDO ───────────────────────────────────────
-    secao("9. LICENÇA DE CONTEÚDO");
-    corpo("9.1. O(A) Criador(a) concede à Velvet licença não exclusiva, mundial, irrevogável durante a vigência do Contrato, isenta de royalties adicionais, para:");
-    item("a) reproduzir, armazenar, hospedar, transmitir e disponibilizar o Conteúdo aos Assinantes autorizados;");
-    item("b) criar thumbnails, previews e materiais derivados para funcionamento e divulgação da Plataforma;");
-    item("c) processar tecnicamente o Conteúdo, incluindo compressão, conversão de formato e otimização;");
-    item("d) realizar backup e manutenção de cópias de segurança;");
-    item("e) manter o Conteúdo disponível pelo período necessário para cumprimento de obrigações legais ou resolução de disputas, ainda que após o encerramento da conta.");
-    corpo("9.2. Esta licença não transfere a propriedade intelectual do Conteúdo para a Velvet. O(A) Criador(a) permanece titular dos direitos autorais e demais direitos de propriedade intelectual sobre o Conteúdo que produzir.");
-
-    // ── 10. MONETIZAÇÃO ──────────────────────────────────────────────
-    secao("10. MONETIZAÇÃO E COMISSÃO");
-    corpo("10.1. O(A) Criador(a) poderá monetizar seu Conteúdo através das modalidades disponíveis na Plataforma, incluindo assinaturas recorrentes, conteúdos pagos avulsos, gorjetas e demais mecanismos disponibilizados.");
-    corpo("10.2. A Velvet reterá percentual sobre as receitas geradas, conforme tabela de comissões disponível na Plataforma, sujeita a alteração mediante comunicação prévia.");
-    corpo("10.3. Caso o(a) Criador(a) esteja vinculado(a) a Agência Parceira autorizada, poderá haver retenção adicional ajustada entre a Agência e o(a) próprio(a) Criador(a). A Velvet não integra essa relação contratual privada.");
-
-    // ── 11. PAGAMENTOS, RETENÇÃO E RESERVA FINANCEIRA ───────────────
-    secao("11. PAGAMENTOS, RETENÇÃO E RESERVA FINANCEIRA");
-    corpo("11.1. Os repasses ao(à) Criador(a) seguirão o calendário divulgado na Plataforma, sujeito a processamento pelos Gateways.");
-    corpo("11.2. A Velvet poderá suspender temporariamente repasses quando houver: Chargeback ou contestação de cobrança; suspeita de fraude ou irregularidade; investigação interna ou externa; violação contratual em apuração; obrigação legal ou determinação de autoridade competente; determinação do Gateway em razão de risco de reversão; período de carência para proteção contra reversões.");
-    corpo("11.3. Os valores retidos serão liberados após: resolução definitiva do Chargeback em favor do(a) Criador(a); encerramento da investigação sem irregularidade; ou decurso do período de proteção aplicável.");
-    corpo("11.4. O(A) Criador(a) autoriza expressamente a Velvet a: descontar de repasses futuros valores correspondentes a Chargebacks confirmados; compensar valores devidos com repasses futuros; bloquear temporariamente saldo durante investigação; solicitar devolução de valores identificados como recebidos indevidamente.");
-
-    // ── 12. FRAUDE E CHARGEBACK ──────────────────────────────────────
-    secao("12. FRAUDE E CHARGEBACK");
-    corpo("12.1. Em caso de Chargeback, o(a) Criador(a) poderá ter o valor correspondente deduzido de repasses futuros, além de estar sujeito(a) à suspensão temporária ou definitiva da conta.");
-    corpo("12.2. A taxa de Chargeback será monitorada pela Velvet. Índices considerados elevados conforme parâmetros dos Gateways poderão ensejar restrições operacionais à conta.");
-    corpo("12.3. É vedada qualquer tentativa de manipulação financeira, incluindo acordos para geração artificial de receita, Chargebacks simulados ou qualquer prática que vise fraudar os sistemas de pagamento da Plataforma ou dos Gateways.");
-
-    // ── 13. OBRIGAÇÕES FISCAIS ───────────────────────────────────────
-    secao("13. OBRIGAÇÕES FISCAIS E TRIBUTÁRIAS");
-    corpo("13.1. O(A) Criador(a) é exclusivamente responsável por: apurar e recolher todos os tributos incidentes sobre seus rendimentos; manter CPF ou CNPJ em situação regular; manter dados fiscais atualizados na Plataforma; emitir documentos fiscais exigidos pela legislação; declarar seus rendimentos perante a Receita Federal; e fornecer à Velvet documentação fiscal quando exigida por lei.");
-    corpo("13.2. Esta cláusula não elimina eventuais obrigações tributárias próprias da Velvet decorrentes de sua atividade como intermediária de serviços digitais.");
-
-    // ── 14. PROTEÇÃO DE DADOS PESSOAIS (LGPD) ───────────────────────
-    secao("14. PROTEÇÃO DE DADOS PESSOAIS (LGPD)");
-    corpo("14.1. A Velvet atua como controladora dos dados pessoais dos Assinantes e demais usuários, nos termos da Lei n.º 13.709/2018 (LGPD).");
-    corpo("14.2. O(A) Criador(a) compromete-se a: utilizar dados pessoais de Assinantes exclusivamente para finalidades relacionadas à interação dentro da Plataforma; não coletar, copiar, exportar ou processar dados pessoais de Assinantes fora da Plataforma; não comercializar ou compartilhar dados de Assinantes a terceiros; comunicar à Velvet imediatamente qualquer incidente de segurança.");
-    corpo("14.3. É expressamente vedado ao(à) Criador(a) utilizar, copiar, armazenar, comercializar ou compartilhar dados pessoais, informações de contato ou qualquer informação obtida de Assinantes através da Velvet para qualquer finalidade externa à Plataforma, salvo quando expressamente autorizado pela Velvet ou exigido por determinação legal ou judicial.");
-
-    // ── 15. NÃO UTILIZAÇÃO DOS ASSINANTES FORA DA PLATAFORMA ────────
-    secao("15. NÃO UTILIZAÇÃO DOS ASSINANTES FORA DA PLATAFORMA");
-    corpo("15.1. O(A) Criador(a) não poderá utilizar informações ou contatos obtidos através da Velvet para:");
-    item("a) direcionar, induzir ou solicitar que Assinantes migrem para outra plataforma concorrente;");
-    item("b) solicitar pagamentos diretos de Assinantes em substituição ao sistema de pagamentos da Velvet, incluindo transferências bancárias, PIX, criptomoedas ou qualquer outro meio;");
-    item("c) vender Conteúdo diretamente a Assinantes obtidos pela Velvet fora do ambiente da Plataforma;");
-    item("d) contactar Assinantes para finalidades não relacionadas às interações da Plataforma;");
-    item("e) compartilhar dados de contato de Assinantes com terceiros.");
-    corpo("15.2. Esta restrição aplica-se durante a vigência do Contrato e por 12 (doze) meses após seu encerramento. A violação configura falta grave, podendo ensejar encerramento imediato da conta e responsabilização por perdas e danos sofridos pela Velvet.");
-
-    // ── 16. SUSPENSÃO E ENCERRAMENTO DE CONTA ───────────────────────
-    secao("16. SUSPENSÃO E ENCERRAMENTO DE CONTA");
-    corpo("16.1. A Velvet poderá, conforme a gravidade e necessidade do caso, remover Conteúdo, limitar funcionalidades, suspender temporária ou definitivamente, ou encerrar a conta do(a) Criador(a), inclusive de forma preventiva, nos seguintes casos: suspeita ou confirmação de fraude; Chargeback ou contestação; violação de qualquer disposição deste Contrato; denúncia de direitos autorais; denúncia ou suspeita de ausência de consentimento de Participante; suspeita ou constatação de participação de menor; solicitação de autoridade competente; risco jurídico, regulatório ou reputacional; comportamento abusivo a outros usuários; manipulação financeira; descumprimento de prazo para documentação; taxa de Chargeback elevada; ou qualquer conduta incompatível com a operação da Plataforma.");
-    corpo("16.2. A Velvet comunicará o encerramento definitivo ao(à) Criador(a), salvo quando a comunicação prévia puder comprometer investigação em curso.");
-
-    // ── 17. LIMITAÇÃO DE RESPONSABILIDADE DA VELVET ─────────────────
-    secao("17. LIMITAÇÃO DE RESPONSABILIDADE DA VELVET");
-    corpo("17.1. A Velvet não se responsabiliza por: perda de receita ou expectativa de ganhos do(a) Criador(a); ações, conteúdo ou comportamento de terceiros, incluindo Assinantes; falhas em sistemas externos ou Gateways de pagamento; indisponibilidade temporária da Plataforma por causas técnicas ou de força maior; decisões de redes sociais externas; reprodução não autorizada de Conteúdo por terceiros fora da Plataforma.");
-    corpo("17.2. A Velvet adotará medidas técnicas e administrativas razoáveis de segurança, compatíveis com a natureza da Plataforma. O(A) Criador(a) reconhece que nenhum sistema digital oferece proteção absoluta contra reprodução, captura ou redistribuição não autorizada de Conteúdo por terceiros, sendo esse risco inerente ao ambiente digital.");
-
-    // ── 18. INDENIZAÇÃO ──────────────────────────────────────────────
-    secao("18. INDENIZAÇÃO");
-    corpo("18.1. O(A) Criador(a) deverá indenizar e manter a Velvet, seus administradores, colaboradores, representantes e parceiros indenes de toda e qualquer perda, dano, custo, despesa, condenação, acordo, multa e honorário advocatício decorrente de atos ou omissões imputáveis ao(à) Criador(a), incluindo: violação deste Contrato; violação de direitos de terceiros; ausência ou insuficiência de consentimento de Participante; publicação de Conteúdo ilegal ou que envolva menor de 18 anos; descumprimento de legislação aplicável; fraudes ou irregularidades financeiras.");
-    corpo("18.2. A obrigação de indenização está diretamente vinculada a atos ou omissões imputáveis ao(à) Criador(a), não abrangendo responsabilidades legais próprias da Velvet decorrentes de sua atividade como operadora de Plataforma.");
-
-    // ── 19. CONFIDENCIALIDADE ────────────────────────────────────────
-    secao("19. CONFIDENCIALIDADE");
-    corpo("19.1. O(A) Criador(a) compromete-se a manter em sigilo: informações internas da Velvet a que tenha acesso; dados pessoais e de uso de Assinantes; condições comerciais não públicas deste Contrato; informações técnicas e operacionais da Plataforma. A obrigação de confidencialidade subsiste pelo prazo de 2 (dois) anos após o encerramento do Contrato.");
-
-    // ── 20. DIVULGAÇÃO EXTERNA E MARKETING ──────────────────────────
-    secao("20. DIVULGAÇÃO EXTERNA E POLÍTICA DE MARKETING");
-    corpo("20.1. O(A) Criador(a) é integralmente responsável pela divulgação de seu perfil e Conteúdo fora da Plataforma. A Velvet não possui controle sobre redes sociais ou plataformas externas e não se responsabiliza por banimentos, bloqueios ou restrições impostos por plataformas externas.");
-    corpo("20.2. O(A) Criador(a) não poderá utilizar dados de Assinantes obtidos na Velvet para direcioná-los a canais externos, nos termos da Seção 15. Na divulgação externa, o(a) Criador(a) deve observar as regras de cada plataforma e não praticar condutas enganosas ou abusivas.");
-
-    // ── 21. ALTERAÇÕES DOS TERMOS ────────────────────────────────────
-    secao("21. ALTERAÇÕES DOS TERMOS");
-    corpo("21.1. A Velvet poderá alterar estes Termos para adequação legal, regulatória, técnica, operacional ou comercial. Alterações relevantes serão comunicadas ao(à) Criador(a) por meio adequado com antecedência mínima de 15 (quinze) dias, salvo quando exigidas por lei ou autoridade competente. O uso continuado da Plataforma após a comunicação implica aceite tácito das novas disposições. A Velvet manterá registro das versões anteriores dos Termos associadas ao aceite de cada Criador(a).");
-
-    // ── 22. ACEITE ELETRÔNICO E VERSIONAMENTO ────────────────────────
-    secao("22. ACEITE ELETRÔNICO E VERSIONAMENTO");
-    corpo("22.1. O aceite deste Contrato é formalizado pelo(a) Criador(a) mediante marcação de checkbox de aceite, conclusão do processo de cadastro, ou uso continuado da Plataforma após comunicação de atualização dos Termos.");
-    corpo("22.2. A Velvet manterá registro eletrônico de cada aceite, contendo: identificação do usuário, data e hora, endereço IP, identificador de sessão, versão dos Termos aceita e hash da versão do documento. Esses registros serão mantidos pelo prazo mínimo de 5 (cinco) anos e poderão ser utilizados como prova em qualquer procedimento administrativo ou judicial.");
-
-    // ── 23. DISPOSIÇÕES GERAIS ───────────────────────────────────────
-    secao("23. DISPOSIÇÕES GERAIS");
-    corpo("23.1. Este Contrato é regido pela legislação da República Federativa do Brasil. Fica eleito o foro da Comarca de São Paulo/SP, com renúncia a qualquer outro, para dirimir quaisquer disputas.");
-    corpo("23.2. A eventual invalidade de uma cláusula não afeta as demais disposições deste Contrato.");
-    corpo("23.3. A tolerância da Velvet em relação a eventual descumprimento não implica renúncia ao direito de exigir o cumprimento posterior.");
-    corpo("23.4. Para dúvidas, notificações ou comunicações: contato@velvet.lat");
+    const fn = { s: secao, b: sub, p: corpo, i: item };
+    for (const [tipo, txt] of blocos) fn[tipo](txt);
 
     // ── Declaração Final da Criadora ─────────────────────────────────
     doc.moveDown(0.8);
     doc.moveTo(L, doc.y).lineTo(L + W, doc.y).stroke();
     doc.moveDown(0.5);
     doc.font("Helvetica-Bold").fontSize(9)
-       .text("DECLARAÇÃO FINAL DA CRIADORA", L, doc.y, { width: W, align: "center" });
+       .text(T.declTitulo, L, doc.y, { width: W, align: "center" });
     doc.moveDown(0.3);
     doc.font("Helvetica").fontSize(9)
-       .text("Ao assinar este contrato eletronicamente, a CRIADORA declara expressamente que:", L, doc.y, { width: W });
+       .text(T.declIntro, L, doc.y, { width: W });
     doc.moveDown(0.2);
-    item("I – é maior de 18 anos e realizou o processo de verificação KYC obrigatório;");
-    item("II – leu, compreendeu e concorda integralmente com todos os termos aqui estabelecidos;");
-    item("III – atua de forma autônoma e independente, sem vínculo empregatício com a Velvet;");
-    item("IV – assume responsabilidade integral pelos conteúdos que publicar, incluindo obtenção de consentimento de todos os Participantes;");
-    item("V – responsabiliza-se exclusivamente por suas obrigações fiscais e tributárias;");
-    item("VI – reconhece a validade jurídica desta assinatura eletrônica como prova de aceite.");
+    T.declItens.forEach(item);
 
     // ── Assinaturas ─────────────────────────────────────────────────
+    // Mantém data + carimbo + assinatura da criadora juntos na mesma página
+    if (doc.y + 230 > doc.page.height - 60) doc.addPage();
     doc.moveDown(1.2);
     doc.font("Helvetica").fontSize(9)
-       .text(`São Paulo/SP, ${dados.dataHoje}.`, L, doc.y, { width: W });
+       .text(T.cidadeData(dados.dataHoje), L, doc.y, { width: W });
     doc.moveDown(1.4);
 
     const metade = (W - 40) / 2;
     const col2 = L + metade + 40;
 
-    doc.font("Helvetica-Bold").fontSize(9)
-       .text("VELVET ENTERTAINMENT LTDA", L, doc.y, { width: metade });
-    const yAssin = doc.y;
-    doc.font("Helvetica").fontSize(9)
-       .text("CNPJ: 66.615.892/0001-43", L, doc.y, { width: metade })
-       .text("Representante Legal: _________________________", L, doc.y, { width: metade });
+    let yAssin;
+    if (CARIMBO_VELVET) {
+      // Carimbo com assinatura da Velvet (já inclui razão social, CNPJ e representante)
+      const yCarimbo = doc.y;
+      doc.image(CARIMBO_VELVET, L, yCarimbo, { fit: [metade, 115] });
+      yAssin = yCarimbo;
+    } else {
+      doc.font("Helvetica-Bold").fontSize(9)
+         .text("VELVET ENTERTAINMENT LTDA", L, doc.y, { width: metade });
+      yAssin = doc.y;
+      doc.font("Helvetica").fontSize(9)
+         .text("CNPJ: 66.615.892/0001-43", L, doc.y, { width: metade })
+         .text(T.velvetRep, L, doc.y, { width: metade });
+    }
 
     doc.font("Helvetica-Bold").fontSize(9)
-       .text("CRIADORA / MODELO / INFLUENCER", col2, yAssin, { width: metade });
+       .text(T.criadora, col2, yAssin, { width: metade });
     doc.font("Helvetica").fontSize(9)
-       .text(`Nome: ${dados.nome || "________________________________"}`, col2, doc.y + 4, { width: metade })
-       .text(`E-mail: ${dados.email || "______________________________"}`, col2, doc.y, { width: metade });
+       .text(`${T.nome}: ${dados.nome || "________________________________"}`, col2, doc.y + 4, { width: metade })
+       .text(`${T.email}: ${dados.email || "______________________________"}`, col2, doc.y, { width: metade });
 
     if (dados.assinaturaPng) {
-      doc.text("Assinatura Eletrônica:", col2, doc.y + 4, { width: metade });
+      doc.text(`${T.assinatura}:`, col2, doc.y + 4, { width: metade });
       const yImg = doc.y + 2;
       doc.image(dados.assinaturaPng, col2, yImg, { fit: [metade, 60] });
       doc.y = yImg + 62;
       doc.moveTo(col2, doc.y).lineTo(col2 + metade, doc.y).stroke();
     } else {
-      doc.text("Assinatura Eletrônica: ______________________", col2, doc.y + 4, { width: metade });
+      doc.text(`${T.assinatura}: ______________________`, col2, doc.y + 4, { width: metade });
     }
 
     // ── Certificado de assinatura (só no documento assinado) ────────
     if (dados.certificado) {
       const c = dados.certificado;
+      const C = T.cert;
       doc.addPage();
       doc.font("Helvetica-Bold").fontSize(13)
-         .text("CERTIFICADO DE ASSINATURA ELETRÔNICA", L, L, { width: W, align: "center" });
+         .text(C.titulo, L, L, { width: W, align: "center" });
       doc.moveDown(0.5);
       doc.moveTo(L, doc.y).lineTo(L + W, doc.y).stroke();
       doc.moveDown(0.8);
@@ -15857,15 +15690,16 @@ function gerarContratoPDFBuffer(dados) {
         doc.font("Helvetica").fontSize(9).text(String(v || "—"), L, doc.y, { width: W });
         doc.moveDown(0.5);
       };
-      linha("Signatária", `${dados.nome} <${dados.email}>`);
-      linha("Data/hora da assinatura (Brasília)", c.assinadoEm);
-      linha("Endereço IP", c.ip);
-      linha("Dispositivo / navegador", c.userAgent);
-      linha("ID da modelo na plataforma", c.modeloId);
-      linha("Impressão digital (SHA-256) do contrato antes da assinatura", c.hashOriginal);
+      linha(C.signataria, `${dados.nome} <${dados.email}>`);
+      linha(C.dataHora, c.assinadoEm);
+      linha(C.ip, c.ip);
+      linha(C.dispositivo, c.userAgent);
+      linha(C.modeloId, c.modeloId);
+      linha(C.idioma, C.idiomaNome);
+      linha(C.hash, c.hashOriginal);
       doc.moveDown(0.5);
       doc.font("Helvetica").fontSize(8).fillColor("#555")
-         .text("Este documento foi assinado eletronicamente por desenho manuscrito na tela, mediante aceite expresso da signatária, com registro de data, hora, IP e dispositivo, nos termos do art. 10, §2º da MP 2.200-2/2001 e da Lei 14.063/2020.", L, doc.y, { width: W, align: "justify" });
+         .text(C.nota, L, doc.y, { width: W, align: "justify" });
       doc.fillColor("#000");
     }
 
@@ -15887,8 +15721,9 @@ async function carregarDadosContratoModelo(userId) {
   return r.rows[0] || null;
 }
 
-function dataExtensoHoje() {
-  return new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric", timeZone: "America/Sao_Paulo" });
+function dataExtensoHoje(lang) {
+  const locale = contratoTextos.meta[contratoTextos.normalizarIdioma(lang)].locale;
+  return new Date().toLocaleDateString(locale, { day: "2-digit", month: "long", year: "numeric", timeZone: "America/Sao_Paulo" });
 }
 
 // GET /api/verificacao/contrato/status
@@ -15922,7 +15757,8 @@ app.get("/api/verificacao/contrato/pdf", auth, async (req, res) => {
       }).promise();
       pdfBuffer = obj.Body;
     } else {
-      pdfBuffer = await gerarContratoPDFBuffer({ nome: m.nome_completo, email: m.email, dataHoje: dataExtensoHoje() });
+      const lang = contratoTextos.normalizarIdioma(req.query.lang);
+      pdfBuffer = await gerarContratoPDFBuffer({ nome: m.nome_completo, email: m.email, dataHoje: dataExtensoHoje(lang), lang });
     }
 
     res.setHeader("Content-Type", "application/pdf");
@@ -15949,6 +15785,7 @@ app.post("/api/verificacao/contrato/assinar", auth, contratoLimiter, express.jso
     }
 
     const { assinatura, aceite } = req.body || {};
+    const lang = contratoTextos.normalizarIdioma(req.body?.lang);
     if (aceite !== true) {
       return res.status(400).json({ erro: "É necessário confirmar que leu e concorda com o contrato." });
     }
@@ -15969,10 +15806,10 @@ app.post("/api/verificacao/contrato/assinar", auth, contratoLimiter, express.jso
 
     const ip = req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.socket?.remoteAddress || null;
     const userAgent = String(req.headers["user-agent"] || "").slice(0, 300);
-    const dataHoje = dataExtensoHoje();
+    const dataHoje = dataExtensoHoje(lang);
 
     // Hash do contrato sem assinatura (mesmo texto que a modelo leu)
-    const original = await gerarContratoPDFBuffer({ nome: m.nome_completo, email: m.email, dataHoje });
+    const original = await gerarContratoPDFBuffer({ nome: m.nome_completo, email: m.email, dataHoje, lang });
     const hashOriginal = crypto.createHash("sha256").update(original).digest("hex");
 
     const assinadoEm = new Date();
@@ -15980,6 +15817,7 @@ app.post("/api/verificacao/contrato/assinar", auth, contratoLimiter, express.jso
       nome: m.nome_completo,
       email: m.email,
       dataHoje,
+      lang,
       assinaturaPng,
       certificado: {
         assinadoEm: assinadoEm.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" }),
@@ -16002,9 +15840,10 @@ app.post("/api/verificacao/contrato/assinar", auth, contratoLimiter, express.jso
               contrato_pdf_url = $3,
               contrato_assinatura_ip = $4,
               contrato_assinatura_ua = $5,
-              contrato_hash = $6
+              contrato_hash = $6,
+              contrato_idioma = $7
         WHERE id = $1`,
-      [m.id, assinadoEm, r2Key, ip, userAgent, hashOriginal]
+      [m.id, assinadoEm, r2Key, ip, userAgent, hashOriginal, lang]
     );
 
     // Anexa à verificação (o dashadmin lê modelos_verificacao.contrato_pdf_url)
@@ -17465,7 +17304,8 @@ db.query(`
   ALTER TABLE modelos
     ADD COLUMN IF NOT EXISTS contrato_assinatura_ip TEXT,
     ADD COLUMN IF NOT EXISTS contrato_assinatura_ua TEXT,
-    ADD COLUMN IF NOT EXISTS contrato_hash TEXT
+    ADD COLUMN IF NOT EXISTS contrato_hash TEXT,
+    ADD COLUMN IF NOT EXISTS contrato_idioma VARCHAR(5)
 `).catch(err => console.error("Migração contrato assinatura própria:", err.message));
 
 // Migração: colunas Synexis Sign (legado, não usadas — o contrato usa ZapSign)

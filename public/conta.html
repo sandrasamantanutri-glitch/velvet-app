@@ -359,18 +359,18 @@
 
     <!-- Estado: a assinar -->
     <div id="contratoAAssinar">
-      <p class="form-info" style="margin-bottom:12px;">
+      <p class="form-info" style="margin-bottom:12px;" data-i18n="conta.contrato_intro">
         📋 Lê o contrato até ao fim e assina com o dedo (ou rato) no final da página.
       </p>
 
       <div class="contrato-toolbar">
-        <button type="button" class="contrato-btn" id="btnContratoSalvar">⬇️ Salvar PDF</button>
-        <button type="button" class="contrato-btn" id="btnContratoImprimir">🖨️ Imprimir</button>
+        <button type="button" class="contrato-btn" id="btnContratoSalvar" data-i18n="conta.contrato_salvar">⬇️ Salvar PDF</button>
+        <button type="button" class="contrato-btn" id="btnContratoImprimir" data-i18n="conta.contrato_imprimir">🖨️ Imprimir</button>
       </div>
 
       <div id="contratoLoadingMsg" style="text-align:center; padding:24px; color:#888;">
         <div class="spinner" style="margin: 0 auto 12px;"></div>
-        <p>A preparar o contrato...</p>
+        <p data-i18n="conta.contrato_preparando">A preparar o contrato...</p>
       </div>
 
       <!-- Janela de leitura com rolagem -->
@@ -378,24 +378,24 @@
         <div id="contratoPaginas" class="contrato-paginas"></div>
 
         <div id="contratoAssinaturaBox" class="contrato-assinatura">
-          <h4>Assinatura</h4>
-          <p class="form-info">Desenha a tua assinatura no quadro abaixo.</p>
+          <h4 data-i18n="conta.contrato_assinatura">Assinatura</h4>
+          <p class="form-info" data-i18n="conta.contrato_assinar_hint">Desenha a tua assinatura no quadro abaixo.</p>
           <div class="contrato-canvas-wrap">
             <canvas id="contratoCanvas"></canvas>
-            <span id="contratoCanvasHint" class="contrato-canvas-hint">Assina aqui</span>
+            <span id="contratoCanvasHint" class="contrato-canvas-hint" data-i18n="conta.contrato_assinar_aqui">Assina aqui</span>
           </div>
           <div class="contrato-assinatura-acoes">
-            <button type="button" class="contrato-btn" id="btnContratoLimpar">Limpar</button>
+            <button type="button" class="contrato-btn" id="btnContratoLimpar" data-i18n="conta.contrato_limpar">Limpar</button>
           </div>
           <label class="contrato-aceite">
             <input type="checkbox" id="contratoAceite">
-            <span>Li e concordo com todos os termos deste contrato e reconheço a validade da minha assinatura eletrónica.</span>
+            <span data-i18n="conta.contrato_aceite">Li e concordo com todos os termos deste contrato e reconheço a validade da minha assinatura eletrónica.</span>
           </label>
-          <button type="button" class="btn-salvar" id="btnContratoAssinar" disabled>✍️ Assinar e enviar contrato</button>
+          <button type="button" class="btn-salvar" id="btnContratoAssinar" data-i18n="conta.contrato_btn_assinar" disabled>✍️ Assinar e enviar contrato</button>
         </div>
       </div>
 
-      <p id="contratoScrollHint" class="form-info hidden" style="text-align:center; margin-top:8px;">⬇️ Rola até ao fim do contrato para poder assinar</p>
+      <p id="contratoScrollHint" data-i18n="conta.contrato_rolar" class="form-info hidden" style="text-align:center; margin-top:8px;">⬇️ Rola até ao fim do contrato para poder assinar</p>
 
       <p id="contratoErro" class="form-info" style="color:#e74c3c; display:none;"></p>
     </div>

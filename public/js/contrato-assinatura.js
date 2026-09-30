@@ -30,6 +30,16 @@
 
   const authHeaders = () => ({ Authorization: `Bearer ${localStorage.getItem("token")}` });
 
+  // Idioma do contrato: o mesmo escolhido no site (pt / es / en)
+  const idioma = () => {
+    const l = (localStorage.getItem("idioma") || navigator.language || "pt").slice(0, 2).toLowerCase();
+    return ["pt", "es", "en"].includes(l) ? l : "pt";
+  };
+  const tr = (key, fallback) => {
+    try { const v = window.t && window.t("conta." + key); return v && v !== "conta." + key ? v : fallback; }
+    catch (_) { return fallback; }
+  };
+
   let carregado = false;
   let leuAteFim = false;
   let desenhou = false;
@@ -79,7 +89,7 @@
 
   // ── PDF: carregar e desenhar páginas ─────────────────────────
   async function buscarPdfBlob(download) {
-    const resp = await fetch(`/api/verificacao/contrato/pdf${download ? "?download=1" : ""}`, { headers: authHeaders() });
+    const resp = await fetch(`/api/verificacao/contrato/pdf?lang=${idioma()}${download ? "&download=1" : ""}`, { headers: authHeaders() });
     if (!resp.ok) {
       let msg = "Não foi possível carregar o contrato.";
       try { msg = (await resp.json()).erro || msg; } catch (_) {}
@@ -204,7 +214,7 @@
       pdfBlobUrl = URL.createObjectURL(blob);
       // O leitor de PDF do navegador oferece imprimir
       const w = window.open(pdfBlobUrl, "_blank");
-      if (!w) mostrarErro("Permite pop-ups para imprimir, ou usa 'Salvar PDF'.");
+      if (!w) mostrarErro(tr("contrato_erro_popup", "Permite pop-ups para imprimir, ou usa 'Salvar PDF'."));
     } catch (err) { mostrarErro(err.message); }
   });
 
@@ -214,12 +224,12 @@
     esconderErro();
     btnAssinar.disabled = true;
     const textoOriginal = btnAssinar.textContent;
-    btnAssinar.textContent = "A enviar...";
+    btnAssinar.textContent = tr("contrato_enviando", "A enviar...");
     try {
       const resp = await fetch("/api/verificacao/contrato/assinar", {
         method: "POST",
         headers: { ...authHeaders(), "Content-Type": "application/json" },
-        body: JSON.stringify({ assinatura: canvas.toDataURL("image/png"), aceite: true })
+        body: JSON.stringify({ assinatura: canvas.toDataURL("image/png"), aceite: true, lang: idioma() })
       });
       const data = await resp.json().catch(() => ({}));
       if (!resp.ok) throw new Error(data.erro || "Erro ao enviar a assinatura.");
@@ -249,7 +259,7 @@
       carregado = false;
       loadingMsg.style.display = "none";
       viewer.classList.add("hidden");
-      mostrarErro(err.message || "Não foi possível carregar o contrato. Tenta actualizar a página.");
+      mostrarErro(err.message || tr("contrato_erro_carregar", "Não foi possível carregar o contrato. Tenta actualizar a página."));
     }
   }
 
@@ -292,7 +302,7 @@
     } catch (err) {
       console.error("[Contrato] Erro:", err);
       loadingMsg.style.display = "none";
-      mostrarErro("Não foi possível carregar o contrato. Tenta actualizar a página.");
+      mostrarErro(tr("contrato_erro_carregar", "Não foi possível carregar o contrato. Tenta actualizar a página."));
     }
   }
 
