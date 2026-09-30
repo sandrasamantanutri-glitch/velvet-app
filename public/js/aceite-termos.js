@@ -25,6 +25,19 @@
   const btnAceitar       = document.getElementById("btnAceitarTermos");
 
   // ── Utilitários ──────────────────────────────────────────────────────────
+  // Tradução (chaves em locales/*.json → conta.*), com fallback em português
+  function tr(key, fallback) {
+    try {
+      const v = window.t && window.t("conta." + key);
+      return v && v !== "conta." + key ? v : fallback;
+    } catch (_) { return fallback; }
+  }
+  const LOCALES = { pt: "pt-PT", es: "es-ES", en: "en-GB" };
+  function localeAtual() {
+    const l = (localStorage.getItem("idioma") || "pt").slice(0, 2);
+    return LOCALES[l] || "pt-PT";
+  }
+
   function getToken() {
     return localStorage.getItem("token");
   }
@@ -32,7 +45,7 @@
   function formatarData(isoString) {
     if (!isoString) return "";
     const d = new Date(isoString);
-    return d.toLocaleDateString("pt-PT", {
+    return d.toLocaleDateString(localeAtual(), {
       day: "2-digit", month: "long", year: "numeric",
       hour: "2-digit", minute: "2-digit"
     });
@@ -55,7 +68,7 @@
     // Mostra o banner de confirmação
     if (bannerAceito) bannerAceito.classList.remove("hidden");
     if (dataAceitoEl && aceiteEm) {
-      dataAceitoEl.textContent = "Aceite em " + formatarData(aceiteEm);
+      dataAceitoEl.textContent = tr("termos_aceite_em", "Aceite em") + " " + formatarData(aceiteEm);
     }
 
     // Garante que a secção de termos está visível (só o banner)
@@ -91,7 +104,7 @@
         overlay.className = "bloqueio-overlay";
         overlay.innerHTML = `
           <div class="bloqueio-msg">
-            🔒 Aceita os termos no passo 1 para continuar
+            ${tr("termos_bloqueio", "🔒 Aceita os termos no passo 1 para continuar")}
           </div>
         `;
         s.style.position = "relative";
@@ -148,23 +161,23 @@
 
       const token = getToken();
       if (!token) {
-        mostrarStatus("Precisas de estar autenticada.", "erro");
+        mostrarStatus(tr("termos_autenticada", "Precisas de estar autenticada."), "erro");
         return;
       }
 
       // Verificar todos os checkboxes manualmente (para mensagens claras)
       const campos = [
-        { id: "aceite_maioridade",   nome: "Declaração de Maioridade" },
-        { id: "aceite_conteudo",     nome: "Consentimento de Conteúdo" },
-        { id: "aceite_tributario",   nome: "Responsabilidade Tributária" },
-        { id: "aceite_independente", nome: "Relação Independente" },
-        { id: "aceite_financeiro",   nome: "Política Financeira" }
+        { id: "aceite_maioridade",   nome: tr("termos_maioridade_titulo", "Declaração de Maioridade") },
+        { id: "aceite_conteudo",     nome: tr("termos_conteudo_titulo", "Consentimento de Conteúdo") },
+        { id: "aceite_tributario",   nome: tr("termos_tributario_titulo", "Responsabilidade Tributária") },
+        { id: "aceite_independente", nome: tr("termos_independente_titulo", "Relação Independente") },
+        { id: "aceite_financeiro",   nome: tr("termos_financeiro_titulo", "Política Financeira") }
       ];
 
       for (const campo of campos) {
         const el = document.getElementById(campo.id);
         if (!el || !el.checked) {
-          mostrarStatus(`⚠️ É obrigatório aceitar: "${campo.nome}"`, "erro");
+          mostrarStatus(`${tr("termos_obrigatorio", "⚠️ É obrigatório aceitar:")} "${campo.nome}"`, "erro");
           el?.scrollIntoView({ behavior: "smooth", block: "center" });
           return;
         }
@@ -172,7 +185,7 @@
 
       if (btnAceitar) {
         btnAceitar.disabled = true;
-        btnAceitar.textContent = "A registar aceite...";
+        btnAceitar.textContent = tr("termos_registando", "A registar aceite...");
       }
 
       try {
@@ -209,10 +222,10 @@
 
       } catch (err) {
         console.error("[aceite-termos] Erro:", err);
-        mostrarStatus("❌ " + (err.message || "Erro ao registar. Tenta novamente."), "erro");
+        mostrarStatus("❌ " + (err.message || tr("termos_erro_registar", "Erro ao registar. Tenta novamente.")), "erro");
         if (btnAceitar) {
           btnAceitar.disabled = false;
-          btnAceitar.textContent = "Aceitar todos os termos e continuar";
+          btnAceitar.textContent = tr("termos_btn_aceitar", "Aceitar todos os termos e continuar");
         }
       }
     });

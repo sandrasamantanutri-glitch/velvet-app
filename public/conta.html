@@ -28,9 +28,9 @@
     </button>
     
     <div class="termos-header">
-      <span class="termos-badge">⚖️ Passo 1 de 3</span>
-      <h3>Conta</h3>
-      <p class="termos-intro">
+      <span class="termos-badge" data-i18n="conta.termos_badge">⚖️ Passo 1 de 3</span>
+      <h3 data-i18n="conta.termos_titulo">Conta</h3>
+      <p class="termos-intro" data-i18n="conta.termos_intro">
         Antes de ativar a tua conta, precisamos que leia e aceite cada uma das seguintes declarações abaixo.
       </p>
     </div>
@@ -39,17 +39,17 @@
     <div id="termosJaAceitos" class="termos-aceitos-banner hidden">
       <span class="termos-aceitos-icon">✅</span>
       <div>
-        <strong>Termos aceites</strong>
+        <strong data-i18n="conta.termos_aceitos">Termos aceites</strong>
         <small id="termosAceitosData"></small>
       </div>
     </div>
 
     <form id="formAceiteTermos" class="form-area">
       <div class="verificacao-steps">
-        <span class="step ativo">1. Termos</span>
-        <span class="step">2. Dados pessoais</span>
-        <span class="step">3. Documentos</span>
-        <span class="step">4. Contrato</span>
+        <span class="step ativo" data-i18n="conta.step_termos">1. Termos</span>
+        <span class="step" data-i18n="conta.step_dados">2. Dados pessoais</span>
+        <span class="step" data-i18n="conta.step_docs">3. Documentos</span>
+        <span class="step" data-i18n="conta.step_contrato">4. Contrato</span>
       </div>
 
       <!-- 1. Declaração de Maioridade -->
@@ -57,15 +57,15 @@
         <div class="declaracao-top">
           <span class="declaracao-icon">🪪</span>
           <div>
-            <div class="declaracao-titulo">Declaração de Maioridade</div>
+            <div class="declaracao-titulo" data-i18n="conta.termos_maioridade_titulo">Declaração de Maioridade</div>
           </div>
         </div>
-        <p class="declaracao-texto">
+        <p class="declaracao-texto" data-i18n="conta.termos_maioridade_texto">
           Declaro que sou maior de 18 anos e possuo plena capacidade legal para utilizar esta plataforma.
         </p>
         <div class="form-group full check-group declaracao-check">
           <input type="checkbox" id="aceite_maioridade" name="aceite_maioridade" required>
-          <label for="aceite_maioridade">Li e aceito esta declaração</label>
+          <label for="aceite_maioridade" data-i18n="conta.termos_li_aceito">Li e aceito esta declaração</label>
         </div>
       </div>
 
@@ -74,16 +74,16 @@
         <div class="declaracao-top">
           <span class="declaracao-icon">📸</span>
           <div>
-            <div class="declaracao-titulo">Consentimento de Conteúdo</div>
+            <div class="declaracao-titulo" data-i18n="conta.termos_conteudo_titulo">Consentimento de Conteúdo</div>
           </div>
         </div>
-        <p class="declaracao-texto">
+        <p class="declaracao-texto" data-i18n="conta.termos_conteudo_texto">
           Declaro que todo o conteúdo que publico pertence-me ou possui autorização legal de uso,
           e que tenho o consentimento de todas as pessoas eventualmente representadas nesse conteúdo.
         </p>
         <div class="form-group full check-group declaracao-check">
           <input type="checkbox" id="aceite_conteudo" name="aceite_conteudo" required>
-          <label for="aceite_conteudo">Li e aceito esta declaração</label>
+          <label for="aceite_conteudo" data-i18n="conta.termos_li_aceito">Li e aceito esta declaração</label>
         </div>
       </div>
 
@@ -92,16 +92,16 @@
         <div class="declaracao-top">
           <span class="declaracao-icon">🧾</span>
           <div>
-            <div class="declaracao-titulo">Responsabilidade Tributária</div>
+            <div class="declaracao-titulo" data-i18n="conta.termos_tributario_titulo">Responsabilidade Tributária</div>
           </div>
         </div>
-        <p class="declaracao-texto">
+        <p class="declaracao-texto" data-i18n="conta.termos_tributario_texto">
           Declaro ser inteiramente responsável pelos meus próprios tributos, impostos e obrigações fiscais
           no meu país de residência. A Velvet não é responsável pela declaração ou pagamento dos meus impostos.
         </p>
         <div class="form-group full check-group declaracao-check">
           <input type="checkbox" id="aceite_tributario" name="aceite_tributario" required>
-          <label for="aceite_tributario">Li e aceito esta declaração</label>
+          <label for="aceite_tributario" data-i18n="conta.termos_li_aceito">Li e aceito esta declaração</label>
         </div>
       </div>
 
@@ -110,16 +110,16 @@
         <div class="declaracao-top">
           <span class="declaracao-icon">🤝</span>
           <div>
-            <div class="declaracao-titulo">Relação Independente</div>
+            <div class="declaracao-titulo" data-i18n="conta.termos_independente_titulo">Relação Independente</div>
           </div>
         </div>
-        <p class="declaracao-texto">
+        <p class="declaracao-texto" data-i18n="conta.termos_independente_texto">
           Reconheço que actuo como prestadora de serviços independente, sem qualquer vínculo empregatício,
           societário ou de subordinação com a Velvet. A plataforma é um canal de distribuição de conteúdo.
         </p>
         <div class="form-group full check-group declaracao-check">
           <input type="checkbox" id="aceite_independente" name="aceite_independente" required>
-          <label for="aceite_independente">Li e aceito esta declaração</label>
+          <label for="aceite_independente" data-i18n="conta.termos_li_aceito">Li e aceito esta declaração</label>
         </div>
       </div>
 
@@ -128,21 +128,21 @@
         <div class="declaracao-top">
           <span class="declaracao-icon">💰</span>
           <div>
-            <div class="declaracao-titulo">Política Financeira</div>
+            <div class="declaracao-titulo" data-i18n="conta.termos_financeiro_titulo">Política Financeira</div>
           </div>
         </div>
-        <p class="declaracao-texto">
+        <p class="declaracao-texto" data-i18n="conta.termos_financeiro_texto">
           Autorizo a Velvet a intermediar os pagamentos recebidos na plataforma e a reter a comissão acordada
           antes do repasse dos valores. O valor líquido a receber será sempre apresentado com transparência.
         </p>
         <div class="form-group full check-group declaracao-check">
           <input type="checkbox" id="aceite_financeiro" name="aceite_financeiro" required>
-          <label for="aceite_financeiro">Li e aceito esta declaração</label>
+          <label for="aceite_financeiro" data-i18n="conta.termos_li_aceito">Li e aceito esta declaração</label>
         </div>
       </div>
 
       <input type="hidden" name="versao_termos" value="2026-05">
-        <button type="submit" class="btn-salvar" id="btnAceitarTermos">
+        <button type="submit" class="btn-salvar" id="btnAceitarTermos" data-i18n="conta.termos_btn_aceitar">
           Aceitar todos os termos e continuar
         </button>
         <p id="statusAceiteTermos" class="form-info" style="margin-top:12px; display:none;"></p>
@@ -163,9 +163,9 @@
 
     <div class="verificacao-steps">
       <span class="step concluido" id="stepTermosIndicator1">1. Termos</span>
-      <span class="step ativo">2. Dados pessoais</span>
-      <span class="step">3. Documentos</span>
-      <span class="step">4. Contrato</span>
+      <span class="step ativo" data-i18n="conta.step_dados">2. Dados pessoais</span>
+      <span class="step" data-i18n="conta.step_docs">3. Documentos</span>
+      <span class="step" data-i18n="conta.step_contrato">4. Contrato</span>
     </div>
 
     <!-- Banner de sucesso ao salvar dados pessoais -->
@@ -197,7 +197,7 @@
         <div class="form-group">
           <label data-i18n="conta.label_genero">Gênero*</label>
           <select name="genero" required>
-            <option value="">Selecione</option>
+            <option value="" data-i18n="conta.doc_selecione">Selecione</option>
             <option value="mulher" data-i18n="conta.genero_mulher">Mulher</option>
             <option value="homem" data-i18n="conta.genero_homem">Homem</option>
             <option value="nao_binario" data-i18n="conta.genero_nao_binario">Não binário</option>
@@ -244,10 +244,10 @@
     <h3 data-i18n="conta.titulo_verificacao">Verificação de Identidade</h3>
 
     <div class="verificacao-steps">
-      <span class="step concluido">1. Termos</span>
-      <span class="step concluido">2. Dados pessoais</span>
-      <span class="step ativo">3. Documentos</span>
-      <span class="step">4. Contrato</span>
+      <span class="step concluido" data-i18n="conta.step_termos">1. Termos</span>
+      <span class="step concluido" data-i18n="conta.step_dados">2. Dados pessoais</span>
+      <span class="step ativo" data-i18n="conta.step_docs">3. Documentos</span>
+      <span class="step" data-i18n="conta.step_contrato">4. Contrato</span>
     </div>
 
     <!-- Banner de rejeição — só aparece quando status = rejeitado -->
@@ -281,9 +281,9 @@
         <label data-i18n="conta.label_tipo_doc">Tipo de documento*</label>
         <select name="documento_tipo" required>
           <option value="">Selecione</option>
-          <option value="rg">RG</option>
-          <option value="cnh">CNH</option>
-          <option value="passaporte">Passaporte</option>
+          <option value="rg" data-i18n="conta.doc_rg">RG</option>
+          <option value="cnh" data-i18n="conta.doc_cnh">CNH</option>
+          <option value="passaporte" data-i18n="conta.doc_passaporte">Passaporte</option>
         </select>
       </div>
 
@@ -342,10 +342,10 @@
     <h3>Contrato de Parceria Digital</h3>
 
     <div class="verificacao-steps">
-      <span class="step concluido">1. Termos</span>
-      <span class="step concluido">2. Dados pessoais</span>
-      <span class="step concluido">3. Documentos</span>
-      <span class="step ativo">4. Contrato</span>
+      <span class="step concluido" data-i18n="conta.step_termos">1. Termos</span>
+      <span class="step concluido" data-i18n="conta.step_dados">2. Dados pessoais</span>
+      <span class="step concluido" data-i18n="conta.step_docs">3. Documentos</span>
+      <span class="step ativo" data-i18n="conta.step_contrato">4. Contrato</span>
     </div>
 
     <!-- Estado: já assinado -->
