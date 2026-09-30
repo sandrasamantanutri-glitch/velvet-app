@@ -4804,7 +4804,7 @@ function gerarReciboPDF(p) {
     const fmtBRL = v => `R$ ${Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     const W = 495;
     const reciboNum = String(p.id).padStart(6, '0');
-    const dataEmissao = new Date().toLocaleDateString('pt-BR');
+    const dataEmissao = (p.pago_em ? new Date(p.pago_em) : new Date()).toLocaleDateString('pt-BR');
     const dataPagamento = p.pago_em ? new Date(p.pago_em).toLocaleDateString('pt-BR') : dataEmissao;
     const mesRefRaw = new Date(p.mes).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric', timeZone: 'UTC' });
     const mesRef = mesRefRaw.charAt(0).toUpperCase() + mesRefRaw.slice(1);
@@ -7335,4 +7335,5 @@ router.post("/saques/:id/rejeitar", authAdmin, async (req, res) => {
   }
 });
 
+router.gerarReciboPDF = gerarReciboPDF;
 module.exports = router;
