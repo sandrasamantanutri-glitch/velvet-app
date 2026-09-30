@@ -1,0 +1,38 @@
+/* Contrato digital próprio — janela de leitura + assinatura */
+.contrato-toolbar { display: flex; gap: 8px; justify-content: flex-end; margin-bottom: 8px; }
+.contrato-btn {
+  background: #1e1e1e; color: #ddd; border: 1px solid #333; border-radius: 8px;
+  padding: 8px 14px; font-size: 13px; cursor: pointer;
+}
+.contrato-btn:hover { background: #2a2a2a; }
+
+.contrato-viewer {
+  height: 70vh; max-height: 640px; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  background: #2b2b2b; border: 1px solid #333; border-radius: 12px; padding: 10px;
+}
+.contrato-viewer.hidden { display: none; }
+.contrato-paginas canvas {
+  display: block; width: 100%; height: auto; margin: 0 auto 10px; background: #fff;
+  border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,.4);
+}
+
+.contrato-assinatura {
+  background: #1a1a1a; border: 1px solid #333; border-radius: 10px;
+  padding: 16px; margin-top: 4px;
+}
+.contrato-assinatura h4 { margin: 0 0 6px; }
+.contrato-canvas-wrap { position: relative; background: #fff; border-radius: 8px; margin: 10px 0; }
+#contratoCanvas { display: block; width: 100%; height: 180px; touch-action: none; cursor: crosshair; }
+.contrato-canvas-hint {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  color: #bbb; font-size: 18px; pointer-events: none;
+}
+.contrato-canvas-hint.hidden { display: none; }
+.contrato-assinatura-acoes { display: flex; justify-content: flex-end; margin-bottom: 10px; }
+.contrato-aceite { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; color: #ccc; margin-bottom: 14px; }
+.contrato-aceite input { margin-top: 3px; }
+.contrato-assinatura .btn-salvar:disabled { opacity: .45; cursor: not-allowed; }
+
+@media (max-width: 600px) {
+  .contrato-viewer { height: 65vh; padding: 6px; }
+}

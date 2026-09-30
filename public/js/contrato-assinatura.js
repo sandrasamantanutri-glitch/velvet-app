@@ -1,46 +1,49 @@
 // ============================================================
 // contrato-assinatura.js
-// Gestão do passo 4 do onboarding: assinatura do contrato ZapSign
-// O contrato só fica disponível após o envio dos documentos (passo 3)
+// Passo 4 do onboarding: contrato lido numa janela com rolagem (pdf.js),
+// assinatura desenhada com o dedo/rato, envio para o servidor (Cloudflare R2).
+// O contrato só fica disponível após o envio dos documentos (passo 3).
 // ============================================================
 
 (function () {
   "use strict";
 
-  // ── Elementos ────────────────────────────────────────────────
-  const secaoContrato      = document.getElementById("secaoContrato");
-  const contratoJaAssinado = document.getElementById("contratoJaAssinado");
-  const contratoAssinadoData = document.getElementById("contratoAssinadoData");
-  const contratoAAssinar   = document.getElementById("contratoAAssinar");
-  const contratoLoadingMsg = document.getElementById("contratoLoadingMsg");
-  const contratoIframeWrap = document.getElementById("contratoIframeWrap");
-  const iframeContrato     = document.getElementById("iframeContrato");
-  const contratoAcoesExternas = document.getElementById("contratoAcoesExternas");
-  const linkAssinaturaExterno  = document.getElementById("linkAssinaturaExterno");
-  const contratoPollingMsg = document.getElementById("contratoPollingMsg");
-  const contratoErro       = document.getElementById("contratoErro");
-
+  const $ = (id) => document.getElementById(id);
+  const secaoContrato        = $("secaoContrato");
   if (!secaoContrato) return; // Só corre em conta.html
 
-  // ── Estado ──────────────────────────────────────────────────
-  let pollingInterval = null;
-  let pollingAttempts = 0;
-  const MAX_POLLING = 120; // ~10 min a cada 5s
+  const contratoJaAssinado   = $("contratoJaAssinado");
+  const contratoAssinadoData = $("contratoAssinadoData");
+  const contratoAAssinar     = $("contratoAAssinar");
+  const loadingMsg           = $("contratoLoadingMsg");
+  const viewer               = $("contratoViewer");
+  const paginasEl            = $("contratoPaginas");
+  const scrollHint           = $("contratoScrollHint");
+  const canvas               = $("contratoCanvas");
+  const canvasHint           = $("contratoCanvasHint");
+  const btnLimpar            = $("btnContratoLimpar");
+  const btnAssinar           = $("btnContratoAssinar");
+  const chkAceite            = $("contratoAceite");
+  const btnSalvar            = $("btnContratoSalvar");
+  const btnImprimir          = $("btnContratoImprimir");
+  const erroEl               = $("contratoErro");
+
+  const authHeaders = () => ({ Authorization: `Bearer ${localStorage.getItem("token")}` });
+
+  let carregado = false;
+  let leuAteFim = false;
+  let desenhou = false;
+  let pdfBlobUrl = null;
 
   // ── Helpers ──────────────────────────────────────────────────
   function mostrarErro(msg) {
-    if (!contratoErro) return;
-    contratoErro.textContent = msg;
-    contratoErro.style.display = "block";
+    if (!erroEl) return;
+    erroEl.textContent = msg;
+    erroEl.style.display = "block";
   }
-
-  function esconderErro() {
-    if (!contratoErro) return;
-    contratoErro.style.display = "none";
-  }
+  function esconderErro() { if (erroEl) erroEl.style.display = "none"; }
 
   function bloquearContrato() {
-    if (!secaoContrato) return;
     secaoContrato.style.opacity = "0.4";
     secaoContrato.style.pointerEvents = "none";
     secaoContrato.style.userSelect = "none";
@@ -54,7 +57,6 @@
   }
 
   function desbloquearContrato() {
-    if (!secaoContrato) return;
     secaoContrato.style.opacity = "";
     secaoContrato.style.pointerEvents = "";
     secaoContrato.style.userSelect = "";
@@ -63,7 +65,6 @@
   }
 
   function mostrarContratoAssinado(assinadoEm) {
-    if (pollingInterval) { clearInterval(pollingInterval); pollingInterval = null; }
     if (contratoJaAssinado) contratoJaAssinado.classList.remove("hidden");
     if (contratoAAssinar)   contratoAAssinar.style.display = "none";
     if (contratoAssinadoData && assinadoEm) {
@@ -72,71 +73,200 @@
     }
   }
 
-  function mostrarFormularioAssinatura(signUrl) {
-    if (contratoLoadingMsg) contratoLoadingMsg.style.display = "none";
-
-    // O ZapSign não carrega em iframe (ecrã preto): a assinatura abre num separador novo
-    // e o polling abaixo detecta quando o contrato for assinado.
-    if (linkAssinaturaExterno && contratoAcoesExternas) {
-      linkAssinaturaExterno.href = signUrl;
-      contratoAcoesExternas.classList.remove("hidden");
-    }
-
-    iniciarPolling();
+  function atualizarBotaoAssinar() {
+    btnAssinar.disabled = !(leuAteFim && desenhou && chkAceite.checked);
   }
 
-  // ── Polling ──────────────────────────────────────────────────
-  function iniciarPolling() {
-    if (pollingInterval) return;
-    if (contratoPollingMsg) contratoPollingMsg.classList.remove("hidden");
-    pollingInterval = setInterval(verificarStatus, 5000);
+  // ── PDF: carregar e desenhar páginas ─────────────────────────
+  async function buscarPdfBlob(download) {
+    const resp = await fetch(`/api/verificacao/contrato/pdf${download ? "?download=1" : ""}`, { headers: authHeaders() });
+    if (!resp.ok) {
+      let msg = "Não foi possível carregar o contrato.";
+      try { msg = (await resp.json()).erro || msg; } catch (_) {}
+      throw new Error(msg);
+    }
+    return resp.blob();
   }
 
-  async function verificarStatus() {
-    pollingAttempts++;
-    if (pollingAttempts > MAX_POLLING) {
-      clearInterval(pollingInterval);
-      pollingInterval = null;
-      if (contratoPollingMsg) contratoPollingMsg.classList.add("hidden");
-      mostrarErro("O tempo de verificação expirou. Actualiza a página após assinar.");
-      return;
-    }
+  async function renderizarPdf(blob) {
+    if (!window.pdfjsLib) throw new Error("Leitor de PDF indisponível.");
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "/js/vendor/pdfjs/pdf.worker.min.js";
+    const data = new Uint8Array(await blob.arrayBuffer());
+    const pdf = await pdfjsLib.getDocument({ data }).promise;
 
+    paginasEl.innerHTML = "";
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const larguraAlvo = Math.max(viewer.clientWidth - 20, 300);
+
+    for (let n = 1; n <= pdf.numPages; n++) {
+      const page = await pdf.getPage(n);
+      const base = page.getViewport({ scale: 1 });
+      const scale = (larguraAlvo / base.width) * dpr;
+      const vp = page.getViewport({ scale });
+      const c = document.createElement("canvas");
+      c.width = Math.floor(vp.width);
+      c.height = Math.floor(vp.height);
+      paginasEl.appendChild(c);
+      await page.render({ canvasContext: c.getContext("2d"), viewport: vp }).promise;
+    }
+  }
+
+  // ── Detetar leitura até ao fim ───────────────────────────────
+  function verificarScroll() {
+    if (leuAteFim) return;
+    const fim = viewer.scrollTop + viewer.clientHeight >= viewer.scrollHeight - 40;
+    if (fim) {
+      leuAteFim = true;
+      if (scrollHint) scrollHint.classList.add("hidden");
+      atualizarBotaoAssinar();
+    }
+  }
+
+  // ── Pad de assinatura ────────────────────────────────────────
+  const ctx = canvas.getContext("2d");
+  let desenhando = false;
+
+  function ajustarCanvas() {
+    const r = canvas.getBoundingClientRect();
+    if (!r.width) return;
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.floor(r.width * dpr);
+    canvas.height = Math.floor(r.height * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.lineWidth = 2.4;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.strokeStyle = "#111";
+    desenhou = false;
+    canvasHint.classList.remove("hidden");
+    atualizarBotaoAssinar();
+  }
+
+  function pos(e) {
+    const r = canvas.getBoundingClientRect();
+    return { x: e.clientX - r.left, y: e.clientY - r.top };
+  }
+
+  canvas.addEventListener("pointerdown", (e) => {
+    e.preventDefault();
+    canvas.setPointerCapture(e.pointerId);
+    desenhando = true;
+    const p = pos(e);
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y);
+    ctx.lineTo(p.x + 0.01, p.y + 0.01);
+    ctx.stroke();
+  });
+  canvas.addEventListener("pointermove", (e) => {
+    if (!desenhando) return;
+    e.preventDefault();
+    const p = pos(e);
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y);
+    if (!desenhou) {
+      desenhou = true;
+      canvasHint.classList.add("hidden");
+      atualizarBotaoAssinar();
+    }
+  });
+  const fimTraco = () => { desenhando = false; };
+  canvas.addEventListener("pointerup", fimTraco);
+  canvas.addEventListener("pointercancel", fimTraco);
+  canvas.addEventListener("pointerleave", fimTraco);
+
+  btnLimpar.addEventListener("click", ajustarCanvas);
+  chkAceite.addEventListener("change", atualizarBotaoAssinar);
+  viewer.addEventListener("scroll", verificarScroll, { passive: true });
+
+  // ── Salvar / Imprimir ────────────────────────────────────────
+  btnSalvar.addEventListener("click", async () => {
     try {
-      const token = localStorage.getItem("token");
-      const resp = await fetch("/api/verificacao/contrato/status", {
-        headers: { Authorization: `Bearer ${token}` }
+      esconderErro();
+      const blob = await buscarPdfBlob(true);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "contrato-velvet.pdf";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 30000);
+    } catch (err) { mostrarErro(err.message); }
+  });
+
+  btnImprimir.addEventListener("click", async () => {
+    try {
+      esconderErro();
+      const blob = await buscarPdfBlob(false);
+      if (pdfBlobUrl) URL.revokeObjectURL(pdfBlobUrl);
+      pdfBlobUrl = URL.createObjectURL(blob);
+      // O leitor de PDF do navegador oferece imprimir
+      const w = window.open(pdfBlobUrl, "_blank");
+      if (!w) mostrarErro("Permite pop-ups para imprimir, ou usa 'Salvar PDF'.");
+    } catch (err) { mostrarErro(err.message); }
+  });
+
+  // ── Enviar assinatura ────────────────────────────────────────
+  btnAssinar.addEventListener("click", async () => {
+    if (btnAssinar.disabled) return;
+    esconderErro();
+    btnAssinar.disabled = true;
+    const textoOriginal = btnAssinar.textContent;
+    btnAssinar.textContent = "A enviar...";
+    try {
+      const resp = await fetch("/api/verificacao/contrato/assinar", {
+        method: "POST",
+        headers: { ...authHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({ assinatura: canvas.toDataURL("image/png"), aceite: true })
       });
-      if (!resp.ok) return;
-      const data = await resp.json();
-      if (data.assinado) {
-        mostrarContratoAssinado(data.assinado_em);
-      }
-    } catch (_) {
-      // Silencioso — tentar novamente
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) throw new Error(data.erro || "Erro ao enviar a assinatura.");
+      mostrarContratoAssinado(data.assinado_em || new Date().toISOString());
+      secaoContrato.scrollIntoView({ behavior: "smooth", block: "start" });
+    } catch (err) {
+      mostrarErro(err.message);
+      btnAssinar.textContent = textoOriginal;
+      atualizarBotaoAssinar();
     }
-  }
+  });
 
   // ── Inicialização ─────────────────────────────────────────────
+  async function carregarContrato() {
+    if (carregado) return;
+    carregado = true;
+    loadingMsg.style.display = "block";
+    try {
+      const blob = await buscarPdfBlob(false);
+      viewer.classList.remove("hidden");
+      await renderizarPdf(blob);
+      loadingMsg.style.display = "none";
+      ajustarCanvas();
+      if (scrollHint) scrollHint.classList.remove("hidden");
+      verificarScroll();
+    } catch (err) {
+      carregado = false;
+      loadingMsg.style.display = "none";
+      viewer.classList.add("hidden");
+      mostrarErro(err.message || "Não foi possível carregar o contrato. Tenta actualizar a página.");
+    }
+  }
+
   async function init() {
     const token = localStorage.getItem("token");
     if (!token) return;
 
-    // Verificar se os documentos já foram enviados
     try {
-      const docResp = await fetch("/api/verificacao/status", {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const docResp = await fetch("/api/verificacao/status", { headers: authHeaders() });
       if (docResp.ok) {
         const docData = await docResp.json();
-        const docEnviados = docData.status && docData.status !== "pendente";
-        if (!docEnviados) {
+        if (!(docData.status && docData.status !== "pendente")) {
           bloquearContrato();
           return;
         }
       }
     } catch (_) {
-      // Se falhar a verificação, bloquear por precaução
       bloquearContrato();
       return;
     }
@@ -144,82 +274,34 @@
     desbloquearContrato();
 
     try {
-      const statusResp = await fetch("/api/verificacao/contrato/status", {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      if (!statusResp.ok) {
-        if (statusResp.status === 401 || statusResp.status === 403) return;
+      const resp = await fetch("/api/verificacao/contrato/status", { headers: authHeaders() });
+      if (!resp.ok) {
+        if (resp.status === 401 || resp.status === 403) return;
         throw new Error("Erro ao verificar contrato");
       }
-
-      const statusData = await statusResp.json();
-
-      if (statusData.assinado) {
-        mostrarContratoAssinado(statusData.assinado_em);
+      const data = await resp.json();
+      if (data.assinado) {
+        mostrarContratoAssinado(data.assinado_em);
         return;
       }
-
-      if (statusData.sign_url) {
-        mostrarFormularioAssinatura(statusData.sign_url);
+      if (data.pode_assinar === false) {
+        secaoContrato.style.display = "none"; // dados pessoais em falta (passo 2)
         return;
       }
-
-      // Gerar novo contrato no ZapSign
-      if (contratoLoadingMsg) {
-        contratoLoadingMsg.style.display = "block";
-        const p = contratoLoadingMsg.querySelector("p");
-        if (p) p.textContent = "A gerar o contrato...";
-      }
-
-      const criarResp = await fetch("/api/verificacao/contrato", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }
-      });
-
-      const criarData = await criarResp.json();
-
-      if (!criarResp.ok) {
-        if (contratoLoadingMsg) contratoLoadingMsg.style.display = "none";
-        if (criarData.erro && criarData.erro.includes("dados pessoais")) {
-          secaoContrato.style.display = "none";
-        } else {
-          mostrarErro(criarData.erro || "Erro ao preparar o contrato. Tenta novamente.");
-        }
-        return;
-      }
-
-      if (criarData.ja_assinado) {
-        mostrarContratoAssinado(null);
-        return;
-      }
-
-      if (criarData.sign_url) {
-        mostrarFormularioAssinatura(criarData.sign_url);
-      }
-
+      await carregarContrato();
     } catch (err) {
       console.error("[Contrato] Erro:", err);
-      if (contratoLoadingMsg) contratoLoadingMsg.style.display = "none";
+      loadingMsg.style.display = "none";
       mostrarErro("Não foi possível carregar o contrato. Tenta actualizar a página.");
     }
   }
 
-  // Ouvir evento emitido após envio bem-sucedido dos documentos
   document.addEventListener("documentosEnviados", () => {
     init();
-    setTimeout(() => {
-      secaoContrato.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 400);
+    setTimeout(() => secaoContrato.scrollIntoView({ behavior: "smooth", block: "start" }), 400);
   });
+  document.addEventListener("dadosPessoaisGuardados", bloquearContrato);
+  window.addEventListener("resize", () => { if (!desenhou && viewer && !viewer.classList.contains("hidden")) ajustarCanvas(); });
 
-  // Ouvir evento do passo anterior (dados pessoais guardados)
-  document.addEventListener("dadosPessoaisGuardados", () => {
-    // Apenas bloquear — docs ainda não foram enviados
-    bloquearContrato();
-  });
-
-  // Correr init() assim que a página carrega (para quem já passou os passos anteriores)
   init();
-
 })();

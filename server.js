@@ -171,8 +171,6 @@ app.use(helmet({
         "https://*.r2.dev",
         "https://cdn.jsdelivr.net",
         "https://app.synexissign.com",
-        "https://app.zapsign.com.br",
-        "https://api.zapsign.com.br",
         "https://api.frankfurter.app",
          "https://formspree.io"
       ],
@@ -182,7 +180,6 @@ app.use(helmet({
         "https://hooks.stripe.com",
         "https://iframe.videodelivery.net",
         "https://app.synexissign.com",
-        "https://app.zapsign.com.br"
       ],
       objectSrc: ["'none'"],
       baseUri: ["'self'"],
@@ -307,74 +304,6 @@ app.use((req, res, next) => {
 // ===============================
 // WEBHOOKS
 // ===============================
-
-// ===============================
-// WEBHOOK ZAPSIGN — Contrato assinado
-// ===============================
-
-app.post("/api/webhook/zapsign", express.json(), async (req, res) => {
-  try {
-    console.log("[ZapSign Webhook]", JSON.stringify(req.body).slice(0, 400));
-    const event = req.body;
-
-    // ZapSign envia: { event_type: "doc_signed", token: "<doc token>", status: "signed", ... }
-    const eventName = event?.event_type || "";
-    const submissionId = event?.token || null;
-
-    if (eventName !== "doc_signed" || !submissionId) {
-      return res.status(200).json({ ok: true, ignorado: true });
-    }
-
-    const upd = await db.query(
-      `UPDATE modelos
-          SET contrato_assinado = true,
-              contrato_assinado_em = NOW()
-        WHERE contrato_token = $1
-       RETURNING id`,
-      [String(submissionId)]
-    );
-
-    if (upd.rowCount === 0) {
-      console.warn(`[ZapSign] Webhook: nenhuma modelo com contrato_token ${submissionId}`);
-      return res.status(200).json({ ok: true });
-    }
-
-    const modeloId = upd.rows[0].id;
-    console.log(`[ZapSign] Contrato assinado — modelo id ${modeloId}`);
-
-    descarregarPDFAssinadoZapSign(String(submissionId), modeloId)
-      .then(async (pdfR2Key) => {
-        try {
-          const mInfo = await db.query(
-            `SELECT m.nome_completo, m.nome_exibicao, u.email, m.contrato_assinado_em
-               FROM modelos m
-               JOIN users u ON u.id = m.user_id
-              WHERE m.id = $1`,
-            [modeloId]
-          );
-          const info = mInfo.rows[0] || {};
-          await enviarEmailNotificacaoContratoAssinado({
-            nomeCompleto:  info.nome_completo,
-            nomeExibicao:  info.nome_exibicao,
-            emailModelo:   info.email,
-            modeloId,
-            assinadoEm:    info.contrato_assinado_em,
-            pdfR2Key
-          });
-          console.log(`[ZapSign] Notificação de contrato assinado enviada`);
-        } catch (emailErr) {
-          console.warn(`[ZapSign Webhook] Falha ao enviar email: ${emailErr.message}`);
-        }
-      })
-      .catch(err => console.warn(`[ZapSign Webhook] Falha ao descarregar PDF: ${err.message}`));
-
-    res.status(200).json({ ok: true });
-  } catch (err) {
-    console.error("[ZapSign Webhook] Erro:", err);
-    res.status(500).json({ erro: "Erro interno" });
-  }
-});
-
 
 // ── WEBHOOK SAFE2PAY (DESATIVADO — migrado para iPag, ver /api/webhook/ipag) ─
 // app.post("/api/webhook/safe2pay", express.json(), async (req, res) => {
@@ -15624,10 +15553,10 @@ app.post("/api/chat/cliente/marcar-lido/:modelo_id", authCliente, async (req, re
 });
 
 // ===========================
-// CONTRATO DIGITAL — ZapSign
+// CONTRATO DIGITAL — assinatura própria (canvas + R2)
 // ===========================
 
-// Gera o buffer do PDF do contrato v2.0 (23 seções) para envio ao ZapSign
+// Gera o buffer do PDF do contrato v2.0 (23 seções) para leitura/assinatura
 function gerarContratoPDFBuffer(dados) {
   // dados: { nome, email, dataHoje }
   return new Promise((resolve, reject) => {
@@ -15902,224 +15831,208 @@ function gerarContratoPDFBuffer(dados) {
        .text("CRIADORA / MODELO / INFLUENCER", col2, yAssin, { width: metade });
     doc.font("Helvetica").fontSize(9)
        .text(`Nome: ${dados.nome || "________________________________"}`, col2, doc.y + 4, { width: metade })
-       .text(`E-mail: ${dados.email || "______________________________"}`, col2, doc.y, { width: metade })
-       .text("Assinatura Eletrônica: [ZapSign]", col2, doc.y, { width: metade });
+       .text(`E-mail: ${dados.email || "______________________________"}`, col2, doc.y, { width: metade });
+
+    if (dados.assinaturaPng) {
+      doc.text("Assinatura Eletrônica:", col2, doc.y + 4, { width: metade });
+      const yImg = doc.y + 2;
+      doc.image(dados.assinaturaPng, col2, yImg, { fit: [metade, 60] });
+      doc.y = yImg + 62;
+      doc.moveTo(col2, doc.y).lineTo(col2 + metade, doc.y).stroke();
+    } else {
+      doc.text("Assinatura Eletrônica: ______________________", col2, doc.y + 4, { width: metade });
+    }
+
+    // ── Certificado de assinatura (só no documento assinado) ────────
+    if (dados.certificado) {
+      const c = dados.certificado;
+      doc.addPage();
+      doc.font("Helvetica-Bold").fontSize(13)
+         .text("CERTIFICADO DE ASSINATURA ELETRÔNICA", L, L, { width: W, align: "center" });
+      doc.moveDown(0.5);
+      doc.moveTo(L, doc.y).lineTo(L + W, doc.y).stroke();
+      doc.moveDown(0.8);
+      const linha = (k, v) => {
+        doc.font("Helvetica-Bold").fontSize(9).text(k, L, doc.y, { width: W });
+        doc.font("Helvetica").fontSize(9).text(String(v || "—"), L, doc.y, { width: W });
+        doc.moveDown(0.5);
+      };
+      linha("Signatária", `${dados.nome} <${dados.email}>`);
+      linha("Data/hora da assinatura (Brasília)", c.assinadoEm);
+      linha("Endereço IP", c.ip);
+      linha("Dispositivo / navegador", c.userAgent);
+      linha("ID da modelo na plataforma", c.modeloId);
+      linha("Impressão digital (SHA-256) do contrato antes da assinatura", c.hashOriginal);
+      doc.moveDown(0.5);
+      doc.font("Helvetica").fontSize(8).fillColor("#555")
+         .text("Este documento foi assinado eletronicamente por desenho manuscrito na tela, mediante aceite expresso da signatária, com registro de data, hora, IP e dispositivo, nos termos do art. 10, §2º da MP 2.200-2/2001 e da Lei 14.063/2020.", L, doc.y, { width: W, align: "justify" });
+      doc.fillColor("#000");
+    }
 
     doc.end();
   });
 }
 
-// Cria um documento no ZapSign e devolve { docToken, signerToken, signUrl }
-async function enviarContratoZapSign(pdfBuffer, nomeModelo, emailModelo) {
-  const resp = await axios.post(
-    "https://api.zapsign.com.br/api/v1/docs/",
-    {
-      name: `Contrato Velvet — ${nomeModelo}`,
-      base64_pdf: pdfBuffer.toString("base64"),
-      lang: "pt-br",
-      signers: [
-        {
-          name: nomeModelo,
-          email: emailModelo,
-          auth_mode: "assinaturaTela",
-          send_automatic_email: false
-        }
-      ]
-    },
-    {
-      headers: {
-        Authorization: `Bearer ${process.env.ZAPSIGN_API_TOKEN}`,
-        "Content-Type": "application/json"
-      },
-      timeout: 30000
-    }
+// ── Helpers do contrato próprio ──────────────────────────────────────
+async function carregarDadosContratoModelo(userId) {
+  const r = await db.query(
+    `SELECT m.id, m.contrato_assinado, m.contrato_assinado_em, m.contrato_pdf_url,
+            md.nome_completo, u.email
+       FROM modelos m
+       LEFT JOIN modelos_dados md ON md.modelo_id = m.id AND md.ativo = true
+       JOIN users u ON u.id = m.user_id
+      WHERE m.user_id = $1`,
+    [userId]
   );
-
-  const signer = resp.data?.signers?.[0];
-  if (!resp.data?.token || !signer?.token) throw new Error("ZapSign não retornou documento/signatário");
-
-  const signUrl = signer.sign_url || `https://app.zapsign.com.br/verificar/${signer.token}`;
-  return { docToken: resp.data.token, signerToken: signer.token, signUrl };
+  return r.rows[0] || null;
 }
 
-// Descarrega o PDF assinado do ZapSign e guarda no R2 privado
-async function descarregarPDFAssinadoZapSign(docToken, modeloId) {
-  try {
-    if (!process.env.ZAPSIGN_API_TOKEN) return null;
-
-    const docResp = await axios.get(
-      `https://api.zapsign.com.br/api/v1/docs/${docToken}/`,
-      {
-        headers: { Authorization: `Bearer ${process.env.ZAPSIGN_API_TOKEN}` },
-        timeout: 15000
-      }
-    );
-
-    const signedUrl = docResp.data?.signed_file;
-    if (!signedUrl) {
-      console.warn(`[ZapSign] Documento ${docToken} ainda sem PDF assinado`);
-      return null;
-    }
-
-    const pdfResp = await axios.get(signedUrl, {
-      responseType: "arraybuffer",
-      timeout: 30000
-    });
-    const pdfBuffer = Buffer.from(pdfResp.data);
-
-    const r2Key = `contratos/${modeloId}/contrato-assinado-${Date.now()}.pdf`;
-    await s3Privado.putObject({
-      Bucket: process.env.R2_BUCKET_PRIVATE,
-      Key: r2Key,
-      Body: pdfBuffer,
-      ContentType: "application/pdf"
-    }).promise();
-
-    await db.query(
-      "UPDATE modelos SET contrato_pdf_url = $1 WHERE id = $2",
-      [r2Key, modeloId]
-    );
-
-    await db.query(
-      `UPDATE modelos_verificacao
-          SET contrato_pdf_url = $1
-        WHERE modelo_id = $2
-          AND (contrato_pdf_url IS NULL OR contrato_pdf_url = '')`,
-      [r2Key, modeloId]
-    );
-
-    console.log(`[ZapSign] PDF assinado guardado em R2: ${r2Key}`);
-    return r2Key;
-  } catch (err) {
-    console.warn(`[ZapSign] Erro ao descarregar PDF assinado: ${err.message}`);
-    return null;
-  }
+function dataExtensoHoje() {
+  return new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric", timeZone: "America/Sao_Paulo" });
 }
 
 // GET /api/verificacao/contrato/status
-// Devolve se o contrato já foi assinado e a URL de assinatura actual
 app.get("/api/verificacao/contrato/status", auth, async (req, res) => {
   try {
-    const userId = req.user.id;
-    const modeloRes = await db.query(
-      `SELECT id, contrato_assinado, contrato_sign_url, contrato_assinado_em,
-              contrato_token, contrato_pdf_url
-         FROM modelos WHERE user_id = $1`,
-      [userId]
-    );
-    if (modeloRes.rowCount === 0) return res.status(404).json({ erro: "Modelo não encontrado" });
-    const m = modeloRes.rows[0];
-
+    const m = await carregarDadosContratoModelo(req.user.id);
+    if (!m) return res.status(404).json({ erro: "Modelo não encontrado" });
     if (m.contrato_assinado) {
-      if (!m.contrato_pdf_url && m.contrato_token) {
-        descarregarPDFAssinadoZapSign(m.contrato_token, m.id).catch(() => {});
-      }
       return res.json({ assinado: true, assinado_em: m.contrato_assinado_em });
     }
-
-    // Pollar ZapSign pelo status do documento
-    if (m.contrato_token && process.env.ZAPSIGN_API_TOKEN) {
-      try {
-        const zapResp = await axios.get(
-          `https://api.zapsign.com.br/api/v1/docs/${m.contrato_token}/`,
-          {
-            headers: { Authorization: `Bearer ${process.env.ZAPSIGN_API_TOKEN}` },
-            timeout: 10000
-          }
-        );
-        if (zapResp.data?.status === "signed") {
-          await db.query(
-            "UPDATE modelos SET contrato_assinado = true, contrato_assinado_em = NOW() WHERE id = $1",
-            [m.id]
-          );
-          descarregarPDFAssinadoZapSign(m.contrato_token, m.id).catch(() => {});
-          return res.json({ assinado: true, assinado_em: new Date().toISOString() });
-        }
-      } catch (pollErr) {
-        console.warn("[ZapSign] Erro ao pollar status:", pollErr.message);
-      }
-    }
-
-    return res.json({
-      assinado: false,
-      sign_url: m.contrato_sign_url || null,
-      tem_contrato: !!m.contrato_token
-    });
+    return res.json({ assinado: false, pode_assinar: !!m.nome_completo });
   } catch (err) {
     console.error("Erro ao verificar status contrato:", err);
     res.status(500).json({ erro: "Erro interno" });
   }
 });
 
-// POST /api/verificacao/contrato
-// Cria documento no ZapSign e devolve URL de assinatura
+// GET /api/verificacao/contrato/pdf[?download=1]
+// PDF para leitura (não assinado) ou o assinado guardado no R2, se já existir
+app.get("/api/verificacao/contrato/pdf", auth, async (req, res) => {
+  try {
+    if (req.user.role !== "modelo") return res.status(403).json({ erro: "Apenas modelos" });
+    const m = await carregarDadosContratoModelo(req.user.id);
+    if (!m) return res.status(404).json({ erro: "Modelo não encontrada" });
+
+    let pdfBuffer;
+    if (m.contrato_assinado && m.contrato_pdf_url) {
+      const obj = await s3Privado.getObject({
+        Bucket: process.env.R2_BUCKET_PRIVATE,
+        Key: m.contrato_pdf_url
+      }).promise();
+      pdfBuffer = obj.Body;
+    } else {
+      pdfBuffer = await gerarContratoPDFBuffer({ nome: m.nome_completo, email: m.email, dataHoje: dataExtensoHoje() });
+    }
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `${req.query.download ? "attachment" : "inline"}; filename="contrato-velvet.pdf"`);
+    res.setHeader("Cache-Control", "private, no-store");
+    res.send(pdfBuffer);
+  } catch (err) {
+    console.error("Erro ao gerar PDF do contrato:", err);
+    res.status(500).json({ erro: "Erro ao carregar o contrato" });
+  }
+});
+
+// POST /api/verificacao/contrato/assinar  { assinatura: "data:image/png;base64,...", aceite: true }
 const contratoLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
-  max: 5,
+  max: 10,
   message: { erro: "Muitas tentativas. Tente novamente em 1 hora." }
 });
 
-app.post("/api/verificacao/contrato", auth, contratoLimiter, async (req, res) => {
+app.post("/api/verificacao/contrato/assinar", auth, contratoLimiter, express.json({ limit: "1mb" }), async (req, res) => {
   try {
-    const userId = req.user.id;
     if (req.user.role !== "modelo") {
       return res.status(403).json({ erro: "Apenas modelos podem assinar o contrato" });
     }
 
-    const modeloRes = await db.query(
-      `SELECT m.id, m.contrato_assinado, m.contrato_sign_url, m.contrato_token,
-              md.nome_completo,
-              u.email
-         FROM modelos m
-         LEFT JOIN modelos_dados md ON md.modelo_id = m.id AND md.ativo = true
-         JOIN users u ON u.id = m.user_id
-        WHERE m.user_id = $1`,
-      [userId]
-    );
-    if (modeloRes.rowCount === 0) return res.status(404).json({ erro: "Modelo não encontrada" });
-    const m = modeloRes.rows[0];
-
-    if (m.contrato_assinado) {
-      return res.json({ ok: true, ja_assinado: true });
+    const { assinatura, aceite } = req.body || {};
+    if (aceite !== true) {
+      return res.status(400).json({ erro: "É necessário confirmar que leu e concorda com o contrato." });
+    }
+    const match = /^data:image\/png;base64,([A-Za-z0-9+/=]+)$/.exec(assinatura || "");
+    if (!match) return res.status(400).json({ erro: "Assinatura inválida. Desenhe a sua assinatura." });
+    const assinaturaPng = Buffer.from(match[1], "base64");
+    if (assinaturaPng.length < 500 || assinaturaPng.length > 600 * 1024 ||
+        assinaturaPng.slice(0, 8).toString("hex") !== "89504e470d0a1a0a") {
+      return res.status(400).json({ erro: "Assinatura inválida. Desenhe a sua assinatura." });
     }
 
-    // Se já tem submission criada — devolve URL existente
-    if (m.contrato_token && m.contrato_sign_url) {
-      return res.json({ ok: true, sign_url: m.contrato_sign_url });
-    }
-
+    const m = await carregarDadosContratoModelo(req.user.id);
+    if (!m) return res.status(404).json({ erro: "Modelo não encontrada" });
+    if (m.contrato_assinado) return res.json({ ok: true, ja_assinado: true });
     if (!m.nome_completo) {
       return res.status(400).json({ erro: "Preencha primeiro os dados pessoais (Passo 2) antes de assinar o contrato." });
     }
 
-    if (!process.env.ZAPSIGN_API_TOKEN) {
-      return res.status(500).json({ erro: "ZapSign não configurado. Contacte o suporte." });
-    }
+    const ip = req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.socket?.remoteAddress || null;
+    const userAgent = String(req.headers["user-agent"] || "").slice(0, 300);
+    const dataHoje = dataExtensoHoje();
 
-    const hoje = new Date();
-    const dataHoje = hoje.toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
-    const pdfBuffer = await gerarContratoPDFBuffer({ nome: m.nome_completo, email: m.email, dataHoje });
+    // Hash do contrato sem assinatura (mesmo texto que a modelo leu)
+    const original = await gerarContratoPDFBuffer({ nome: m.nome_completo, email: m.email, dataHoje });
+    const hashOriginal = crypto.createHash("sha256").update(original).digest("hex");
 
-    const { docToken, signerToken, signUrl } = await enviarContratoZapSign(
-      pdfBuffer,
-      m.nome_completo,
-      m.email
-    );
+    const assinadoEm = new Date();
+    const pdfAssinado = await gerarContratoPDFBuffer({
+      nome: m.nome_completo,
+      email: m.email,
+      dataHoje,
+      assinaturaPng,
+      certificado: {
+        assinadoEm: assinadoEm.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" }),
+        ip, userAgent, modeloId: m.id, hashOriginal
+      }
+    });
+
+    const r2Key = `contratos/${m.id}/contrato-assinado-${Date.now()}.pdf`;
+    await s3Privado.putObject({
+      Bucket: process.env.R2_BUCKET_PRIVATE,
+      Key: r2Key,
+      Body: pdfAssinado,
+      ContentType: "application/pdf"
+    }).promise();
 
     await db.query(
       `UPDATE modelos
-          SET contrato_token = $1,
-              contrato_signer_token = $2,
-              contrato_sign_url = $3
-        WHERE id = $4`,
-      [docToken, signerToken, signUrl, m.id]
+          SET contrato_assinado = true,
+              contrato_assinado_em = $2,
+              contrato_pdf_url = $3,
+              contrato_assinatura_ip = $4,
+              contrato_assinatura_ua = $5,
+              contrato_hash = $6
+        WHERE id = $1`,
+      [m.id, assinadoEm, r2Key, ip, userAgent, hashOriginal]
     );
 
-    console.log(`[CONTRATO] Modelo ${m.id} — ZapSign doc ${docToken}`);
-    res.json({ ok: true, sign_url: signUrl });
+    // Anexa à verificação (o dashadmin lê modelos_verificacao.contrato_pdf_url)
+    await db.query(
+      `UPDATE modelos_verificacao SET contrato_pdf_url = $1, atualizado_em = NOW() WHERE modelo_id = $2`,
+      [r2Key, m.id]
+    );
+
+    console.log(`[CONTRATO] Modelo ${m.id} assinou — ${r2Key}`);
+
+    try {
+      const mInfo = await db.query("SELECT nome_exibicao FROM modelos WHERE id = $1", [m.id]);
+      await enviarEmailNotificacaoContratoAssinado({
+        nomeCompleto: m.nome_completo,
+        nomeExibicao: mInfo.rows[0]?.nome_exibicao,
+        emailModelo: m.email,
+        modeloId: m.id,
+        assinadoEm,
+        pdfR2Key: r2Key
+      });
+    } catch (emailErr) {
+      console.warn(`[CONTRATO] Falha ao enviar email: ${emailErr.message}`);
+    }
+
+    res.json({ ok: true, assinado_em: assinadoEm.toISOString() });
   } catch (err) {
-    console.error("Erro ao criar contrato ZapSign:", err.response?.data || err.message);
-    res.status(500).json({ erro: "Erro ao gerar contrato. Tente novamente." });
+    console.error("Erro ao assinar contrato:", err);
+    res.status(500).json({ erro: "Erro ao assinar o contrato. Tente novamente." });
   }
 });
 
@@ -17546,6 +17459,14 @@ db.query("ALTER TABLE modelo_dados_bancarios ADD COLUMN IF NOT EXISTS motivo_ped
 db.query("ALTER TABLE saques ADD COLUMN IF NOT EXISTS taxa_saque NUMERIC(10,2) NOT NULL DEFAULT 0")
   .catch(err => console.error("Migração taxa_saque:", err.message));
 
+
+// Migração: evidências da assinatura própria do contrato
+db.query(`
+  ALTER TABLE modelos
+    ADD COLUMN IF NOT EXISTS contrato_assinatura_ip TEXT,
+    ADD COLUMN IF NOT EXISTS contrato_assinatura_ua TEXT,
+    ADD COLUMN IF NOT EXISTS contrato_hash TEXT
+`).catch(err => console.error("Migração contrato assinatura própria:", err.message));
 
 // Migração: colunas Synexis Sign (legado, não usadas — o contrato usa ZapSign)
 db.query(`

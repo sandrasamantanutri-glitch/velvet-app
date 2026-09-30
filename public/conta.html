@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="/css/pages.css">
   <link rel="stylesheet" href="/css/aceite-termos.css">
   <script src="/i18n.js"></script>
+  <link rel="stylesheet" href="/css/contrato-assinatura.css">
 </head>
 
 <body>
@@ -335,7 +336,7 @@
   </section>
 
   <!-- ========================================================== -->
-  <!-- STEP 4 — CONTRATO DIGITAL (ZapSign)                       -->
+  <!-- STEP 4 — CONTRATO DIGITAL (assinatura própria)             -->
   <!-- ========================================================== -->
   <section class="area-card" id="secaoContrato">
     <h3>Contrato de Parceria Digital</h3>
@@ -358,39 +359,43 @@
 
     <!-- Estado: a assinar -->
     <div id="contratoAAssinar">
-      <p class="form-info" style="margin-bottom:16px;">
-        📋 Lê e assina o Contrato de Parceria Digital com a Velvet.
-        Podes assinar directamente no ecrã — sem necessidade de impressão.
+      <p class="form-info" style="margin-bottom:12px;">
+        📋 Lê o contrato até ao fim e assina com o dedo (ou rato) no final da página.
       </p>
+
+      <div class="contrato-toolbar">
+        <button type="button" class="contrato-btn" id="btnContratoSalvar">⬇️ Salvar PDF</button>
+        <button type="button" class="contrato-btn" id="btnContratoImprimir">🖨️ Imprimir</button>
+      </div>
 
       <div id="contratoLoadingMsg" style="text-align:center; padding:24px; color:#888;">
         <div class="spinner" style="margin: 0 auto 12px;"></div>
         <p>A preparar o contrato...</p>
       </div>
 
-      <!-- Iframe ZapSign para assinatura -->
-      <div id="contratoIframeWrap" class="hidden" style="border:1px solid #333; border-radius:12px; overflow:hidden; margin-bottom:16px;">
-        <iframe
-          id="iframeContrato"
-          src=""
-          style="width:100%; height:600px; border:none; display:block;"
-          allow="camera; microphone"
-          title="Assinatura do contrato ZapSign">
-        </iframe>
+      <!-- Janela de leitura com rolagem -->
+      <div id="contratoViewer" class="contrato-viewer hidden" tabindex="0">
+        <div id="contratoPaginas" class="contrato-paginas"></div>
+
+        <div id="contratoAssinaturaBox" class="contrato-assinatura">
+          <h4>Assinatura</h4>
+          <p class="form-info">Desenha a tua assinatura no quadro abaixo.</p>
+          <div class="contrato-canvas-wrap">
+            <canvas id="contratoCanvas"></canvas>
+            <span id="contratoCanvasHint" class="contrato-canvas-hint">Assina aqui</span>
+          </div>
+          <div class="contrato-assinatura-acoes">
+            <button type="button" class="contrato-btn" id="btnContratoLimpar">Limpar</button>
+          </div>
+          <label class="contrato-aceite">
+            <input type="checkbox" id="contratoAceite">
+            <span>Li e concordo com todos os termos deste contrato e reconheço a validade da minha assinatura eletrónica.</span>
+          </label>
+          <button type="button" class="btn-salvar" id="btnContratoAssinar" disabled>✍️ Assinar e enviar contrato</button>
+        </div>
       </div>
 
-      <div id="contratoAcoesExternas" class="hidden" style="text-align:center; margin-bottom:16px;">
-        <p style="color:#aaa; font-size:14px; margin-bottom:12px;">
-          Clica no botão abaixo para abrir e assinar o contrato. Depois de assinar, volta a esta página — a confirmação é automática.
-        </p>
-        <a id="linkAssinaturaExterno" href="#" target="_blank" class="btn-salvar" style="display:inline-block; text-decoration:none;">
-          ✍️ Assinar contrato
-        </a>
-      </div>
-
-      <div id="contratoPollingMsg" class="hidden" style="text-align:center; padding:12px; color:#aaa; font-size:13px;">
-        ⏳ A verificar assinatura...
-      </div>
+      <p id="contratoScrollHint" class="form-info hidden" style="text-align:center; margin-top:8px;">⬇️ Rola até ao fim do contrato para poder assinar</p>
 
       <p id="contratoErro" class="form-info" style="color:#e74c3c; display:none;"></p>
     </div>
@@ -513,6 +518,7 @@
   <script src="/socket.io/socket.io.js"></script>
   <script src="/js/header.js"></script>
   <script src="/js/aceite-termos.js"></script>
+  <script src="/js/vendor/pdfjs/pdf.min.js"></script>
   <script src="/js/contrato-assinatura.js"></script>
   <script src="/js/areaUsuario.js"></script>
   <script src="/js/verificacaoDocumentos.js"></script>
