@@ -4105,7 +4105,8 @@ router.get("/modelo-pagamentos/calcular", authAdmin, async (req, res) => {
     const assinaturas  = Number(midAssinRes.rows[0].assinaturas);
     const total_geral  = Number(midAssinRes.rows[0].total);
     const chargebacks  = Number(cbRes.rows[0].total);
-    const valor_liquido = Math.max(0, total_geral - chargebacks);
+    // chargebacks já ficam fora do ganho (status != 'pago'): não subtrair de novo
+    const valor_liquido = total_geral;
     const ganhosDisp   = Number(saldoGeral.rows[0].ganhos_disponiveis);
     const pagos        = Number(pagosRes.rows[0].pagos);
     const comprometidos = Number(saquesRes.rows[0].comprometidos);
@@ -4433,7 +4434,7 @@ router.post("/modelo-pagamentos", authAdmin, upload.single("recibo"), async (req
         taxa_agencia:    valorBruto * pctAgencia,
         chargebacks:     chargebacksVal,
         comissao_velvet: valorBruto * pctPlataforma,
-        valor_liquido:   total - chargebacksVal,
+        valor_liquido:   total,
         pago_em:         null,
         saques_do_mes:   saquesDoMesRes.rows
       };
@@ -4815,7 +4816,7 @@ function gerarReciboPDF(p) {
     const taxaAgencia    = Number(p.taxa_agencia     || 0);
     const chargebacksVal = Number(p.chargebacks      || 0);
     const valorBruto     = Number(p.valor_bruto      || (modeloShare + taxaPlataforma + taxaAgencia));
-    const liquido        = Number(p.valor_liquido    || (modeloShare - chargebacksVal));
+    const liquido        = Number(p.total_geral      || 0); // chargebacks já estão fora do bruto
     const pctAgenciaPct  = Number(p.pct_agencia_pct  || 0);
     // alias para retrocompatibilidade
     const comissao = taxaPlataforma;
@@ -4889,7 +4890,6 @@ function gerarReciboPDF(p) {
 
     // calcular altura dinâmica conforme linhas visíveis
     let bLinhas = 1; // valor bruto sempre
-    if (chargebacksVal > 0) bLinhas++;
     const bH = 18 + bLinhas * 16 + 24; // header + linhas + separador + total
 
     doc.rect(310, bY, W - 260, bH).fill('#f9f5ff').stroke('#e0d4ff');
@@ -4901,13 +4901,6 @@ function gerarReciboPDF(p) {
     doc.text('Valor bruto:', 320, bLineY)
        .text(fmtBRL(modeloShare), 430, bLineY, { width: 110, align: 'right' });
     bLineY += 16;
-
-    // Chargebacks / estornos
-    if (chargebacksVal > 0) {
-      doc.text('Chargebacks / estornos:', 320, bLineY)
-         .text(`- ${fmtBRL(chargebacksVal)}`, 430, bLineY, { width: 110, align: 'right' });
-      bLineY += 16;
-    }
 
     // Separador + total líquido
     doc.moveTo(320, bLineY + 2).lineTo(540, bLineY + 2).strokeColor('#7B2CFF').lineWidth(0.8).stroke();
@@ -5033,7 +5026,7 @@ router.post("/modelo-pagamentos/:id/pagar", authAdmin, async (req, res) => {
     const taxaAgencia    = valorBruto * pctAgencia;             // % da agência (0 se sem agência)
     const chargebacksVal = Number(p.chargebacks || 0);          // deduções manuais
     const comissao       = taxaPlataforma;                      // alias para compatibilidade
-    const liquido        = modeloShare - chargebacksVal;        // valor efectivamente transferido
+    const liquido        = modeloShare;                         // chargebacks já estão fora do bruto
 
     // 2. Usar PDF já gerado no registro — ou gerar agora se não existir (fallback)
     let pdfBuffer = null;
@@ -5236,7 +5229,7 @@ router.get("/modelo-pagamentos/:id/recibo", authAdmin, async (req, res) => {
         COALESCE(SUM(CASE WHEN tipo  = 'assinatura' THEN valor_modelo ELSE 0 END), 0) AS assinaturas_bruto
       FROM transacoes_agency
       WHERE modelo_id = $1
-        AND status IN ('pago', 'chargeback')
+        AND status = 'pago'
         AND EXTRACT(YEAR  FROM CASE WHEN disponivel_em IS NOT NULL THEN disponivel_em ELSE created_at AT TIME ZONE 'America/Sao_Paulo' END) = $2
         AND EXTRACT(MONTH FROM CASE WHEN disponivel_em IS NOT NULL THEN disponivel_em ELSE created_at AT TIME ZONE 'America/Sao_Paulo' END) = $3
     `, [p.modelo_id, anoMes, mesMes]);
@@ -5277,7 +5270,7 @@ router.get("/modelo-pagamentos/:id/recibo", authAdmin, async (req, res) => {
     const midias_bruto      = Number(brutoRes.rows[0]?.midias_bruto      || 0);
     const assinaturas_bruto = Number(brutoRes.rows[0]?.assinaturas_bruto || 0);
     const ganhosBrutos      = midias_bruto + assinaturas_bruto;
-    const saldoDoMes        = ganhosBrutos - chargebacksVal + bonusVal;
+    const saldoDoMes        = ganhosBrutos + bonusVal;
     const valorDisponivel   = saldoDoMes - totalSacado;
 
     try { await db.query(`INSERT INTO recibos_pagamento (pagamento_id, modelo_id, numero_recibo) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING`, [p.id, p.modelo_id, reciboNum]); } catch (_) {}
@@ -5358,7 +5351,6 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f0f0;padding:20px;col
     <div class="row sub"><span class="lbl">Mídias</span><span class="val">${fmtBRL(midias_bruto)}</span></div>
     <div class="row sub"><span class="lbl">Assinaturas</span><span class="val">${fmtBRL(assinaturas_bruto)}</span></div>
     <div class="row total-row"><span class="lbl">Ganhos Brutos</span><span class="val">${fmtBRL(ganhosBrutos)}</span></div>
-    ${chargebacksVal > 0 ? `<div class="row cb"><span class="lbl">Chargebacks / estornos</span><span class="val">− ${fmtBRL(chargebacksVal)}</span></div>` : ''}
     ${bonusVal > 0 ? `<div class="row bon"><span class="lbl">Bônus</span><span class="val">+ ${fmtBRL(bonusVal)}</span></div>` : ''}
     <hr class="divider">
     <div class="row total-row"><span class="lbl">Saldo do Mês</span><span class="val">${fmtBRL(saldoDoMes)}</span></div>

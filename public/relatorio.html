@@ -849,7 +849,7 @@ async function loadFaturamento() {
       <td data-label="Mídias" style="font-size:.85rem">${fmt(r.total_midias)}</td>
       <td data-label="Assinaturas" style="font-size:.85rem">${fmt(r.total_assinaturas)}</td>
       <td data-label="Chargebacks" style="font-size:.85rem;color:var(--red,#ef4444)">${r.chargebacks > 0 ? '− ' + fmt(r.chargebacks) : '—'}</td>
-      <td data-label="Saldo Líquido" style="font-weight:600">${fmt(r.valor_liquido || (Number(r.total_geral) - Number(r.chargebacks || 0)))}</td>
+      <td data-label="Saldo Líquido" style="font-weight:600">${fmt(r.total_geral)}</td>
       <td data-label="Recibo">
         ${r.recibo_pdf_signed_url
           ? `<a href="${r.recibo_pdf_signed_url}" target="_blank" rel="noopener"

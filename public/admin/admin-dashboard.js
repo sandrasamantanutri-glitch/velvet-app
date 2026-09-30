@@ -4564,12 +4564,12 @@ function recalcularFechamento() {
   const cb          = Number($('fechInputCb')?.value         || 0);
   const bonus       = Number($('fechInputBonus')?.value      || 0);
   const total       = midias + assinaturas + bonus;
-  const liquido     = Math.max(0, total - cb);
+  const liquido     = total; // chargebacks já estão fora do bruto
 
   $('fechValMidias').textContent      = money(midias);
   $('fechValAssinaturas').textContent = money(assinaturas);
   $('fechValTotal').textContent       = money(total);
-  $('fechValCb').textContent          = cb > 0 ? '− ' + money(cb) : '—';
+  $('fechValCb').textContent          = cb > 0 ? money(cb) : '—';
   $('fechCbQtd').textContent          = _fechCalculo?.chargebacks_qtd > 0 ? `(${_fechCalculo.chargebacks_qtd}x)` : '';
   $('fechValLiquido').textContent     = money(liquido);
 
@@ -4667,7 +4667,7 @@ async function confirmarFecharMes() {
   const cb          = Number($('fechInputCb')?.value         || 0);
   const bonus       = Number($('fechInputBonus')?.value      || 0);
   const total       = midias + assinaturas + bonus;
-  const liquido     = Math.max(0, total - cb);
+  const liquido     = total; // chargebacks já estão fora do bruto
 
   const ok = confirm(`Fechar mês ${mes} para esta modelo?\n\nGanhos: ${money(total)}\nChargebacks: ${money(cb)}\nLíquido: ${money(liquido)}\n\nIsto registrará o pagamento, gerará o recibo PDF e enviará email à modelo.`);
   if (!ok) return;
@@ -4981,7 +4981,7 @@ async function salvarPagModelo(e) {
 
     if (!total) {
       const bonusNoTotal = bonusTipo === 'saldo' ? bonus : 0;
-      total = Math.max(0, midias + assinaturas - chargebacks + bonusNoTotal);
+      total = Math.max(0, midias + assinaturas + bonusNoTotal);
       formData.set('total_geral', total);
     }
 

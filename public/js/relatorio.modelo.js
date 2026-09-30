@@ -301,7 +301,7 @@ async function carregarPagamentos() {
       const assinaturas = Number(p.total_assinaturas || 0);
       const chargebacks = Number(p.chargebacks       || 0);
       const bonus       = Number(p.bonus             || 0);
-      const saldoBruto  = midias + assinaturas + chargebacks;
+      const saldoBruto  = midias + assinaturas;
       const pagoLiquido = Number(p.total_geral       || 0);
 
       const pdfBtn = p.status === 'pago'
@@ -329,7 +329,6 @@ async function carregarPagamentos() {
             <div style="display:flex;justify-content:space-between;padding-left:12px;color:#555;">
               <span>${t("relatorio.assinaturas")}</span><span>${emReais(assinaturas)}</span>
             </div>
-            ${chargebacks > 0 ? `<div style="display:flex;justify-content:space-between;padding-left:12px;color:#e53e3e;"><span>${t("relatorio.chargebacks")}</span><span>− ${emReais(chargebacks)}</span></div>` : ''}
             <hr style="border:none;border-top:1px solid #eee;margin:6px 0;">
             ${bonus > 0 ? `<div style="display:flex;justify-content:space-between;color:#7c3aed;"><span>${t("relatorio.bonus")}</span><span>+ ${emReais(bonus)}</span></div>` : ''}
             <div style="display:flex;justify-content:space-between;font-weight:700;font-size:15px;margin-top:4px;">
