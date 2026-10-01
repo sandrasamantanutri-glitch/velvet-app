@@ -580,11 +580,9 @@ async function gerarFechamentoAgency() {
   const mesInput = $('novoFechamentoMes').value;
   if (!mesInput) return toast('Selecione o mês', 'error');
   const [ano, mes] = mesInput.split('-').map(Number);
-  const despesaChatterRaw = $('novoFechamentoDespesaChatter').value;
-  const despesaChatter = despesaChatterRaw !== '' ? Number(despesaChatterRaw) : null;
 
   try {
-    await postJSON('/agency/dashboard/fechamentos-agency', { ano, mes, despesa_chatter: despesaChatter });
+    await postJSON('/agency/dashboard/fechamentos-agency', { ano, mes });
     toast('Fechamento gerado!', 'success');
     pageLoaders.fechamento();
   } catch (err) {
@@ -602,13 +600,10 @@ async function abrirDetalheFechamentoAgency(id) {
     const meses = ['', 'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
     $('fechDetalheTitulo').textContent = `Fechamento — ${meses[f.mes]}/${f.ano}`;
 
-    const liquido = Number(f.total_agencia) - Number(f.despesa_chatter);
-
     $('fechDetalheCorpo').innerHTML = `
       <div class="kpi-row">
         <div class="kpi-card purple"><span>Faturado Agência</span><strong>${money(f.total_agencia)}</strong></div>
-        <div class="kpi-card red"><span>Despesa Chatter</span><strong>${money(f.despesa_chatter)}</strong></div>
-        <div class="kpi-card green"><span>Líquido Agência</span><strong>${money(liquido)}</strong></div>
+        <div class="kpi-card green"><span>Faturado Modelos</span><strong>${money(f.total_modelo)}</strong></div>
       </div>
       <table class="table">
         <thead><tr><th>Modelo</th><th>Mídias</th><th>Assinaturas</th><th>Total</th></tr></thead>
@@ -655,8 +650,6 @@ function imprimirFechamentoAgency() {
   if (!f) return;
 
   const meses = ['', 'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-  const liquido = Number(f.total_agencia) - Number(f.despesa_chatter);
-
   const win = window.open('', '_blank');
   win.document.write(`<!DOCTYPE html><html lang="pt-BR"><head>
     <meta charset="UTF-8">
@@ -669,7 +662,7 @@ function imprimirFechamentoAgency() {
       table { width:100%; border-collapse:collapse; margin-top:16px; }
       td, th { padding:6px 8px; border-bottom:1px solid #e5e7eb; }
       th { background:#f3f4f6; font-weight:600; font-size:12px; text-align:left; }
-      .resumo { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin:24px 0; }
+      .resumo { display:grid; grid-template-columns:repeat(2,1fr); gap:16px; margin:24px 0; }
       .card { border:1px solid #e5e7eb; border-radius:8px; padding:16px; }
       .card-label { font-size:11px; color:#666; text-transform:uppercase; margin-bottom:4px; }
       .card-value { font-size:20px; font-weight:700; }
@@ -682,8 +675,7 @@ function imprimirFechamentoAgency() {
 
     <div class="resumo">
       <div class="card"><div class="card-label">Faturado Agência</div><div class="card-value purple">${money(f.total_agencia)}</div></div>
-      <div class="card"><div class="card-label">Despesa Chatter</div><div class="card-value red">${money(f.despesa_chatter)}</div></div>
-      <div class="card"><div class="card-label">Líquido Agência</div><div class="card-value green">${money(liquido)}</div></div>
+      <div class="card"><div class="card-label">Faturado Modelos</div><div class="card-value green">${money(f.total_modelo)}</div></div>
     </div>
 
     <h2>Detalhamento por Modelo</h2>
