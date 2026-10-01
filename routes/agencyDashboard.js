@@ -555,14 +555,8 @@ router.put("/agency/percentuais", authAgencia, async (req, res) => {
 
 // ========== 8. FECHAMENTO ==========
 
-const DESPESA_CHATTER_PADRAO = 1400;
-
-// Hoje só a Silva Talents tem custo de chatter; as demais agências não têm essa despesa por padrão.
-async function obterDespesaChatterPadrao(agenciaId) {
-  const { rows } = await db.query("SELECT nome FROM agencias WHERE id = $1", [agenciaId]);
-  const nome = (rows[0]?.nome || "").toLowerCase();
-  return nome.includes("silva talents") ? DESPESA_CHATTER_PADRAO : 0;
-}
+// Despesa de chatter não é mais descontada no fechamento da agência (é despesa da plataforma, lançada no fechamento da Velvet).
+const DESPESA_CHATTER_PADRAO = 0;
 
 // Calcula os totais (agência + por modelo) de um ano/mês para uma agência, sem gravar nada.
 // Mês/ano sempre determinado por created_at (quando a transação ocorreu).
@@ -627,9 +621,7 @@ async function calcularFechamentoAgencia(agenciaId, ano, mes) {
 
 // Gera (grava) o fechamento de um ano/mês para uma agência. Não duplica se já existir.
 async function gerarFechamentoAgencia(agenciaId, ano, mes, despesaChatter = null) {
-  if (despesaChatter == null) {
-    despesaChatter = await obterDespesaChatterPadrao(agenciaId);
-  }
+  despesaChatter = 0;
 
   const existente = await db.query(
     "SELECT id FROM fechamento_mensal_agency WHERE agencia_id = $1 AND ano = $2 AND mes = $3",
@@ -702,9 +694,7 @@ router.post("/fechamentos-agency", authAgencia, async (req, res) => {
     const now = new Date();
     const ano = Number(req.body.ano) || now.getFullYear();
     const mes = Number(req.body.mes) || (now.getMonth() + 1);
-    const despesaChatter = req.body.despesa_chatter != null && req.body.despesa_chatter !== ''
-      ? Number(req.body.despesa_chatter)
-      : null;
+    const despesaChatter = 0;
 
     if (mes < 1 || mes > 12 || ano < 2020) {
       return res.status(400).json({ erro: "Mês ou ano inválido" });
