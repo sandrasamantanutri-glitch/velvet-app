@@ -5,6 +5,7 @@
 const express = require("express");
 const router = express.Router();
 const db = require("../db");
+const { pagosEfetivosSql } = require("../utils/pagosModelo");
 const auth = require("../middleware/auth");
 const authAdmin = require("../middleware/authAdmin");
 const bcrypt = require("bcrypt");
@@ -4096,7 +4097,7 @@ router.get("/modelo-pagamentos/calcular", authAdmin, async (req, res) => {
     ]);
 
     const pagosRes = await db.query(
-      `SELECT COALESCE(SUM(total_geral), 0) AS pagos FROM modelo_pagamentos WHERE modelo_id = $1 AND status = 'pago'`,
+      `SELECT ${pagosEfetivosSql('$1')} AS pagos`,
       [modelo_id]
     );
     const saquesRes = await db.query(
@@ -4333,10 +4334,7 @@ router.post("/modelo-pagamentos", authAdmin, upload.single("recibo"), async (req
     `, [modeloIdNum]);
 
     const pagosRes = await db.query(`
-      SELECT COALESCE(SUM(total_geral), 0) AS pagos
-      FROM modelo_pagamentos
-      WHERE modelo_id = $1
-        AND status = 'pago'
+      SELECT ${pagosEfetivosSql('$1')} AS pagos
     `, [modeloIdNum]);
 
     const ganhosDisponiveis = Number(ganhosRes.rows[0].ganhos_disponiveis || 0);
@@ -4512,10 +4510,7 @@ router.get("/modelo-pagamentos/saldo/:modelo_id", authAdmin, async (req, res) =>
     `, [modelo_id]);
 
     const pagosRes = await db.query(`
-      SELECT COALESCE(SUM(total_geral), 0) AS pagos
-      FROM modelo_pagamentos
-      WHERE modelo_id = $1
-        AND status = 'pago'
+      SELECT ${pagosEfetivosSql('$1')} AS pagos
     `, [modelo_id]);
 
     const saquesRes = await db.query(`
@@ -7095,8 +7090,7 @@ router.get("/saldo-modelo/:id", authAdmin, async (req, res) => {
         WHERE modelo_id = $1 AND status = 'pago'
       `, [modelo_id]),
       db.query(`
-        SELECT COALESCE(SUM(total_geral), 0) AS pagos
-        FROM modelo_pagamentos WHERE modelo_id = $1 AND status = 'pago'
+        SELECT ${pagosEfetivosSql('$1')} AS pagos
       `, [modelo_id]),
       db.query(`
         SELECT
@@ -7173,7 +7167,7 @@ router.post("/saques/registrar", authAdmin, async (req, res) => {
         ), 0) AS ganhos_disponiveis
         FROM transacoes_agency WHERE modelo_id=$1 AND status='pago'
       `, [modelo_id]),
-      db.query(`SELECT COALESCE(SUM(total_geral),0) AS pagos FROM modelo_pagamentos WHERE modelo_id=$1 AND status='pago'`, [modelo_id]),
+      db.query(`SELECT ${pagosEfetivosSql('$1')} AS pagos`, [modelo_id]),
       db.query(`
         SELECT COALESCE(SUM(valor + COALESCE(taxa_saque,0)) FILTER (WHERE status IN ('pago','pendente')), 0) AS comprometidos
         FROM saques WHERE modelo_id=$1
