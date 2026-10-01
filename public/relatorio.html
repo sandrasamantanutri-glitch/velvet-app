@@ -582,10 +582,11 @@ async function loadPix(ym) {
   const totalAss    = rows.filter(r=>r.tipo==='assinatura').reduce((a,r)=>a+ +r.valor_modelo,0);
 
   const tbody = rows.length ? rows.map(r => {
-    const isLib = !r.disponivel_em || new Date(r.disponivel_em) <= now;
+    const semData = !r.disponivel_em && r.gateway === 'stripe';
+    const isLib = !semData && (!r.disponivel_em || new Date(r.disponivel_em) <= now);
     const disp  = isLib
       ? `<span class="bdg-lib"><i class="bi bi-check-circle"></i> Liberado</span>`
-      : `<span class="bdg-pend"><i class="bi bi-clock"></i> ${fmtDate(r.disponivel_em)}</span>`;
+      : `<span class="bdg-pend"><i class="bi bi-clock"></i> ${semData ? 'Aguardando liberação' : fmtDate(r.disponivel_em)}</span>`;
     return `<tr>
       <td data-label="Data">${fmtDate(r.created_at)}</td>
       <td data-label="Tipo"><span class="bdg ${r.tipo}">${r.tipo||'—'}</span></td>
@@ -636,10 +637,10 @@ async function loadCartao(ym) {
 
   const tbody = rows.length ? rows.map(r => {
     const dispD = r.disponivel_em ? new Date(r.disponivel_em) : null;
-    const isLib = !dispD || dispD <= now;
+    const isLib = !!dispD && dispD <= now;
     const disp  = isLib
       ? `<span class="bdg-lib"><i class="bi bi-check-circle"></i> Liberado${dispD?' em '+fmtDate(dispD):''}</span>`
-      : `<span class="bdg-pend"><i class="bi bi-clock"></i> Libera ${fmtDate(dispD)}</span>`;
+      : `<span class="bdg-pend"><i class="bi bi-clock"></i> ${dispD ? 'Libera ' + fmtDate(dispD) : 'Aguardando liberação'}</span>`;
     return `<tr>
       <td data-label="Data">${fmtDate(r.created_at)}</td>
       <td data-label="Tipo"><span class="bdg ${r.tipo}">${r.tipo||'—'}</span></td>

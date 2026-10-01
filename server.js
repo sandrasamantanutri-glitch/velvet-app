@@ -7618,8 +7618,7 @@ app.get("/api/modelo/painel/geral", authModelo, async (req, res) => {
         SELECT COALESCE(SUM(valor_modelo), 0) AS total
         FROM transacoes_agency
         WHERE modelo_id = $1 AND status = 'pago'
-          AND disponivel_em IS NOT NULL
-          AND disponivel_em > NOW()
+          AND (disponivel_em > NOW() OR (disponivel_em IS NULL AND gateway = 'stripe'))
       `, [mid]),
       // Total já pago via modelo_pagamentos
       db.query(`
@@ -7720,8 +7719,7 @@ app.get("/api/modelo/painel/meubanco", authModelo, async (req, res) => {
         SELECT COALESCE(SUM(valor_modelo), 0) AS total
         FROM transacoes_agency
         WHERE modelo_id = $1 AND status = 'pago'
-          AND disponivel_em IS NOT NULL
-          AND disponivel_em > NOW()
+          AND (disponivel_em > NOW() OR (disponivel_em IS NULL AND gateway = 'stripe'))
       `, [mid]),
       // Total já pago via modelo_pagamentos
       db.query(`
@@ -17284,7 +17282,7 @@ async function sincronizarDisponibilidadeStripe() {
   }
 }
 
-cron.schedule("0 4 * * *", sincronizarDisponibilidadeStripe);
+cron.schedule("0 5 * * *", sincronizarDisponibilidadeStripe);
 
 // Backup diário Cloudflare R2 → Backblaze B2
 require("./scripts/cron-backup");
