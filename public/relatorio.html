@@ -919,7 +919,11 @@ async function loadSaques() {
         <i class="bi bi-file-earmark-check"></i> Comprovante
       </a>`;
     }
-    const cancelBtn = r.status === 'pendente'
+    if (r.origem === 'contabilidade') {
+      const tag = `<span style="display:block;font-size:.78rem;font-weight:600;color:var(--purple,#7B2CFF)"><i class="bi bi-building"></i> Registrado pela Contabilidade</span>`;
+      obs = obs === '—' ? tag : tag + obs;
+    }
+    const cancelBtn = r.status === 'pendente' && r.origem !== 'contabilidade'
       ? `<button onclick="cancelarSaque(${r.id})" style="background:none;border:1px solid #ef4444;color:#ef4444;border-radius:6px;padding:2px 10px;font-size:.78rem;cursor:pointer;margin-left:4px">Cancelar</button>`
       : '';
     return `

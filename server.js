@@ -8064,7 +8064,7 @@ app.get("/api/modelo/saques", authModelo, async (req, res) => {
         saldo_disponivel_no_dia,
         TO_CHAR(solicitado_em AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY HH24:MI') AS solicitado_fmt,
         TO_CHAR(processado_em AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY HH24:MI') AS processado_fmt,
-        chave_pix, pix_tipo, pgto_tipo, comprovante_url
+        chave_pix, pix_tipo, pgto_tipo, comprovante_url, origem
       FROM saques
       WHERE modelo_id = $1
       ORDER BY solicitado_em DESC
@@ -17297,6 +17297,8 @@ db.query("ALTER TABLE modelo_dados_bancarios ADD COLUMN IF NOT EXISTS motivo_ped
 
 db.query("ALTER TABLE saques ADD COLUMN IF NOT EXISTS taxa_saque NUMERIC(10,2) NOT NULL DEFAULT 0")
   .catch(err => console.error("Migração taxa_saque:", err.message));
+db.query("ALTER TABLE saques ADD COLUMN IF NOT EXISTS origem TEXT NOT NULL DEFAULT 'modelo'")
+  .catch(err => console.error("Migração origem saques:", err.message));
 
 
 // Migração: evidências da assinatura própria do contrato

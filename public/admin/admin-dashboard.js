@@ -4141,7 +4141,7 @@ pageLoaders['saques-modelos'] = async function () {
         : `<span style="color:#16a34a;font-size:.82rem">Gratuito</span>`;
       return `
       <tr>
-        <td><strong>${nomeModelo(s)}</strong><br><span style="font-size:.75rem;color:var(--text-muted)">${s.modelo_email||''}</span></td>
+        <td><strong>${nomeModelo(s)}</strong>${s.origem==='contabilidade' ? ' <span class="badge badge-info" style="font-size:.68rem">Registrado pela Contabilidade</span>' : ''}<br><span style="font-size:.75rem;color:var(--text-muted)">${s.modelo_email||''}</span></td>
         <td><strong>${fmtBRL(s.valor)}</strong></td>
         <td>${taxaCell}</td>
         <td><strong style="color:var(--purple)">${fmtBRL(transferir)}</strong></td>
@@ -4176,6 +4176,7 @@ pageLoaders['saques-modelos'] = async function () {
             <option value="processando" ${filtroStatus==='processando'?'selected':''}>Processando</option>
             <option value="rejeitado"   ${filtroStatus==='rejeitado'  ?'selected':''}>Rejeitados</option>
           </select>
+          <button class="btn btn-primary btn-sm" onclick="registrarSaqueAdmin()">+ Registrar saque</button>
           <button class="btn btn-ghost btn-sm" onclick="renderSaquesAdmin(document.getElementById('filtroStatusSaque').value)">↻ Atualizar</button>
           <span style="font-size:.82rem;color:var(--text-muted)">${rows.length} registro(s)</span>
         </div>
@@ -4193,6 +4194,77 @@ pageLoaders['saques-modelos'] = async function () {
   }
 
   window.renderSaquesAdmin = renderSaques;
+
+  // Registrar saque em nome da modelo (fecho do mês) → cria pendente e abre o fluxo normal de processamento
+  window.registrarSaqueAdmin = async function() {
+    const lista = await fetchJSON('/admin/dashboard/modelos-lista').catch(() => []);
+    const esc = t => String(t ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+    const overlay = document.createElement('div');
+    overlay.id = 'modalRegistrarSaqueOverlay';
+    overlay.className = 'modal-overlay active';
+    overlay.onclick = e => { if (e.target === overlay) closeModal('modalRegistrarSaque'); };
+    const modal = document.createElement('div');
+    modal.id = 'modalRegistrarSaque';
+    modal.className = 'modal active';
+    modal.innerHTML = `
+      <div class="modal-header">
+        <h3>Registrar saque para modelo</h3>
+        <button class="modal-close" onclick="closeModalSaque('modalRegistrarSaque')">×</button>
+      </div>
+      <div class="modal-body">
+        <label style="font-size:.85rem;font-weight:600">Modelo</label>
+        <select id="regSaqueModelo" class="form-select" style="width:100%;margin:6px 0 12px" onchange="regSaqueCarregarSaldo()">
+          <option value="">Selecione...</option>
+          ${lista.map(m => `<option value="${m.id}">${esc(m.nome)}</option>`).join('')}
+        </select>
+        <div id="regSaqueSaldo" style="font-size:.82rem;color:var(--text-muted);margin-bottom:12px"></div>
+        <label style="font-size:.85rem;font-weight:600">Valor (R$)</label>
+        <input id="regSaqueValor" type="number" step="0.01" min="0.01" class="form-input" style="width:100%;margin-top:6px" placeholder="0,00">
+        <p style="font-size:.78rem;color:var(--text-muted);margin-top:10px">Sem taxa. Será usado o dado bancário aprovado da modelo. Depois de registrar, você confirma o envio (comprovante + e-mail) como num saque normal.</p>
+        <div id="regSaqueErro" style="display:none;margin-top:8px;color:var(--red,#ef4444);font-size:.82rem"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeModalSaque('modalRegistrarSaque')">Cancelar</button>
+        <button id="btnRegistrarSaque" class="btn btn-primary" onclick="confirmarRegistrarSaque()">Registrar & Processar</button>
+      </div>`;
+    document.body.appendChild(overlay);
+    document.body.appendChild(modal);
+  };
+
+  window.regSaqueCarregarSaldo = async function() {
+    const mid = document.getElementById('regSaqueModelo').value;
+    const el = document.getElementById('regSaqueSaldo');
+    if (!mid) { el.textContent = ''; return; }
+    const d = await fetchJSON('/admin/dashboard/saldo-modelo/' + mid).catch(() => null);
+    el.innerHTML = d ? `Saldo disponível: <strong style="color:var(--purple)">${fmtBRL(d.saldo_disponivel)}</strong>` : '';
+    if (d) document.getElementById('regSaqueValor').value = Number(d.saldo_disponivel).toFixed(2);
+  };
+
+  window.confirmarRegistrarSaque = async function() {
+    const mid   = document.getElementById('regSaqueModelo').value;
+    const valor = document.getElementById('regSaqueValor').value;
+    const erroEl = document.getElementById('regSaqueErro');
+    const btn = document.getElementById('btnRegistrarSaque');
+    erroEl.style.display = 'none';
+    if (!mid) { erroEl.textContent = 'Selecione a modelo.'; erroEl.style.display = 'block'; return; }
+    btn.disabled = true; btn.textContent = 'Registrando...';
+    const r = await authFetch('/admin/dashboard/saques/registrar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ modelo_id: Number(mid), valor: Number(valor) })
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      erroEl.textContent = data.erro || 'Erro ao registrar saque';
+      erroEl.style.display = 'block';
+      btn.disabled = false; btn.textContent = 'Registrar & Processar';
+      return;
+    }
+    const nome = document.getElementById('regSaqueModelo').selectedOptions[0].textContent;
+    closeModal('modalRegistrarSaque');
+    await renderSaques(document.getElementById('filtroStatusSaque')?.value || '');
+    processarSaque(data.saque_id, nome, Number(valor), 0);
+  };
 
   window.processarSaque = function(saqueId, nomeModelo, valor, taxaSaque = 0) {
     const taxa = Number(taxaSaque) || 0;

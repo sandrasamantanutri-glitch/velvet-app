@@ -7136,6 +7136,61 @@ router.get("/saques-modelo/:id", authAdmin, async (req, res) => {
   }
 });
 
+// Registrar saque em nome da modelo (admin) — fecho do mês, sem solicitação da modelo.
+// Cria o saque como 'pendente' (sem taxa, sem limite semanal/mínimo); depois segue o fluxo normal de /processar.
+router.post("/saques/registrar", authAdmin, async (req, res) => {
+  try {
+    const modelo_id = Number(req.body.modelo_id);
+    const valorNum  = Math.round(Number(req.body.valor) * 100) / 100;
+    if (!modelo_id) return res.status(400).json({ erro: 'Selecione a modelo' });
+    if (!valorNum || valorNum <= 0) return res.status(400).json({ erro: 'Valor inválido' });
+
+    const bancRes = await db.query(
+      `SELECT * FROM modelo_dados_bancarios WHERE modelo_id=$1 AND status='aprovado' LIMIT 1`, [modelo_id]
+    );
+    if (!bancRes.rows.length) return res.status(400).json({ erro: 'Esta modelo não possui dados bancários aprovados.' });
+    const banc = bancRes.rows[0];
+
+    const pendRes = await db.query(`SELECT id FROM saques WHERE modelo_id=$1 AND status='pendente' LIMIT 1`, [modelo_id]);
+    if (pendRes.rows.length) return res.status(400).json({ erro: `Esta modelo já possui o saque pendente #${pendRes.rows[0].id}. Processe ou rejeite antes.` });
+
+    const [ganhosRes, pagosRes, saquesRes] = await Promise.all([
+      db.query(`
+        SELECT COALESCE(SUM(valor_modelo) FILTER (
+          WHERE gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW())
+        ), 0) AS ganhos_disponiveis
+        FROM transacoes_agency WHERE modelo_id=$1 AND status='pago'
+      `, [modelo_id]),
+      db.query(`SELECT COALESCE(SUM(total_geral),0) AS pagos FROM modelo_pagamentos WHERE modelo_id=$1 AND status='pago'`, [modelo_id]),
+      db.query(`
+        SELECT COALESCE(SUM(valor + COALESCE(taxa_saque,0)) FILTER (WHERE status IN ('pago','pendente')), 0) AS comprometidos
+        FROM saques WHERE modelo_id=$1
+      `, [modelo_id]),
+    ]);
+    const saldoDisp = Number(ganhosRes.rows[0].ganhos_disponiveis) - Number(pagosRes.rows[0].pagos) - Number(saquesRes.rows[0].comprometidos);
+    if (valorNum > saldoDisp + 0.01) {
+      return res.status(400).json({ erro: `Saldo insuficiente. Saldo disponível: R$ ${saldoDisp.toFixed(2).replace('.', ',')}` });
+    }
+
+    const { rows } = await db.query(`
+      INSERT INTO saques (modelo_id, valor, taxa_saque, chave_pix, pix_tipo, banco, agencia, conta, conta_tipo,
+        titular_nome, titular_documento, pgto_tipo, saldo_disponivel_no_dia, admin_id, origem)
+      VALUES ($1,$2,0,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,'contabilidade')
+      RETURNING id
+    `, [
+      modelo_id, valorNum,
+      banc.pix_chave || null, banc.pix_tipo || null,
+      banc.banco || null, banc.agencia || null, banc.conta || null, banc.conta_tipo || null,
+      banc.titular_nome || null, banc.titular_documento || null,
+      banc.tipo || 'pix', saldoDisp, req.user.id
+    ]);
+    res.json({ ok: true, saque_id: rows[0].id });
+  } catch (err) {
+    console.error("Erro registrar saque (admin):", err);
+    res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
 // Processar saque (marcar como pago + upload comprovante + enviar email)
 router.post("/saques/:id/processar", authAdmin, upload.single("comprovante"), async (req, res) => {
   try {
