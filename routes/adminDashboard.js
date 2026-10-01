@@ -3567,15 +3567,15 @@ router.get("/transacoes-agency-cartao", async (req, res) => {
         COALESCE(SUM(CASE WHEN t.status = 'pago'       THEN t.valor_modelo ELSE 0 END), 0) AS total_modelo,
         COALESCE(SUM(CASE WHEN t.status = 'chargeback' THEN t.valor_bruto  ELSE 0 END), 0) AS chargeback_bruto,
         COALESCE(SUM(CASE WHEN t.status = 'chargeback' THEN t.valor_modelo ELSE 0 END), 0) AS chargeback_modelo,
-        COALESCE(SUM(CASE WHEN t.status = 'pago' AND t.disponivel_em IS NOT NULL AND t.disponivel_em >  NOW() THEN t.valor_bruto  ELSE 0 END), 0) AS pendente_bruto,
-        COALESCE(SUM(CASE WHEN t.status = 'pago' AND t.disponivel_em IS NOT NULL AND t.disponivel_em >  NOW() THEN t.valor_modelo ELSE 0 END), 0) AS pendente_modelo,
+        COALESCE(SUM(CASE WHEN t.status = 'pago' AND (t.disponivel_em > NOW() OR (t.disponivel_em IS NULL AND t.gateway = 'stripe')) THEN t.valor_bruto  ELSE 0 END), 0) AS pendente_bruto,
+        COALESCE(SUM(CASE WHEN t.status = 'pago' AND (t.disponivel_em > NOW() OR (t.disponivel_em IS NULL AND t.gateway = 'stripe')) THEN t.valor_modelo ELSE 0 END), 0) AS pendente_modelo,
         COALESCE(SUM(CASE WHEN t.status = 'pago' AND t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW() THEN t.valor_bruto  ELSE 0 END), 0) AS liberado_bruto,
         COALESCE(SUM(CASE WHEN t.status = 'pago' AND t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW() THEN t.valor_modelo ELSE 0 END), 0) AS liberado_modelo,
         COALESCE(SUM(CASE WHEN t.status = 'pago'                                                                                              THEN t.taxa_gateway ELSE 0 END), 0) AS total_gateway,
-        COALESCE(SUM(CASE WHEN t.status = 'pago' AND t.disponivel_em IS NOT NULL AND t.disponivel_em >  NOW() THEN t.taxa_gateway ELSE 0 END), 0) AS pendente_gateway,
+        COALESCE(SUM(CASE WHEN t.status = 'pago' AND (t.disponivel_em > NOW() OR (t.disponivel_em IS NULL AND t.gateway = 'stripe')) THEN t.taxa_gateway ELSE 0 END), 0) AS pendente_gateway,
         COALESCE(SUM(CASE WHEN t.status = 'pago' AND t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW() THEN t.taxa_gateway ELSE 0 END), 0) AS liberado_gateway,
         COALESCE(SUM(CASE WHEN t.status = 'pago'                                                                                              THEN t.agency_fee   ELSE 0 END), 0) AS total_agency,
-        COALESCE(SUM(CASE WHEN t.status = 'pago' AND t.disponivel_em IS NOT NULL AND t.disponivel_em >  NOW() THEN t.agency_fee   ELSE 0 END), 0) AS pendente_agency,
+        COALESCE(SUM(CASE WHEN t.status = 'pago' AND (t.disponivel_em > NOW() OR (t.disponivel_em IS NULL AND t.gateway = 'stripe')) THEN t.agency_fee   ELSE 0 END), 0) AS pendente_agency,
         COALESCE(SUM(CASE WHEN t.status = 'pago' AND t.disponivel_em IS NOT NULL AND t.disponivel_em <= NOW() THEN t.agency_fee   ELSE 0 END), 0) AS liberado_agency,
         TO_CHAR(MIN(CASE WHEN t.status = 'pago' AND t.disponivel_em IS NOT NULL AND t.disponivel_em > NOW()
           THEN DATE(t.disponivel_em AT TIME ZONE 'UTC') END), 'YYYY-MM-DD') AS proxima_liberacao
@@ -3713,8 +3713,8 @@ router.get("/ganhos-conciliacao", async (req, res) => {
       SELECT
         COALESCE(SUM(CASE WHEN t.status = 'pago' THEN t.valor_bruto ELSE 0 END), 0) AS bruto,
         COALESCE(SUM(CASE WHEN t.status = 'pago' THEN t.valor_modelo ELSE 0 END), 0) AS modelo,
-        COALESCE(SUM(CASE WHEN t.status = 'pago' AND t.disponivel_em IS NOT NULL AND t.disponivel_em >  NOW() THEN t.valor_bruto  ELSE 0 END), 0) AS pendente_bruto,
-        COALESCE(SUM(CASE WHEN t.status = 'pago' AND t.disponivel_em IS NOT NULL AND t.disponivel_em >  NOW() THEN t.valor_modelo ELSE 0 END), 0) AS pendente_modelo,
+        COALESCE(SUM(CASE WHEN t.status = 'pago' AND (t.disponivel_em > NOW() OR (t.disponivel_em IS NULL AND t.gateway = 'stripe')) THEN t.valor_bruto  ELSE 0 END), 0) AS pendente_bruto,
+        COALESCE(SUM(CASE WHEN t.status = 'pago' AND (t.disponivel_em > NOW() OR (t.disponivel_em IS NULL AND t.gateway = 'stripe')) THEN t.valor_modelo ELSE 0 END), 0) AS pendente_modelo,
         COALESCE(SUM(CASE WHEN t.status = 'chargeback' THEN t.valor_modelo ELSE 0 END), 0) AS chargebacks
       FROM transacoes_agency t ${BASE_JOIN}
       WHERE ${BASE_COND}${modF}
