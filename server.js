@@ -17298,6 +17298,10 @@ db.query("ALTER TABLE saques ADD COLUMN IF NOT EXISTS taxa_saque NUMERIC(10,2) N
   .catch(err => console.error("Migração taxa_saque:", err.message));
 db.query("ALTER TABLE saques ADD COLUMN IF NOT EXISTS origem TEXT NOT NULL DEFAULT 'modelo'")
   .catch(err => console.error("Migração origem saques:", err.message));
+// fechamento_ajustes.tipo: libera 'salario_chatters' (a constraint original só aceitava taxa_gateway e retencao)
+db.query(`ALTER TABLE fechamento_ajustes DROP CONSTRAINT IF EXISTS fechamento_ajustes_tipo_check,
+  ADD CONSTRAINT fechamento_ajustes_tipo_check CHECK (tipo IN ('taxa_gateway','retencao','salario_chatters'))`)
+  .catch(err => console.error("Migração fechamento_ajustes_tipo_check:", err.message));
 db.query("ALTER TABLE saques ADD COLUMN IF NOT EXISTS mes_referencia DATE")
   .then(() => db.query("UPDATE saques SET mes_referencia = (DATE_TRUNC('month', processado_em AT TIME ZONE 'America/Sao_Paulo') - INTERVAL '1 month')::date WHERE origem='contabilidade' AND mes_referencia IS NULL AND processado_em IS NOT NULL"))
   .catch(err => console.error("Migração mes_referencia saques:", err.message));
