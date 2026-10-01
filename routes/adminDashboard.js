@@ -4022,6 +4022,10 @@ router.put("/vip-subscriptions/:id", async (req, res) => {
   } catch (err) { res.status(500).json({ erro: "Erro interno" }); }
 });
 
+// Mês a que o saque pertence: mes_referencia (saques da contabilidade, p/ fechar o mês) ou o mês em que foi processado
+const SAQUE_MES_SQL = `COALESCE(TO_CHAR(mes_referencia, 'YYYY-MM'), TO_CHAR(processado_em AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM'))`;
+const SAQUE_SOLICITANTE = o => (o === 'contabilidade' ? 'Contabilidade' : 'Modelo');
+
 // ========== 16. MODELO PAGAMENTOS ==========
 
 // Calcula automaticamente mídias, assinaturas e chargebacks de um mês para o novo fluxo de fechamento
@@ -4081,15 +4085,14 @@ router.get("/modelo-pagamentos/calcular", authAdmin, async (req, res) => {
 
       // Saques pagos no mês (com detalhes individuais)
       db.query(`
-        SELECT id, valor, COALESCE(taxa_saque, 0) AS taxa_saque,
+        SELECT id, valor, COALESCE(taxa_saque, 0) AS taxa_saque, origem,
           TO_CHAR(processado_em AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY') AS data_fmt
         FROM saques
         WHERE modelo_id = $1
           AND status = 'pago'
-          AND EXTRACT(YEAR  FROM processado_em AT TIME ZONE 'America/Sao_Paulo') = $2
-          AND EXTRACT(MONTH FROM processado_em AT TIME ZONE 'America/Sao_Paulo') = $3
+          AND ${SAQUE_MES_SQL} = $2
         ORDER BY processado_em
-      `, [modelo_id, ano, mesNum])
+      `, [modelo_id, mes])
     ]);
 
     const pagosRes = await db.query(
@@ -4111,7 +4114,7 @@ router.get("/modelo-pagamentos/calcular", authAdmin, async (req, res) => {
     const pagos        = Number(pagosRes.rows[0].pagos);
     const comprometidos = Number(saquesRes.rows[0].comprometidos);
     const saldo_disponivel = ganhosDisp - pagos - comprometidos;
-    const saques_rows     = saqMesRes.rows;
+    const saques_rows     = saqMesRes.rows.map(r => ({ ...r, solicitante: SAQUE_SOLICITANTE(r.origem) }));
     const saques_mes      = saques_rows.reduce((s, r) => s + Number(r.valor), 0);
     const saques_mes_qtd  = saques_rows.length;
     const taxas_saques_mes = saques_rows.reduce((s, r) => s + Number(r.taxa_saque || 0), 0);
@@ -4418,11 +4421,11 @@ router.post("/modelo-pagamentos", authAdmin, upload.single("recibo"), async (req
       const valorBruto    = pctModelo > 0 ? total / pctModelo : total;
 
       const saquesDoMesRes = await db.query(`
-        SELECT id, valor, solicitado_em, processado_em
+        SELECT id, valor, solicitado_em, processado_em, origem
         FROM saques
         WHERE modelo_id = $1
           AND status = 'pago'
-          AND DATE_TRUNC('month', processado_em AT TIME ZONE 'America/Sao_Paulo') = DATE_TRUNC('month', $2::date)
+          AND ${SAQUE_MES_SQL} = TO_CHAR($2::date, 'YYYY-MM')
         ORDER BY processado_em
       `, [modeloIdNum, mesDate]);
 
@@ -4928,6 +4931,8 @@ function gerarReciboPDF(p) {
       doc.rect(50, saqY, W, 20).fill('#7B2CFF');
       doc.fillColor('white').fontSize(9).font('Helvetica-Bold')
         .text('DATA DO SAQUE', 65, saqY + 6)
+        .text('SAQUE', 150, saqY + 6)
+        .text('SOLICITADO POR', 230, saqY + 6)
         .text('VALOR TRANSFERIDO', 380, saqY + 6, { width: 160, align: 'right' });
       doc.fillColor('black');
 
@@ -4940,7 +4945,8 @@ function gerarReciboPDF(p) {
           : new Date(sq.solicitado_em).toLocaleDateString('pt-BR');
         doc.fillColor('#222').fontSize(9).font('Helvetica')
           .text(dataSaque, 65, saqRowY + 4)
-          .text(`Saque #${String(sq.id).padStart(6,'0')}`, 200, saqRowY + 4)
+          .text(`Saque ${i + 1} (#${String(sq.id).padStart(6,'0')})`, 150, saqRowY + 4)
+          .text(SAQUE_SOLICITANTE(sq.origem), 230, saqRowY + 4)
           .text(fmtBRL(sq.valor), 380, saqRowY + 4, { width: 160, align: 'right' });
         totalSacado += Number(sq.valor || 0);
         saqRowY += 18;
@@ -5049,10 +5055,10 @@ router.post("/modelo-pagamentos/:id/pagar", authAdmin, async (req, res) => {
     if (!pdfKey) {
       // Fallback: gera PDF agora (caso o registro não tenha gerado)
       const saqFallbackRes = await db.query(`
-        SELECT id, valor, solicitado_em, processado_em
+        SELECT id, valor, solicitado_em, processado_em, origem
         FROM saques
         WHERE modelo_id = $1 AND status = 'pago'
-          AND DATE_TRUNC('month', processado_em AT TIME ZONE 'America/Sao_Paulo') = DATE_TRUNC('month', $2::date)
+          AND ${SAQUE_MES_SQL} = TO_CHAR($2::date, 'YYYY-MM')
         ORDER BY processado_em
       `, [p.modelo_id, p.mes]);
 
@@ -5236,14 +5242,13 @@ router.get("/modelo-pagamentos/:id/recibo", authAdmin, async (req, res) => {
 
     // Saques do mês
     const saquesRes = await db.query(`
-      SELECT id, valor, COALESCE(taxa_saque, 0) AS taxa_saque,
+      SELECT id, valor, COALESCE(taxa_saque, 0) AS taxa_saque, origem,
         TO_CHAR(processado_em AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY') AS data_fmt
       FROM saques
       WHERE modelo_id = $1 AND status = 'pago'
-        AND EXTRACT(YEAR  FROM processado_em AT TIME ZONE 'America/Sao_Paulo') = $2
-        AND EXTRACT(MONTH FROM processado_em AT TIME ZONE 'America/Sao_Paulo') = $3
+        AND ${SAQUE_MES_SQL} = $2
       ORDER BY processado_em
-    `, [p.modelo_id, anoMes, mesMes]);
+    `, [p.modelo_id, `${anoMes}-${String(mesMes).padStart(2, '0')}`]);
     const saquesRows   = saquesRes.rows;
     const totalSacado  = saquesRows.reduce((acc, s) => acc + Number(s.valor || 0), 0);
     const totalTaxas   = saquesRows.reduce((acc, s) => acc + Number(s.taxa_saque || 0), 0);
@@ -5281,7 +5286,7 @@ router.get("/modelo-pagamentos/:id/recibo", authAdmin, async (req, res) => {
           const taxaSpan = taxa > 0
             ? ` <span style="font-size:11px;color:#c0392b">(taxa ${fmtBRL(taxa)})</span>`
             : ` <span style="font-size:11px;color:#27a745">(gratuito)</span>`;
-          return `<div class="row sub"><span class="lbl">${s.data_fmt} — Saque #${s.id}${taxaSpan}</span><span class="val">${fmtBRL(s.valor)}</span></div>`;
+          return `<div class="row sub"><span class="lbl">${s.data_fmt} — Saque #${s.id}${taxaSpan} <span style="font-size:11px;color:#7B2CFF">· Solicitado por: ${SAQUE_SOLICITANTE(s.origem)}</span></span><span class="val">${fmtBRL(s.valor)}</span></div>`;
         }).join('')
       : '<div class="row sub"><span class="lbl" style="color:#999">Nenhum saque neste mês</span><span class="val">—</span></div>';
 
@@ -7142,6 +7147,13 @@ router.post("/saques/registrar", authAdmin, async (req, res) => {
   try {
     const modelo_id = Number(req.body.modelo_id);
     const valorNum  = Math.round(Number(req.body.valor) * 100) / 100;
+    // Mês que este saque fecha (YYYY-MM). Padrão: se registrado até o dia 10, é o mês anterior.
+    let mesRef = String(req.body.mes_referencia || '');
+    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(mesRef)) {
+      const hoje = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
+      if (hoje.getDate() <= 10) hoje.setMonth(hoje.getMonth() - 1, 1);
+      mesRef = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;
+    }
     if (!modelo_id) return res.status(400).json({ erro: 'Selecione a modelo' });
     if (!valorNum || valorNum <= 0) return res.status(400).json({ erro: 'Valor inválido' });
 
@@ -7168,21 +7180,25 @@ router.post("/saques/registrar", authAdmin, async (req, res) => {
       `, [modelo_id]),
     ]);
     const saldoDisp = Number(ganhosRes.rows[0].ganhos_disponiveis) - Number(pagosRes.rows[0].pagos) - Number(saquesRes.rows[0].comprometidos);
-    if (valorNum > saldoDisp + 0.01) {
-      return res.status(400).json({ erro: `Saldo insuficiente. Saldo disponível: R$ ${saldoDisp.toFixed(2).replace('.', ',')}` });
+    // Admin pode forçar (ex.: já transferiu o fecho do mês e o saldo do sistema diverge por ajustes de fechamentos antigos)
+    if (valorNum > saldoDisp + 0.01 && !req.body.forcar) {
+      return res.status(400).json({
+        erro: `Saldo insuficiente. Saldo disponível: R$ ${saldoDisp.toFixed(2).replace('.', ',')}`,
+        saldo_insuficiente: true, saldo_disponivel: saldoDisp
+      });
     }
 
     const { rows } = await db.query(`
       INSERT INTO saques (modelo_id, valor, taxa_saque, chave_pix, pix_tipo, banco, agencia, conta, conta_tipo,
-        titular_nome, titular_documento, pgto_tipo, saldo_disponivel_no_dia, admin_id, origem)
-      VALUES ($1,$2,0,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,'contabilidade')
+        titular_nome, titular_documento, pgto_tipo, saldo_disponivel_no_dia, admin_id, origem, mes_referencia)
+      VALUES ($1,$2,0,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,'contabilidade',$14::date)
       RETURNING id
     `, [
       modelo_id, valorNum,
       banc.pix_chave || null, banc.pix_tipo || null,
       banc.banco || null, banc.agencia || null, banc.conta || null, banc.conta_tipo || null,
       banc.titular_nome || null, banc.titular_documento || null,
-      banc.tipo || 'pix', saldoDisp, req.user.id
+      banc.tipo || 'pix', saldoDisp, req.user.id, `${mesRef}-01`
     ]);
     res.json({ ok: true, saque_id: rows[0].id });
   } catch (err) {
