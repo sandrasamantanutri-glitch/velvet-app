@@ -644,6 +644,17 @@
           </div>
 
           <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);">
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;font-weight:600;">Salários chatters (ex.: Silva Talents)</div>
+            <div id="listaFechSalarios"></div>
+            <div style="display:flex;gap:6px;margin-top:6px;">
+              <input type="text" id="novaFechSalDesc" class="input-text" placeholder="Ex: Silva Talents" style="flex:2;">
+              <input type="number" id="novaFechSalValor" class="input-text" step="0.01" placeholder="0,00" style="flex:1;">
+              <button class="btn btn-primary" onclick="adicionarAjuste('salario_chatters')" style="white-space:nowrap;">+ Add</button>
+            </div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Sai de "Pago agências" no banco e entra como despesa da plataforma.</div>
+          </div>
+
+          <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);">
             <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;font-weight:600;">Valores retidos / bloqueados</div>
             <div id="listaFechRetencoes"></div>
             <div style="display:flex;gap:6px;margin-top:6px;">

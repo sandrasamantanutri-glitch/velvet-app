@@ -3009,7 +3009,12 @@ function renderFechamento(d) {
     row('(+) Taxa gateway coletada', f.total_taxas, '#22c55e') +
     row('(+) Fee Velvet', f.total_velvet, '#6366f1') +
     row('(-) Fees agências', f.total_agency, '#ef4444') +
-    row('(-) Repasse modelos', f.total_modelos, '#f97316');
+    row('(-) Repasse modelos', f.total_modelos, '#f97316') +
+    row('(-) Taxas reais dos gateways', d.total_taxas_reais, '#ef4444') +
+    row(`(-) Chargebacks (${d.chargebacks.qtd})`, d.chargebacks.total, '#ef4444') +
+    row('(-) Despesas da plataforma', d.banco.despesas, '#ef4444') +
+    row('(-) Salários chatters', d.total_salarios, '#ef4444') +
+    sep('= Velvet líquido', d.velvet_liquido, d.velvet_liquido >= 0 ? '#6366f1' : '#ef4444');
 
   // ── SAÍDAS ──────────────────────────────────────────────────────────────────
   const cb = d.chargebacks;
@@ -3020,6 +3025,7 @@ function renderFechamento(d) {
   // Listas dinâmicas de ajustes
   const taxas = (d.ajustes || []).filter(a => a.tipo === 'taxa_gateway');
   const retencoes = (d.ajustes || []).filter(a => a.tipo === 'retencao');
+  const salarios = (d.ajustes || []).filter(a => a.tipo === 'salario_chatters');
 
   const renderAjusteLista = (items) => items.map(a =>
     `<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;font-size:12px;">
@@ -3031,6 +3037,7 @@ function renderFechamento(d) {
 
   $('listaFechTaxas').innerHTML = renderAjusteLista(taxas);
   $('listaFechRetencoes').innerHTML = renderAjusteLista(retencoes);
+  if ($('listaFechSalarios')) $('listaFechSalarios').innerHTML = renderAjusteLista(salarios);
 
   // ── BANCO ────────────────────────────────────────────────────────────────────
   const b = d.banco;
@@ -3038,6 +3045,7 @@ function renderFechamento(d) {
     row('(+) Entradas recebidas', b.entradas, '#22c55e') +
     row('(-) Pago modelos', b.modelos, '#f97316') +
     row('(-) Pago agências', b.agencias, '#a855f7') +
+    row('(-) Salários chatters', b.salarios, '#ef4444') +
     row('(-) Despesas lançadas', b.despesas, '#ef4444') +
     sep('Saldo banco (disponível real)', b.saldo, b.saldo >= 0 ? '#22c55e' : '#ef4444');
 
@@ -3062,6 +3070,7 @@ function renderFechamento(d) {
     row('(-) Taxas reais pagas aos gateways', d.total_taxas_reais, '#ef4444') +
     row(`(-) Chargebacks (${d.chargebacks.qtd})`, d.chargebacks.total, '#ef4444') +
     row('(-) Despesas bancárias', b.despesas, '#ef4444') +
+    row('(-) Salários chatters', d.total_salarios, '#ef4444') +
     sep('= Velvet líquido estimado', d.velvet_liquido, d.velvet_liquido >= 0 ? '#6366f1' : '#ef4444') +
 
     // Bloco 2: O que ficou no banco
@@ -3069,6 +3078,7 @@ function renderFechamento(d) {
     row('(+) Entradas recebidas', b.entradas, '#22c55e') +
     row('(-) Pago a modelos', b.modelos, '#f97316') +
     row('(-) Pago a agências', b.agencias, '#a855f7') +
+    row('(-) Salários chatters', b.salarios, '#ef4444') +
     row('(-) Despesas bancárias', b.despesas, '#ef4444') +
     sep('= Saldo banco (disponível real)', b.saldo, b.saldo >= 0 ? '#22c55e' : '#ef4444') +
 
@@ -3098,7 +3108,7 @@ function renderFechamento(d) {
     // Bloco 4: Diferença e explicação pelos retidos
     blk('4. Diferença e conciliação') +
     row('Saldo banco', b.saldo) +
-    row('(-) Velvet líquido estimado (s/ taxas gateway)', d.velvet_liquido_banco ?? d.velvet_liquido, '#6366f1') +
+    row('(-) Velvet líquido estimado', d.velvet_liquido_banco ?? d.velvet_liquido, '#6366f1') +
     `<div style="display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid var(--border);">
       <span style="font-weight:600;font-size:13px;color:var(--text-muted);">Diferença bruta</span>
       <span style="font-weight:600;color:${diff < 0 ? '#ef4444' : '#22c55e'};">${money(diff)}</span>
@@ -3175,6 +3185,7 @@ function imprimirFechamento() {
   const secSaidas = $('fechSaidas')?.innerHTML || '';
   const secTaxas  = $('listaFechTaxas')?.innerHTML || '';
   const secRet    = $('listaFechRetencoes')?.innerHTML || '';
+  const secSal    = $('listaFechSalarios')?.innerHTML || '';
   const secBanco  = $('fechBanco')?.innerHTML || '';
   const secConc   = $('fechConciliacao')?.innerHTML || '';
   const secAnal   = $('fechAnalise')?.innerHTML || '';
@@ -3229,6 +3240,10 @@ function imprimirFechamento() {
         <div style="font-size:10px;color:#888;font-weight:700;text-transform:uppercase;margin-bottom:6px;">Valores retidos / bloqueados</div>
         ${secRet}
       </div>
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid #eee;">
+        <div style="font-size:10px;color:#888;font-weight:700;text-transform:uppercase;margin-bottom:6px;">Salários chatters</div>
+        ${secSal}
+      </div>
     </div>
     <div class="card">
       <h4>Conta Bancária — Real</h4>
@@ -3270,9 +3285,14 @@ async function salvarObservacoes() {
 async function adicionarAjuste(tipo) {
   const d = window._fechamentoAtual;
   if (!d) return;
-  const isTaxa = tipo === 'taxa_gateway';
-  const descEl = isTaxa ? $('novaFechTaxaDesc') : $('novaFechRetDesc');
-  const valEl  = isTaxa ? $('novaFechTaxaValor') : $('novaFechRetValor');
+  const ids = {
+    taxa_gateway:     ['novaFechTaxaDesc', 'novaFechTaxaValor'],
+    retencao:         ['novaFechRetDesc',  'novaFechRetValor'],
+    salario_chatters: ['novaFechSalDesc',  'novaFechSalValor'],
+  }[tipo];
+  if (!ids) return;
+  const descEl = $(ids[0]);
+  const valEl  = $(ids[1]);
   const desc = descEl.value.trim();
   const valor = parseFloat(valEl.value);
   if (!desc || !valor) return toast('Preencha descrição e valor', 'error');

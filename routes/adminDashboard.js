@@ -2481,32 +2481,34 @@ router.get("/fechamento/detalhe/:ano/:mes", async (req, res) => {
       else if (r.categoria === 'despesa') banco.despesas += v;
       else banco.outros += v;
     });
-    banco.saldo = banco.entradas - banco.modelos - banco.agencias - banco.despesas - banco.outros;
-
     // Ajustes
     const ajustes = ajustesQ.rows;
     const total_taxas_reais = ajustes.filter(a => a.tipo === 'taxa_gateway').reduce((s,a) => s + Number(a.valor), 0);
     const total_retencoes   = ajustes.filter(a => a.tipo === 'retencao').reduce((s,a) => s + Number(a.valor), 0);
+    // Salário de chatters (ex.: Silva Talents) costuma ser lançado no banco como "pagamento agência":
+    // aqui sai de "agências" e passa a ser despesa da plataforma.
+    const total_salarios    = ajustes.filter(a => a.tipo === 'salario_chatters').reduce((s,a) => s + Number(a.valor), 0);
 
-    // Velvet líquido P&L: inclui taxas reais como custo real da plataforma
+    banco.salarios = Math.min(total_salarios, banco.agencias);
+    banco.agencias = banco.agencias - banco.salarios;
+    banco.saldo = banco.entradas - banco.modelos - banco.agencias - banco.salarios - banco.despesas - banco.outros;
+
+    // Velvet líquido: fee + taxa coletada − taxas reais dos gateways − chargebacks − despesas − salários chatters
     const velvet_liquido =
       Number(f.total_velvet) +
       Number(f.total_taxas) -
       total_taxas_reais -
       Number(cbQ.rows[0].total) -
-      banco.despesas;
+      banco.despesas -
+      total_salarios;
 
-    // Velvet líquido banco: sem taxas reais (gateway deduziu antes do depósito — banco já reflete isso)
-    const velvet_liquido_banco =
-      Number(f.total_velvet) +
-      Number(f.total_taxas) -
-      Number(cbQ.rows[0].total) -
-      banco.despesas;
+    // O gateway desconta a taxa real antes de depositar, então o banco já vem líquido dela:
+    // a comparação com o banco usa o mesmo líquido.
+    const velvet_liquido_banco = velvet_liquido;
 
     // Disponível real = saldo banco
     banco.disponivel = banco.saldo;
 
-    // Diferença baseada no velvet_liquido_banco (taxas reais não entram na comparação com banco)
     const diferenca = banco.disponivel - velvet_liquido_banco;
 
     // Análise inteligente
@@ -2553,7 +2555,7 @@ router.get("/fechamento/detalhe/:ano/:mes", async (req, res) => {
       investimento:   Math.round(velvet_liquido * 0.15 * 100) / 100,
     } : null;
 
-    res.json({ fechamento: f, chargebacks: { qtd: cbQ.rows[0].qtd, total: cbQ.rows[0].total }, banco, ajustes, total_taxas_reais, total_retencoes, velvet_liquido, velvet_liquido_banco, diferenca, difInexplicada, analise, distrib });
+    res.json({ fechamento: f, chargebacks: { qtd: cbQ.rows[0].qtd, total: cbQ.rows[0].total }, banco, ajustes, total_taxas_reais, total_retencoes, total_salarios, velvet_liquido, velvet_liquido_banco, diferenca, difInexplicada, analise, distrib });
   } catch (err) {
     console.error("Erro detalhe fechamento:", err);
     res.status(500).json({ erro: "Erro interno" });
