@@ -4198,6 +4198,8 @@ pageLoaders['saques-modelos'] = async function () {
   // Registrar saque em nome da modelo (fecho do mês) → cria pendente e abre o fluxo normal de processamento
   window.registrarSaqueAdmin = async function() {
     const lista = await fetchJSON('/admin/dashboard/modelos-lista').catch(() => []);
+    const _h = new Date(); if (_h.getDate() <= 10) _h.setMonth(_h.getMonth() - 1, 1);
+    const mesPadrao = `${_h.getFullYear()}-${String(_h.getMonth() + 1).padStart(2, '0')}`;
     const esc = t => String(t ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
     const overlay = document.createElement('div');
     overlay.id = 'modalRegistrarSaqueOverlay';
@@ -4220,6 +4222,8 @@ pageLoaders['saques-modelos'] = async function () {
         <div id="regSaqueSaldo" style="font-size:.82rem;color:var(--text-muted);margin-bottom:12px"></div>
         <label style="font-size:.85rem;font-weight:600">Valor (R$)</label>
         <input id="regSaqueValor" type="number" step="0.01" min="0.01" class="form-input" style="width:100%;margin-top:6px" placeholder="0,00">
+        <label style="font-size:.85rem;font-weight:600;display:block;margin-top:12px">Mês que este saque fecha</label>
+        <input id="regSaqueMes" type="month" class="form-input" style="width:100%;margin-top:6px" value="${mesPadrao}">
         <p style="font-size:.78rem;color:var(--text-muted);margin-top:10px">Sem taxa. Será usado o dado bancário aprovado da modelo. Depois de registrar, você confirma o envio (comprovante + e-mail) como num saque normal.</p>
         <div id="regSaqueErro" style="display:none;margin-top:8px;color:var(--red,#ef4444);font-size:.82rem"></div>
       </div>
@@ -4251,7 +4255,7 @@ pageLoaders['saques-modelos'] = async function () {
     const r = await authFetch('/admin/dashboard/saques/registrar', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ modelo_id: Number(mid), valor: Number(valor), forcar: forcar === true })
+      body: JSON.stringify({ modelo_id: Number(mid), valor: Number(valor), mes_referencia: document.getElementById('regSaqueMes')?.value || undefined, forcar: forcar === true })
     });
     const data = await r.json().catch(() => ({}));
     if (!r.ok && data.saldo_insuficiente) {
@@ -4672,7 +4676,7 @@ function recalcularFechamento() {
             : `<span style="color:#16a34a;font-size:.76rem;margin-left:4px">(gratuito)</span>`;
           return `
           <div style="display:flex;justify-content:space-between;font-size:.88rem;padding:3px 0;border-bottom:1px solid #f3f4f6;color:#374151">
-            <span>${s.data_fmt || '—'} &nbsp;<span style="color:#9ca3af;font-size:.8rem">Saque #${String(s.id).padStart(4,'0')}</span>${taxaInfo}</span>
+            <span>${s.data_fmt || '—'} &nbsp;<span style="color:#9ca3af;font-size:.8rem">Saque #${String(s.id).padStart(4,'0')}</span>${taxaInfo} <span style="color:#7B2CFF;font-size:.76rem">· Solicitado por: ${s.solicitante || 'Modelo'}</span></span>
             <span style="color:#6b7280">− ${money(s.valor)}</span>
           </div>`;
         }).join('')}

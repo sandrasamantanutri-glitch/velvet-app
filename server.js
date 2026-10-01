@@ -17299,6 +17299,9 @@ db.query("ALTER TABLE saques ADD COLUMN IF NOT EXISTS taxa_saque NUMERIC(10,2) N
   .catch(err => console.error("Migração taxa_saque:", err.message));
 db.query("ALTER TABLE saques ADD COLUMN IF NOT EXISTS origem TEXT NOT NULL DEFAULT 'modelo'")
   .catch(err => console.error("Migração origem saques:", err.message));
+db.query("ALTER TABLE saques ADD COLUMN IF NOT EXISTS mes_referencia DATE")
+  .then(() => db.query("UPDATE saques SET mes_referencia = (DATE_TRUNC('month', processado_em AT TIME ZONE 'America/Sao_Paulo') - INTERVAL '1 month')::date WHERE origem='contabilidade' AND mes_referencia IS NULL AND processado_em IS NOT NULL"))
+  .catch(err => console.error("Migração mes_referencia saques:", err.message));
 
 
 // Migração: evidências da assinatura própria do contrato
