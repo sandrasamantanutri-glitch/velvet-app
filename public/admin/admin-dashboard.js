@@ -4240,7 +4240,7 @@ pageLoaders['saques-modelos'] = async function () {
     if (d) document.getElementById('regSaqueValor').value = Number(d.saldo_disponivel).toFixed(2);
   };
 
-  window.confirmarRegistrarSaque = async function() {
+  window.confirmarRegistrarSaque = async function(forcar = false) {
     const mid   = document.getElementById('regSaqueModelo').value;
     const valor = document.getElementById('regSaqueValor').value;
     const erroEl = document.getElementById('regSaqueErro');
@@ -4251,9 +4251,16 @@ pageLoaders['saques-modelos'] = async function () {
     const r = await authFetch('/admin/dashboard/saques/registrar', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ modelo_id: Number(mid), valor: Number(valor) })
+      body: JSON.stringify({ modelo_id: Number(mid), valor: Number(valor), forcar: forcar === true })
     });
     const data = await r.json().catch(() => ({}));
+    if (!r.ok && data.saldo_insuficiente) {
+      btn.disabled = false; btn.textContent = 'Registrar & Processar';
+      if (confirm(`O saldo disponível no sistema é ${fmtBRL(data.saldo_disponivel)}, menor que ${fmtBRL(valor)}.\n\nRegistrar mesmo assim? (o saldo da modelo ficará negativo/zerado no sistema)`)) {
+        return confirmarRegistrarSaque(true);
+      }
+      return;
+    }
     if (!r.ok) {
       erroEl.textContent = data.erro || 'Erro ao registrar saque';
       erroEl.style.display = 'block';

@@ -7168,8 +7168,12 @@ router.post("/saques/registrar", authAdmin, async (req, res) => {
       `, [modelo_id]),
     ]);
     const saldoDisp = Number(ganhosRes.rows[0].ganhos_disponiveis) - Number(pagosRes.rows[0].pagos) - Number(saquesRes.rows[0].comprometidos);
-    if (valorNum > saldoDisp + 0.01) {
-      return res.status(400).json({ erro: `Saldo insuficiente. Saldo disponível: R$ ${saldoDisp.toFixed(2).replace('.', ',')}` });
+    // Admin pode forçar (ex.: já transferiu o fecho do mês e o saldo do sistema diverge por ajustes de fechamentos antigos)
+    if (valorNum > saldoDisp + 0.01 && !req.body.forcar) {
+      return res.status(400).json({
+        erro: `Saldo insuficiente. Saldo disponível: R$ ${saldoDisp.toFixed(2).replace('.', ',')}`,
+        saldo_insuficiente: true, saldo_disponivel: saldoDisp
+      });
     }
 
     const { rows } = await db.query(`
