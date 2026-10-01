@@ -17282,7 +17282,7 @@ async function sincronizarDisponibilidadeStripe() {
   }
 }
 
-cron.schedule("0 * * * *", sincronizarDisponibilidadeStripe); // de hora em hora: vendas novas ganham data de liberação logo
+cron.schedule("0 5 * * *", sincronizarDisponibilidadeStripe);
 
 // Backup diário Cloudflare R2 → Backblaze B2
 require("./scripts/cron-backup");
