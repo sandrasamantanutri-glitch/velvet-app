@@ -8064,7 +8064,7 @@ app.get("/api/modelo/saques", authModelo, async (req, res) => {
         saldo_disponivel_no_dia,
         TO_CHAR(solicitado_em AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY HH24:MI') AS solicitado_fmt,
         TO_CHAR(processado_em AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY HH24:MI') AS processado_fmt,
-        chave_pix, pix_tipo, pgto_tipo, comprovante_url
+        chave_pix, pix_tipo, pgto_tipo, comprovante_url, origem
       FROM saques
       WHERE modelo_id = $1
       ORDER BY solicitado_em DESC
