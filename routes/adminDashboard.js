@@ -7174,8 +7174,8 @@ router.post("/saques/registrar", authAdmin, async (req, res) => {
 
     const { rows } = await db.query(`
       INSERT INTO saques (modelo_id, valor, taxa_saque, chave_pix, pix_tipo, banco, agencia, conta, conta_tipo,
-        titular_nome, titular_documento, pgto_tipo, saldo_disponivel_no_dia, admin_id)
-      VALUES ($1,$2,0,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+        titular_nome, titular_documento, pgto_tipo, saldo_disponivel_no_dia, admin_id, origem)
+      VALUES ($1,$2,0,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,'contabilidade')
       RETURNING id
     `, [
       modelo_id, valorNum,

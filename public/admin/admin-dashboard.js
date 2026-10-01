@@ -4141,7 +4141,7 @@ pageLoaders['saques-modelos'] = async function () {
         : `<span style="color:#16a34a;font-size:.82rem">Gratuito</span>`;
       return `
       <tr>
-        <td><strong>${nomeModelo(s)}</strong><br><span style="font-size:.75rem;color:var(--text-muted)">${s.modelo_email||''}</span></td>
+        <td><strong>${nomeModelo(s)}</strong>${s.origem==='contabilidade' ? ' <span class="badge badge-info" style="font-size:.68rem">Registrado pela Contabilidade</span>' : ''}<br><span style="font-size:.75rem;color:var(--text-muted)">${s.modelo_email||''}</span></td>
         <td><strong>${fmtBRL(s.valor)}</strong></td>
         <td>${taxaCell}</td>
         <td><strong style="color:var(--purple)">${fmtBRL(transferir)}</strong></td>
