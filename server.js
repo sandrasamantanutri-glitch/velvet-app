@@ -18,6 +18,7 @@ const express = require("express");
 const db = require("./db");
 const { registrarLog } = require("./utils/securityLog");
 const { criarNotificacaoAdmin } = require("./utils/notificacoesAdmin");
+const { pagosEfetivosSql } = require("./utils/pagosModelo");
 const bcrypt = require("bcrypt");
 const path = require("path");
 const fs = require("fs");
@@ -7622,7 +7623,7 @@ app.get("/api/modelo/painel/geral", authModelo, async (req, res) => {
       `, [mid]),
       // Total já pago via modelo_pagamentos
       db.query(`
-        SELECT COALESCE(SUM(total_geral), 0) AS pagos FROM modelo_pagamentos WHERE modelo_id=$1 AND status='pago'
+        SELECT ${pagosEfetivosSql('$1')} AS pagos
       `, [mid]),
       // Saques já pagos + pendentes
       db.query(`
@@ -7724,7 +7725,7 @@ app.get("/api/modelo/painel/meubanco", authModelo, async (req, res) => {
       `, [mid]),
       // Total já pago via modelo_pagamentos
       db.query(`
-        SELECT COALESCE(SUM(total_geral),0) AS pagos FROM modelo_pagamentos WHERE modelo_id=$1 AND status='pago'
+        SELECT ${pagosEfetivosSql('$1')} AS pagos
       `, [mid]),
       // Saques já pagos + pendentes (valor + taxa comprometem o saldo)
       db.query(`
@@ -7948,7 +7949,7 @@ app.post("/api/modelo/sacar", authModelo, async (req, res) => {
         FROM transacoes_agency WHERE modelo_id=$1 AND status='pago'
       `, [mid]),
       db.query(`
-        SELECT COALESCE(SUM(total_geral),0) AS pagos FROM modelo_pagamentos WHERE modelo_id=$1 AND status='pago'
+        SELECT ${pagosEfetivosSql('$1')} AS pagos
       `, [mid]),
       db.query(`
         SELECT COALESCE(SUM(valor + COALESCE(taxa_saque,0)) FILTER (WHERE status IN ('pago','pendente')), 0) AS saques_comprometidos
