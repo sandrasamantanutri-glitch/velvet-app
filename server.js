@@ -2371,7 +2371,7 @@ app.post("/api/webhook/stripe", express.raw({ type: "application/json" }), async
         await client.query(
           `UPDATE vip_subscriptions
            SET ativo = true, expiration_at = $1, updated_at = NOW(),
-               aviso_7_dias_enviado = false, aviso_24h_aviado = false,
+               aviso_7_dias_enviado = false, aviso_24h_enviado = false,
                gateway_subscription_id = COALESCE($2, gateway_subscription_id)
            WHERE id = $3`,
           [novaExpiracao, invoicePiId, vip.id]
