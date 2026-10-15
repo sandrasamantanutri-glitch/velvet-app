@@ -7855,6 +7855,7 @@ app.get("/api/modelo/sacar/info", authModelo, async (req, res) => {
       SELECT COUNT(*) AS qtd, MAX(solicitado_em) AS ultima_solicitacao
       FROM saques
       WHERE modelo_id=$1 AND status IN ('pago','pendente')
+        AND origem IS DISTINCT FROM 'contabilidade'
         AND EXTRACT(YEAR  FROM solicitado_em AT TIME ZONE 'America/Sao_Paulo') = $2
         AND EXTRACT(MONTH FROM solicitado_em AT TIME ZONE 'America/Sao_Paulo') = $3
     `, [mid, ano, mes]);
@@ -7920,6 +7921,7 @@ app.post("/api/modelo/sacar", authModelo, async (req, res) => {
       SELECT COUNT(*) AS qtd, MAX(solicitado_em) AS ultima_solicitacao
       FROM saques
       WHERE modelo_id=$1 AND status IN ('pago','pendente')
+        AND origem IS DISTINCT FROM 'contabilidade'
         AND EXTRACT(YEAR  FROM solicitado_em AT TIME ZONE 'America/Sao_Paulo') = $2
         AND EXTRACT(MONTH FROM solicitado_em AT TIME ZONE 'America/Sao_Paulo') = $3
     `, [mid, ano, mes]);
