@@ -101,9 +101,9 @@
     "tipos_social_titulo": "Social",
     "tipos_social_desc": "Conteúdos do dia a dia, como fotos, vídeos, viagens, lifestyle, gaming, fitness, moda e muito mais.",
     "tipos_premium_titulo": "Premium",
-    "tipos_premium_desc": "Conteúdo mais sensual, como ensaios de biquíni, lingerie, cosplay e outras publicações com maior apelo visual, sem nudez ou conteúdo explícito.",
+    "tipos_premium_desc": "Conteúdo exclusivo com maior apelo visual, como ensaios de moda, cosplay e outras publicações especiais.",
     "tipos_privado_titulo": "Privado",
-    "tipos_privado_desc": "Conteúdo reservado para adultos, disponível mediante validação da identidade do utilizador."
+    "tipos_privado_desc": "Pode ser solicitada a validação de identidade do assinante VIP."
   },
   "updates": {
     "titulo": "Novidades desde sua última visita",
@@ -1083,7 +1083,7 @@
   },
   "faq4": {
     "q": "Que tipo de conteudo e permitido?",
-    "a": "Conteudo de lifestyle, bastidores, dicas, entretenimento, +18 e muito mais. Conteudo explicito nao e permitido na plataforma."
+    "a": "Conteúdo de lifestyle, bastidores, dicas e entretenimento. O acesso à plataforma é restrito a maiores de 18 anos."
   },
   "faq5": {
     "q": "Qual a idade minima para usar o Velvet?",
@@ -1115,9 +1115,9 @@
     "cat_social_nome": "🌍 Social",
     "cat_social_desc": "Conteúdos do dia a dia, incluindo fotografias, vídeos, viagens, lifestyle, gaming, fitness, moda e outros conteúdos de entretenimento.",
     "cat_premium_nome": "🔥 Premium",
-    "cat_premium_desc": "Conteúdo mais sensual, como ensaios em biquíni, lingerie, cosplay e outras produções com maior apelo visual, SEM NUDEZ OU CONTEÚDO EXPLICÍTO.",
+    "cat_premium_desc": "Conteúdo exclusivo com maior apelo visual, como ensaios de moda, cosplay e outras publicações especiais.",
     "cat_adulto_nome": "🔒 Privado",
-    "cat_adulto_desc": "Conteúdo reservado para adultos, disponível mediante validação da identidade do utilizador."
+    "cat_adulto_desc": "Pode ser solicitada a validação de identidade do assinante VIP."
   },
   "contato_extra": {
     "denuncia": "Denunciar conta",
