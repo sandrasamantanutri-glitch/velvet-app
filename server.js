@@ -11271,6 +11271,37 @@ app.delete("/api/conteudos/:id", authModelo, async (req, res) => {
 // EXCLUIR CONTA
 // ===========================
 
+// Encerra a recorrência (Stripe + vip_subscriptions) das assinaturas afetadas por autoexclusão
+async function encerrarRecorrenciaVip(client, whereCol, whereId) {
+  const subs = await client.query(
+    `SELECT id, stripe_subscription_id
+     FROM vip_subscriptions
+     WHERE ${whereCol} = $1
+       AND (recorrente = true OR stripe_subscription_id IS NOT NULL)`,
+    [whereId]
+  );
+
+  for (const sub of subs.rows) {
+    if (!sub.stripe_subscription_id) continue;
+    try {
+      await stripe.subscriptions.cancel(sub.stripe_subscription_id);
+    } catch (stripeErr) {
+      // Já cancelada/inexistente no Stripe não impede a exclusão; qualquer outro erro aborta (rollback) para não deixar cobrança ativa
+      if (stripeErr.code !== "resource_missing") throw stripeErr;
+    }
+  }
+
+  await client.query(
+    `UPDATE vip_subscriptions
+     SET recorrente = false,
+         cancelado_em = COALESCE(cancelado_em, NOW()),
+         updated_at = NOW()
+     WHERE ${whereCol} = $1
+       AND (recorrente = true OR stripe_subscription_id IS NOT NULL)`,
+    [whereId]
+  );
+}
+
 app.delete("/api/conta/excluir", auth, async (req, res) => {
   const userId = req.user.id;
   const role = req.user.role;
@@ -11363,6 +11394,8 @@ app.delete("/api/conta/excluir", auth, async (req, res) => {
           [modelo_id]
         );
 
+        await encerrarRecorrenciaVip(client, "modelo_id", modelo_id);
+
         await client.query(
           `UPDATE conteudos
            SET ativo = false,
@@ -11424,6 +11457,8 @@ app.delete("/api/conta/excluir", auth, async (req, res) => {
              AND ativo = true`,
           [cliente_id]
         );
+
+        await encerrarRecorrenciaVip(client, "cliente_id", cliente_id);
 
         await client.query(
           `UPDATE clientes_dados
