@@ -115,9 +115,11 @@ function abrirModal(html) { $('#mbody').innerHTML = html; $('#modal').classList.
 function fechar() { $('#modal').classList.remove('on'); carregar(); }
 $('#modal').addEventListener('click', (e) => { if (e.target.id === 'modal') fechar(); });
 
-$('#btnNovo').onclick = () => abrirModal(`
+$('#btnNovo').onclick = () => { window._buscaBio = undefined; window._buscaEmail = undefined; abrirModal(`
   <div class="row-flex"><h3 style="flex:1">Adicionar perfil</h3><button class="btn ghost" id="x">Fechar</button></div>
-  <label>@username do Instagram</label><input class="full" id="n_user" placeholder="@usuario">
+  <label>@username do Instagram</label>
+  <div class="row-flex"><input id="n_user" style="flex:1" placeholder="@usuario"><button class="btn ghost" id="n_busca">Buscar dados</button></div>
+  <p class="muted" id="n_info" style="margin-top:6px"></p>
   <div class="two">
     <div><label>Nome</label><input id="n_nome"></div>
     <div><label>Seguidores</label><input id="n_seg" type="number" min="0"></div>
@@ -126,14 +128,37 @@ $('#btnNovo').onclick = () => abrirModal(`
   </div>
   <label>Categorias (separe por vírgula)</label><input class="full" id="n_cat" placeholder="fitness, danca">
   <label>Notas</label><textarea id="n_notas" rows="3"></textarea>
-  <div style="margin-top:12px"><button class="btn" id="n_save">Guardar</button></div>`);
+  <div style="margin-top:12px"><button class="btn" id="n_save">Guardar</button></div>`); };
 document.addEventListener('click', async (e) => {
   if (e.target.id === 'x') fechar();
+  if (e.target.id === 'n_busca') {
+    const btn = e.target;
+    btn.disabled = true; $('#n_info').textContent = 'A consultar o Instagram (pode levar até 1 minuto)...';
+    try {
+      const d = await api('/buscar', { method: 'POST', body: { username: $('#n_user').value } });
+      $('#n_user').value = d.username; $('#n_nome').value = d.nome; $('#n_seg').value = d.seguidores;
+      $('#n_eng').value = d.engajamento; $('#n_pps').value = d.posts_semana; $('#n_cat').value = d.categorias.join(', ');
+      window._buscaBio = d.bio; window._buscaEmail = d.email;
+      $('#n_info').textContent = d.privado ? 'Perfil privado: engajamento indisponível.'
+        : `Engajamento calculado com a mediana de ${d.posts_analisados} posts recentes.`;
+    } catch (err) { $('#n_info').textContent = ''; toast(err.message); }
+    btn.disabled = false;
+  }
+  if (e.target.id === 'm_atualizar') {
+    const btn = e.target, id = btn.dataset.id;
+    btn.disabled = true; btn.textContent = 'A consultar...';
+    try {
+      const d = await api('/buscar', { method: 'POST', body: { username: btn.dataset.user } });
+      await api('/' + id, { method: 'PATCH', body: { nome: d.nome, bio: d.bio, seguidores: d.seguidores, engajamento: d.engajamento, posts_semana: d.posts_semana } });
+      toast('Dados atualizados'); abrir(id);
+    } catch (err) { toast(err.message); btn.disabled = false; btn.textContent = 'Atualizar do Instagram'; }
+  }
   if (e.target.id === 'n_save') {
     try {
       await api('/', { method: 'POST', body: {
         username: $('#n_user').value, nome: $('#n_nome').value, seguidores: $('#n_seg').value,
         engajamento: $('#n_eng').value, posts_semana: $('#n_pps').value, notas: $('#n_notas').value,
+        bio: window._buscaBio || '', email: window._buscaEmail || '', origem: window._buscaBio !== undefined ? 'busca' : 'manual',
         categorias: $('#n_cat').value.split(',').map((c) => c.trim().toLowerCase()).filter(Boolean) } });
       toast('Perfil guardado'); fechar();
     } catch (err) { toast(err.message); }
@@ -147,7 +172,8 @@ async function abrir(id) {
       <div class="row-flex"><h3 style="flex:1">@${esc(p.username)}</h3><button class="btn ghost" id="x">Fechar</button></div>
       <p class="muted">${esc(p.nome)} · ${fmt(p.seguidores)} seguidores · pont. ${p.score}</p>
       <p style="margin:6px 0">${esc(p.bio)}</p>
-      <a class="link" target="_blank" rel="noopener noreferrer" href="https://instagram.com/${encodeURIComponent(p.username)}">Abrir no Instagram</a>
+      <div class="row-flex"><a class="link" target="_blank" rel="noopener noreferrer" href="https://instagram.com/${encodeURIComponent(p.username)}">Abrir no Instagram</a>
+      <button class="btn ghost" id="m_atualizar" data-id="${p.id}" data-user="${esc(p.username)}">Atualizar do Instagram</button></div>
       <div class="two">
         <div><label>Estado</label><select id="m_status">${Object.entries(STATUS).map(([k, v]) => `<option value="${k}" ${k === p.status ? 'selected' : ''}>${v}</option>`).join('')}</select></div>
         <div><label>Prioridade (0-5)</label><input id="m_prio" type="number" min="0" max="5" value="${p.prioridade}"></div>

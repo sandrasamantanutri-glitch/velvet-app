@@ -22,6 +22,76 @@ const comScore = (p) => ({ ...p, score: pontuacao(p) });
 const limparUser = (u) => String(u || "").trim().replace(/^@+/, "").toLowerCase();
 const num = (v, d = 0) => (Number.isFinite(Number(v)) ? Number(v) : d);
 
+const CATEGORIAS = {
+  fitness: ["fitness", "gym", "workout", "treino", "academia", "crossfit", "pilates"],
+  beleza: ["beauty", "makeup", "beleza", "maquiagem", "skincare", "hair", "cabelo"],
+  lifestyle: ["lifestyle", "rotina", "daily", "vlog", "grwm"],
+  danca: ["dance", "danca", "dança", "dancinha", "choreo"],
+  trends: ["trend", "viral", "reels", "tiktok"],
+  moda: ["fashion", "moda", "ootd", "style", "look"],
+  criadora: ["contentcreator", "creator", "criadora", "ugc", "influencer"],
+};
+
+function mediana(arr) {
+  if (!arr.length) return 0;
+  const s = [...arr].sort((a, b) => a - b);
+  const m = Math.floor(s.length / 2);
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+}
+
+function analisarPerfil(d) {
+  const seguidores = d.followersCount || 0;
+  const posts = d.latestPosts || [];
+  const validos = posts.filter((p) => (p.likesCount ?? -1) >= 0);
+  const interacoes = validos.map((p) => (p.likesCount || 0) + (p.commentsCount || 0));
+  const engajamento = seguidores && interacoes.length
+    ? Math.round((mediana(interacoes) / seguidores) * 10000) / 100 : 0;
+  const datas = posts.map((p) => Date.parse(p.timestamp)).filter(Number.isFinite);
+  let postsSemana = 0;
+  if (datas.length >= 2) {
+    const dias = Math.max((Math.max(...datas) - Math.min(...datas)) / 86400000, 1);
+    postsSemana = Math.round((datas.length / dias) * 7 * 10) / 10;
+  }
+  const texto = `${d.biography || ""} ${d.businessCategoryName || ""}`.toLowerCase();
+  return {
+    username: d.username || "",
+    nome: d.fullName || "",
+    bio: d.biography || "",
+    seguidores,
+    engajamento,
+    posts_semana: postsSemana,
+    categorias: Object.keys(CATEGORIAS).filter((c) => CATEGORIAS[c].some((k) => texto.includes(k))),
+    email: d.businessEmail || "",
+    privado: !!d.private,
+    posts_analisados: validos.length,
+  };
+}
+
+router.post("/buscar", async (req, res) => {
+  const token = process.env.APIFY_TOKEN;
+  if (!token) return res.status(400).json({ error: "APIFY_TOKEN não configurado no servidor" });
+  const username = limparUser(req.body?.username);
+  if (!/^[a-z0-9._]{1,30}$/.test(username)) return res.status(400).json({ error: "Username inválido" });
+  try {
+    const r = await fetch(
+      "https://api.apify.com/v2/acts/apify~instagram-profile-scraper/run-sync-get-dataset-items?timeout=120",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ usernames: [username] }),
+        signal: AbortSignal.timeout(130000),
+      });
+    if (!r.ok) return res.status(502).json({ error: `Erro Apify (${r.status}). Verifique o token e o saldo.` });
+    const data = await r.json();
+    if (!Array.isArray(data) || !data.length || !data[0].username)
+      return res.status(404).json({ error: "Perfil não encontrado" });
+    res.json(analisarPerfil(data[0]));
+  } catch (err) {
+    console.error("Erro prospeccao buscar:", err.message);
+    res.status(502).json({ error: "Não foi possível consultar o Instagram agora" });
+  }
+});
+
 router.get("/stats", async (req, res) => {
   try {
     const r = await db.query(`
