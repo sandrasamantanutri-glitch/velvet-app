@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prospecção - Admin</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #0f0f13; color: #e2e2e2; font-size: 13px; }
+  .wrap { padding: 16px; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 14px; }
+  .stat { background: #1a1a24; border: 1px solid #2a2a3a; border-radius: 8px; padding: 12px; }
+  .stat b { display: block; font-size: 22px; color: #9b6cff; }
+  .stat span { font-size: 11px; color: #888; }
+  .toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+  input, select, textarea { background: #0f0f13; border: 1px solid #2a2a3a; border-radius: 6px; color: #e2e2e2; padding: 7px 10px; font: inherit; outline: none; }
+  input:focus, select:focus, textarea:focus { border-color: #7b2cff; }
+  .toolbar input[type=search] { flex: 1; min-width: 180px; }
+  .btn { background: #7b2cff; border: 0; border-radius: 6px; color: #fff; cursor: pointer; padding: 7px 12px; font: inherit; font-weight: 600; text-decoration: none; display: inline-block; }
+  .btn.ghost { background: transparent; border: 1px solid #2a2a3a; color: #aaa; font-weight: 400; }
+  .btn.ghost:hover { border-color: #7b2cff; color: #fff; }
+  .btn.danger { background: #3a1d24; color: #f87171; }
+  .box { background: #1a1a24; border: 1px solid #2a2a3a; border-radius: 8px; overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid #2a2a3a; }
+  th { font-size: 11px; text-transform: uppercase; letter-spacing: .6px; color: #666; font-weight: 500; }
+  tr.row { cursor: pointer; }
+  tr.row:hover { background: #1e1e2e; }
+  .pill { display: inline-block; background: #7b2cff22; color: #9b6cff; border-radius: 10px; padding: 1px 8px; font-size: 11px; margin: 1px 2px 0 0; }
+  .st-novo { color: #9b6cff; } .st-qualificada { color: #d4af37; } .st-contactada { color: #fbbf24; }
+  .st-em_conversa, .st-fechada { color: #34d399; } .st-rejeitada { color: #f87171; }
+  .score { font-weight: 700; }
+  .muted { color: #888; }
+  .modal { position: fixed; inset: 0; background: #000b; display: none; justify-content: center; align-items: flex-start; padding: 30px 14px; overflow: auto; z-index: 10; }
+  .modal.on { display: flex; }
+  .card { background: #1a1a24; border: 1px solid #2a2a3a; border-radius: 10px; padding: 18px; width: 100%; max-width: 640px; }
+  label { display: block; color: #888; font-size: 11px; margin: 10px 0 4px; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .two input, .two select, textarea, .full { width: 100%; }
+  .row-flex { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .log { padding: 7px 0; border-bottom: 1px solid #2a2a3a; }
+  #toast { position: fixed; bottom: 16px; right: 16px; background: #1e1e2e; border: 1px solid #2a2a3a; padding: 10px 16px; border-radius: 8px; display: none; z-index: 20; }
+  a.link { color: #9b6cff; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="stats" id="stats"></div>
+  <div class="toolbar">
+    <input type="search" id="busca" placeholder="Pesquisar @, nome ou notas">
+    <select id="fStatus"><option value="">Todos os estados</option></select>
+    <select id="fCat"><option value="">Todas as categorias</option></select>
+    <select id="fOrdem">
+      <option value="score">Ordenar: pontuação</option>
+      <option value="seguidores">Seguidores</option>
+      <option value="recentes">Mais recentes</option>
+    </select>
+    <button class="btn" id="btnNovo">+ Adicionar perfil</button>
+    <a class="btn ghost" href="/api/admin/prospeccao/export.csv">Exportar CSV</a>
+  </div>
+  <div class="box">
+    <table>
+      <thead><tr><th>Perfil</th><th>Seguidores</th><th>Eng.</th><th>Posts/sem</th><th>Estado</th><th>Prior.</th><th>Pont.</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="modal" id="modal"><div class="card" id="mbody"></div></div>
+<div id="toast"></div>
+
+<script>
+const API = '/api/admin/prospeccao';
+const STATUS = { novo: 'Novo', qualificada: 'Qualificada', contactada: 'Contactada', em_conversa: 'Em conversa', fechada: 'Fechada', rejeitada: 'Rejeitada' };
+const CATS = ['fitness', 'beleza', 'lifestyle', 'danca', 'trends', 'moda', 'criadora'];
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmt = (n) => n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(n >= 1e5 ? 0 : 1) + 'K' : n;
+
+async function api(path, opts = {}) {
+  const r = await fetch(API + path, {
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
+    ...opts,
+    body: opts.body ? JSON.stringify(opts.body) : undefined,
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || 'Erro ' + r.status);
+  return j;
+}
+function toast(m) { const t = $('#toast'); t.textContent = m; t.style.display = 'block'; clearTimeout(t._t); t._t = setTimeout(() => t.style.display = 'none', 3200); }
+const pills = (p) => (p.categorias || []).map((c) => `<span class="pill">${esc(c)}</span>`).join('');
+
+$('#fStatus').insertAdjacentHTML('beforeend', Object.entries(STATUS).map(([k, v]) => `<option value="${k}">${v}</option>`).join(''));
+$('#fCat').insertAdjacentHTML('beforeend', CATS.map((c) => `<option>${c}</option>`).join(''));
+['busca', 'fStatus', 'fCat', 'fOrdem'].forEach((id) => $('#' + id).addEventListener('input', carregar));
+
+async function carregar() {
+  try {
+    const qs = new URLSearchParams({ busca: $('#busca').value, status: $('#fStatus').value, categoria: $('#fCat').value, ordem: $('#fOrdem').value });
+    const [s, ps] = await Promise.all([api('/stats'), api('/?' + qs)]);
+    $('#stats').innerHTML = [['Total', s.total], ['Este mês', s.este_mes], ['Contactadas', s.contactadas], ['Alta prioridade', s.alta_prioridade], ['Follow-ups em atraso', s.followups]]
+      .map(([l, v]) => `<div class="stat"><b>${v}</b><span>${l}</span></div>`).join('');
+    $('#rows').innerHTML = ps.map((p) => `<tr class="row" data-id="${p.id}">
+      <td><b>@${esc(p.username)}</b> <span class="muted">${esc(p.nome)}</span><div>${pills(p)}</div></td>
+      <td>${fmt(p.seguidores)}</td><td>${Number(p.engajamento) ? p.engajamento + '%' : '-'}</td><td>${Number(p.posts_semana) || '-'}</td>
+      <td class="st-${esc(p.status)}">${esc(STATUS[p.status] || p.status)}</td>
+      <td>${'★'.repeat(p.prioridade) || '-'}</td><td class="score">${p.score}</td></tr>`).join('')
+      || '<tr><td colspan="7" class="muted">Nenhum perfil. Clique em "Adicionar perfil".</td></tr>';
+  } catch (e) { toast(e.message); }
+}
+$('#rows').addEventListener('click', (e) => { const tr = e.target.closest('tr.row'); if (tr) abrir(tr.dataset.id); });
+
+function abrirModal(html) { $('#mbody').innerHTML = html; $('#modal').classList.add('on'); }
+function fechar() { $('#modal').classList.remove('on'); carregar(); }
+$('#modal').addEventListener('click', (e) => { if (e.target.id === 'modal') fechar(); });
+
+$('#btnNovo').onclick = () => abrirModal(`
+  <div class="row-flex"><h3 style="flex:1">Adicionar perfil</h3><button class="btn ghost" id="x">Fechar</button></div>
+  <label>@username do Instagram</label><input class="full" id="n_user" placeholder="@usuario">
+  <div class="two">
+    <div><label>Nome</label><input id="n_nome"></div>
+    <div><label>Seguidores</label><input id="n_seg" type="number" min="0"></div>
+    <div><label>Engajamento (%)</label><input id="n_eng" type="number" step="0.01" min="0"></div>
+    <div><label>Posts por semana</label><input id="n_pps" type="number" step="0.5" min="0"></div>
+  </div>
+  <label>Categorias (separe por vírgula)</label><input class="full" id="n_cat" placeholder="fitness, danca">
+  <label>Notas</label><textarea id="n_notas" rows="3"></textarea>
+  <div style="margin-top:12px"><button class="btn" id="n_save">Guardar</button></div>`);
+document.addEventListener('click', async (e) => {
+  if (e.target.id === 'x') fechar();
+  if (e.target.id === 'n_save') {
+    try {
+      await api('/', { method: 'POST', body: {
+        username: $('#n_user').value, nome: $('#n_nome').value, seguidores: $('#n_seg').value,
+        engajamento: $('#n_eng').value, posts_semana: $('#n_pps').value, notas: $('#n_notas').value,
+        categorias: $('#n_cat').value.split(',').map((c) => c.trim().toLowerCase()).filter(Boolean) } });
+      toast('Perfil guardado'); fechar();
+    } catch (err) { toast(err.message); }
+  }
+});
+
+async function abrir(id) {
+  try {
+    const p = await api('/' + id);
+    abrirModal(`
+      <div class="row-flex"><h3 style="flex:1">@${esc(p.username)}</h3><button class="btn ghost" id="x">Fechar</button></div>
+      <p class="muted">${esc(p.nome)} · ${fmt(p.seguidores)} seguidores · pont. ${p.score}</p>
+      <p style="margin:6px 0">${esc(p.bio)}</p>
+      <a class="link" target="_blank" rel="noopener noreferrer" href="https://instagram.com/${encodeURIComponent(p.username)}">Abrir no Instagram</a>
+      <div class="two">
+        <div><label>Estado</label><select id="m_status">${Object.entries(STATUS).map(([k, v]) => `<option value="${k}" ${k === p.status ? 'selected' : ''}>${v}</option>`).join('')}</select></div>
+        <div><label>Prioridade (0-5)</label><input id="m_prio" type="number" min="0" max="5" value="${p.prioridade}"></div>
+        <div><label>Email</label><input id="m_email" value="${esc(p.email)}"></div>
+        <div><label>Telefone / WhatsApp</label><input id="m_tel" value="${esc(p.telefone)}"></div>
+        <div><label>Seguidores</label><input id="m_seg" type="number" min="0" value="${p.seguidores}"></div>
+        <div><label>Engajamento (%)</label><input id="m_eng" type="number" step="0.01" value="${p.engajamento}"></div>
+        <div><label>Posts por semana</label><input id="m_pps" type="number" step="0.5" value="${p.posts_semana}"></div>
+        <div><label>Próximo follow-up</label><input id="m_fu" type="date" value="${p.proximo_contato ? String(p.proximo_contato).slice(0, 10) : ''}"></div>
+      </div>
+      <label><input type="checkbox" id="m_18" ${p.maior_18 ? 'checked' : ''}> Confirmei que tem 18+ anos</label>
+      <label>Categorias (vírgula)</label><input class="full" id="m_cat" value="${esc((p.categorias || []).join(', '))}">
+      <label>Notas</label><textarea id="m_notas" rows="3">${esc(p.notas)}</textarea>
+      <div class="row-flex" style="margin-top:12px"><button class="btn" id="m_save">Guardar</button><button class="btn danger" id="m_del">Apagar</button></div>
+      <h4 style="margin-top:18px">Contactos</h4>
+      <div class="row-flex" style="margin:8px 0">
+        <select id="c_tipo"><option value="dm">DM</option><option value="email">Email</option><option value="whatsapp">WhatsApp</option><option value="ligacao">Ligação</option></select>
+        <input id="c_notas" style="flex:1;min-width:160px" placeholder="O que foi dito / resposta">
+        <button class="btn ghost" id="c_add">Registar</button>
+      </div>
+      ${p.contatos.map((c) => `<div class="log"><span class="pill">${esc(c.tipo)}</span> <span class="muted">${esc(new Date(c.criado_em).toLocaleString('pt-BR'))}</span><div>${esc(c.notas)}</div></div>`).join('') || '<p class="muted">Sem contactos registados.</p>'}`);
+    $('#m_save').onclick = async () => {
+      try {
+        await api('/' + id, { method: 'PATCH', body: {
+          status: $('#m_status').value, prioridade: $('#m_prio').value, email: $('#m_email').value, telefone: $('#m_tel').value,
+          seguidores: $('#m_seg').value, engajamento: $('#m_eng').value, posts_semana: $('#m_pps').value,
+          proximo_contato: $('#m_fu').value || null, maior_18: $('#m_18').checked, notas: $('#m_notas').value,
+          categorias: $('#m_cat').value.split(',').map((c) => c.trim().toLowerCase()).filter(Boolean) } });
+        toast('Guardado'); abrir(id);
+      } catch (err) { toast(err.message); }
+    };
+    $('#m_del').onclick = async () => {
+      if (!confirm('Apagar este perfil e o histórico de contactos?')) return;
+      try { await api('/' + id, { method: 'DELETE' }); fechar(); } catch (err) { toast(err.message); }
+    };
+    $('#c_add').onclick = async () => {
+      try { await api('/' + id + '/contatos', { method: 'POST', body: { tipo: $('#c_tipo').value, notas: $('#c_notas').value } }); abrir(id); }
+      catch (err) { toast(err.message); }
+    };
+  } catch (e) { toast(e.message); }
+}
+carregar();
+</script>
+</body>
+</html>

@@ -3483,6 +3483,7 @@ const usuariosConfiaveisRouter = require('./routes/usuariosConfiaveis');
 const modelosPixConfigRouter = require('./routes/modelosPixConfig');
 const contestacoesRouter = require('./routes/contestacoes');
 const suporteRouter = require('./routes/suporte');
+const adminProspeccaoRouter = require('./routes/adminProspeccao');
 const authAdmin = require('./middleware/authAdmin');
 
 app.get("/api/stripe/pk", (req, res) => {
@@ -3497,6 +3498,7 @@ app.use('/api/admin/email', auth, authAdmin, adminEmailRouter);
 app.use('/api/admin/usuarios-confiaveis', auth, authAdmin, usuariosConfiaveisRouter);
 app.use('/api/admin/modelos-pix-config', auth, authAdmin, modelosPixConfigRouter);
 app.use('/api/admin/contestacoes', auth, authAdmin, contestacoesRouter);
+app.use('/api/admin/prospeccao', auth, authAdmin, adminProspeccaoRouter);
 app.use('/api/suporte', suporteRouter);
 
 // ── CAMPANHAS VIP ─────────────────────────────────────────────

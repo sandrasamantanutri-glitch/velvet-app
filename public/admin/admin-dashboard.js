@@ -195,6 +195,7 @@ const pageTitles = {
   suporte: 'Suporte ao Cliente',
   midias: 'Gestão de Mídias',
   ppvs: 'PPVs Enviados',
+  prospeccao: 'Prospecção de Modelos',
   'usuarios-confiaveis': 'Usuários Confiáveis',
   'pix-modelos': 'PIX por Modelo',
   contestacoes: 'Contestações',
@@ -514,6 +515,13 @@ pageLoaders.midias = function () {
   const iframe = document.getElementById('midias-iframe');
   if (!iframe.src || iframe.src === window.location.href) {
     iframe.src = '/admin/midias.html';
+  }
+};
+
+pageLoaders.prospeccao = function () {
+  const iframe = document.getElementById('prospeccao-iframe');
+  if (!iframe.src || iframe.src === window.location.href) {
+    iframe.src = '/admin/prospeccao.html';
   }
 };
 
