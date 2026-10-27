@@ -2509,6 +2509,22 @@ app.post("/api/webhook/stripe", express.raw({ type: "application/json" }), async
       }
     }
 
+    // 3) PIX via Stripe (VIP ou Mídia) — fallback do iPag
+    if (!pagamento) {
+      const pixStripeRes = await client.query(
+        `SELECT * FROM pagamentos_pix
+         WHERE pagarme_order_id = $1 AND gateway = 'stripe'
+         FOR UPDATE`,
+        [paymentIntentId]
+      );
+      if (pixStripeRes.rowCount > 0) {
+        pagamento = pixStripeRes.rows[0];
+        pagamento.tipo = pagamento.message_id ? 'conteudo' : 'vip';
+        tabelaPagamento = 'pagamentos_pix';
+        metodoPagamento = 'pix';
+      }
+    }
+
     if (!pagamento) {
       console.log("🚨 Pagamento não encontrado:", {
         paymentIntentId,
@@ -3267,6 +3283,11 @@ if (valorEsperado > 0 && Math.abs(Number(valorPago) - Number(valorEsperado)) > 0
       );
     } else if (tabelaPagamento === "premium_unlocks") {
       console.log("premium_unlocks já foi atualizado no bloco premium");
+    } else if (tabelaPagamento === "pagamentos_pix") {
+      await client.query(
+        `UPDATE pagamentos_pix SET status = 'pago' WHERE pagarme_order_id = $1`,
+        [paymentIntentId]
+      );
     }
 
     console.log("Pagamento atualizado");
@@ -3308,7 +3329,8 @@ if (valorEsperado > 0 && Math.abs(Number(valorPago) - Number(valorEsperado)) > 0
     }
 
     // ── STRIPE SUBSCRIPTION — AUTO-RENOVAÇÃO VIP ─────────────────
-    if (dadosParaEmitir?.tipo === 'vip' && paymentIntentId) {
+    // PIX é pagamento avulso — não cria subscription recorrente
+    if (dadosParaEmitir?.tipo === 'vip' && paymentIntentId && tabelaPagamento !== 'pagamentos_pix') {
       const { cliente_id: cId, modelo_id: mId, novaExpiracao: nExp, valorBase: vBase, taxaCambioVip: tCambio } = dadosParaEmitir;
       (async () => {
         try {
@@ -4143,6 +4165,28 @@ async function criarPixIpag({ valorTotal, nome, email, cpf, telefone, endereco, 
       }
     }
   });
+}
+
+async function criarPixStripe({ valorTotal, email, referencia }) {
+  const amount = Math.round(valorTotal * 100);
+  const pi = await stripe.paymentIntents.create({
+    amount,
+    currency: 'brl',
+    payment_method_types: ['pix'],
+    payment_method_data: { type: 'pix' },
+    confirm: true,
+    payment_method_options: { pix: { expires_after_seconds: 3600 } },
+    receipt_email: email,
+    description: referencia
+  });
+  return {
+    id:         pi.id,
+    qrcode:     pi.next_action?.pix_display_qr_code?.data          || null,
+    link:       pi.next_action?.pix_display_qr_code?.image_url_png || null,
+    expires_at: pi.next_action?.pix_display_qr_code?.expires_at
+                  ? new Date(pi.next_action.pix_display_qr_code.expires_at * 1000).toISOString()
+                  : null
+  };
 }
 
 async function salvarEnderecoClientePix(dbClient, { cliente_id, telefone, endereco }) {
@@ -12036,28 +12080,45 @@ if (Number.isNaN(dataAceite.getTime())) {
        CRIAR PIX IPAG
     ========================= */
 
-    console.log("Criando pagamento PIX VIP no iPag...");
+    console.log("Criando pagamento PIX VIP...");
 
-    const ipagResVip = await criarPixIpag({
-      valorTotal: valorTotal,
-      nome:       nomeFinal,
-      email:      emailFinal,
-      cpf:        cpfVip      || "",
-      telefone:   telefoneVip || "",
-      endereco,
-      referencia: `vip_${cliente_id}_${modeloIdNum}_${Date.now()}`
-    });
+    let pixGatewayVip = 'ipag';
+    let ipagId, pixKey, brCodeB64, brCode, expiresAt;
 
-    const ipagId    = String(ipagResVip?.id || "");
-    const pixKey    = ipagResVip?.attributes?.pix?.qrcode   || null; // código EMV copia-e-cola
-    const brCodeB64 = ipagResVip?.attributes?.pix?.qrcode64 || null;
-    const brCode    = ipagResVip?.attributes?.pix?.link     || null; // link da página de pagamento
-    const expiresAt = ipagResVip?.attributes?.pix?.expires_at || null;
-
-    if (!ipagId || !pixKey) {
-      console.error("PIX iPag não gerado:", ipagResVip);
-      await client.query("ROLLBACK");
-      return res.status(500).json({ error: "Erro ao gerar QR PIX" });
+    try {
+      const ipagResVip = await criarPixIpag({
+        valorTotal: valorTotal,
+        nome:       nomeFinal,
+        email:      emailFinal,
+        cpf:        cpfVip      || "",
+        telefone:   telefoneVip || "",
+        endereco,
+        referencia: `vip_${cliente_id}_${modeloIdNum}_${Date.now()}`
+      });
+      ipagId    = String(ipagResVip?.id || "");
+      pixKey    = ipagResVip?.attributes?.pix?.qrcode   || null;
+      brCodeB64 = ipagResVip?.attributes?.pix?.qrcode64 || null;
+      brCode    = ipagResVip?.attributes?.pix?.link     || null;
+      expiresAt = ipagResVip?.attributes?.pix?.expires_at || null;
+      if (!ipagId || !pixKey) throw new Error("iPag não retornou dados PIX");
+    } catch (ipagErrVip) {
+      console.warn("⚠️ iPag PIX VIP falhou, usando Stripe PIX:", ipagErrVip.message);
+      pixGatewayVip = 'stripe';
+      const stripeResVip = await criarPixStripe({
+        valorTotal,
+        email:      emailFinal,
+        referencia: `vip_${cliente_id}_${modeloIdNum}_${Date.now()}`
+      });
+      ipagId    = stripeResVip.id;
+      pixKey    = stripeResVip.qrcode;
+      brCodeB64 = null;
+      brCode    = stripeResVip.link;
+      expiresAt = stripeResVip.expires_at;
+      if (!ipagId || !pixKey) {
+        console.error("PIX Stripe VIP também falhou");
+        await client.query("ROLLBACK");
+        return res.status(500).json({ error: "Erro ao gerar QR PIX" });
+      }
     }
 
     await salvarEnderecoClientePix(client, { cliente_id, telefone: telefoneVip, endereco });
@@ -12090,7 +12151,7 @@ if (Number.isNaN(dataAceite.getTime())) {
         cpf,
         telefone
       )
-      VALUES ($1,$2,$3,'pendente','ipag',$4,$5,$6,NOW(),$7,$8,$9,$10,$11,$12,$13,$14)
+      VALUES ($1,$2,$3,'pendente',$15,$4,$5,$6,NOW(),$7,$8,$9,$10,$11,$12,$13,$14)
       `,
       [
         cliente_id,
@@ -12106,7 +12167,8 @@ if (Number.isNaN(dataAceite.getTime())) {
         versao_termos || "2026-06-07",
         fingerprint || "",
         cpfVip || null,
-        telefoneVip || null
+        telefoneVip || null,
+        pixGatewayVip
       ]
     );
 
@@ -12320,7 +12382,7 @@ if (Number.isNaN(dataAceite.getTime())) {
       FROM pagamentos_pix
       WHERE cliente_id = $1
       AND message_id = $2
-      AND gateway = 'ipag'
+      AND gateway IN ('ipag', 'stripe')
       AND status = 'pendente'
       AND expires_at > NOW()
       ORDER BY criado_em DESC
@@ -12344,7 +12406,7 @@ if (Number.isNaN(dataAceite.getTime())) {
        CRIAR PIX IPAG
     ================================ */
 
-    console.log("Criando pagamento PIX Mídia no iPag...");
+    console.log("Criando pagamento PIX Mídia...");
 
     const nomeCliente  = String(nomeDB || "").trim() || "Cliente Velvet";
     const emailCliente = String(emailDB || "").trim();
@@ -12354,23 +12416,37 @@ if (Number.isNaN(dataAceite.getTime())) {
       return res.status(400).json({ error: "E-mail do cliente não encontrado." });
     }
 
-    const ipagResMidia = await criarPixIpag({
-      valorTotal: valorTotal,
-      nome:       nomeCliente,
-      email:      emailCliente,
-      cpf:        String(cpf || "").replace(/\D/g, ""),
-      telefone:   String(telefone || "").replace(/\D/g, ""),
-      endereco,
-      referencia: `midia_${cliente_id}_${conteudo_id}_${Date.now()}`
-    });
+    let pixGatewayMidia = 'ipag';
+    let ipagIdMidia, pixKeyMidia, brCodeB64Midia, brCodeMidia;
 
-    const ipagIdMidia    = String(ipagResMidia?.id || "");
-    const pixKeyMidia    = ipagResMidia?.attributes?.pix?.qrcode   || null; // código EMV copia-e-cola
-    const brCodeB64Midia = ipagResMidia?.attributes?.pix?.qrcode64 || null;
-    const brCodeMidia    = ipagResMidia?.attributes?.pix?.link     || null; // link da página de pagamento
-
-    if (!ipagIdMidia || !pixKeyMidia) {
-      throw new Error("Erro ao gerar PIX no iPag");
+    try {
+      const ipagResMidia = await criarPixIpag({
+        valorTotal: valorTotal,
+        nome:       nomeCliente,
+        email:      emailCliente,
+        cpf:        String(cpf || "").replace(/\D/g, ""),
+        telefone:   String(telefone || "").replace(/\D/g, ""),
+        endereco,
+        referencia: `midia_${cliente_id}_${conteudo_id}_${Date.now()}`
+      });
+      ipagIdMidia    = String(ipagResMidia?.id || "");
+      pixKeyMidia    = ipagResMidia?.attributes?.pix?.qrcode   || null;
+      brCodeB64Midia = ipagResMidia?.attributes?.pix?.qrcode64 || null;
+      brCodeMidia    = ipagResMidia?.attributes?.pix?.link     || null;
+      if (!ipagIdMidia || !pixKeyMidia) throw new Error("iPag não retornou dados PIX");
+    } catch (ipagErrMidia) {
+      console.warn("⚠️ iPag PIX Mídia falhou, usando Stripe PIX:", ipagErrMidia.message);
+      pixGatewayMidia = 'stripe';
+      const stripeResMidia = await criarPixStripe({
+        valorTotal,
+        email:      emailCliente,
+        referencia: `midia_${cliente_id}_${conteudo_id}_${Date.now()}`
+      });
+      ipagIdMidia    = stripeResMidia.id;
+      pixKeyMidia    = stripeResMidia.qrcode;
+      brCodeB64Midia = null;
+      brCodeMidia    = stripeResMidia.link;
+      if (!ipagIdMidia || !pixKeyMidia) throw new Error("Erro ao gerar PIX no Stripe");
     }
 
     await salvarEnderecoClientePix(client, {
@@ -12408,7 +12484,7 @@ await client.query(
     telefone
   )
   VALUES (
-    $1,$2,$3,$4,$5,$6,'pendente','ipag',$7,NOW(),NOW() + INTERVAL '60 minutes',
+    $1,$2,$3,$4,$5,$6,'pendente',$16,$7,NOW(),NOW() + INTERVAL '60 minutes',
     $8,$9,$10,$11,$12,$13,$14,$15
   )
   `,
@@ -12427,7 +12503,8 @@ await client.query(
     versao_termos || "2026-06-07",
     fingerprint || "",
     String(cpf || "").replace(/\D/g, ""),
-    String(telefone || "").replace(/\D/g, "")
+    String(telefone || "").replace(/\D/g, ""),
+    pixGatewayMidia
   ]
 );
 
@@ -12800,28 +12877,45 @@ if (Number.isNaN(dataAceite.getTime())) {
        CRIAR PIX IPAG
     ========================= */
 
-    console.log("Criando pagamento PIX Premium no iPag...");
+    console.log("Criando pagamento PIX Premium...");
 
-    const ipagResPremium = await criarPixIpag({
-      valorTotal: valorTotal,
-      nome:       nomeFinal,
-      email:      emailFinal,
-      cpf:        cpfPremium      || "",
-      telefone:   telefonePremium || "",
-      endereco,
-      referencia: `premium_${cliente_id}_${premiumPostIdNum}_${Date.now()}`
-    });
+    let pixGatewayPremium = 'ipag';
+    let ipagIdPremium, pixKeyPremium, brCodeB64Premium, brCodePremium, expiresAtPremium;
 
-    const ipagIdPremium    = String(ipagResPremium?.id || "");
-    const pixKeyPremium    = ipagResPremium?.attributes?.pix?.qrcode   || null; // código EMV copia-e-cola
-    const brCodeB64Premium = ipagResPremium?.attributes?.pix?.qrcode64 || null;
-    const brCodePremium    = ipagResPremium?.attributes?.pix?.link     || null; // link da página de pagamento
-    const expiresAtPremium = ipagResPremium?.attributes?.pix?.expires_at || null;
-
-    if (!ipagIdPremium || !pixKeyPremium) {
-      console.error("PIX iPag não gerado:", ipagResPremium);
-      await client.query("ROLLBACK");
-      return res.status(500).json({ error: "Erro ao gerar QR PIX" });
+    try {
+      const ipagResPremium = await criarPixIpag({
+        valorTotal: valorTotal,
+        nome:       nomeFinal,
+        email:      emailFinal,
+        cpf:        cpfPremium      || "",
+        telefone:   telefonePremium || "",
+        endereco,
+        referencia: `premium_${cliente_id}_${premiumPostIdNum}_${Date.now()}`
+      });
+      ipagIdPremium    = String(ipagResPremium?.id || "");
+      pixKeyPremium    = ipagResPremium?.attributes?.pix?.qrcode   || null;
+      brCodeB64Premium = ipagResPremium?.attributes?.pix?.qrcode64 || null;
+      brCodePremium    = ipagResPremium?.attributes?.pix?.link     || null;
+      expiresAtPremium = ipagResPremium?.attributes?.pix?.expires_at || null;
+      if (!ipagIdPremium || !pixKeyPremium) throw new Error("iPag não retornou dados PIX");
+    } catch (ipagErrPremium) {
+      console.warn("⚠️ iPag PIX Premium falhou, usando Stripe PIX:", ipagErrPremium.message);
+      pixGatewayPremium = 'stripe';
+      const stripeResPremium = await criarPixStripe({
+        valorTotal,
+        email:      emailFinal,
+        referencia: `premium_${cliente_id}_${premiumPostIdNum}_${Date.now()}`
+      });
+      ipagIdPremium    = stripeResPremium.id;
+      pixKeyPremium    = stripeResPremium.qrcode;
+      brCodeB64Premium = null;
+      brCodePremium    = stripeResPremium.link;
+      expiresAtPremium = stripeResPremium.expires_at;
+      if (!ipagIdPremium || !pixKeyPremium) {
+        console.error("PIX Stripe Premium também falhou");
+        await client.query("ROLLBACK");
+        return res.status(500).json({ error: "Erro ao gerar QR PIX" });
+      }
     }
 
     await salvarEnderecoClientePix(client, {
@@ -12870,7 +12964,7 @@ await client.query(
     $1,$2,$3,
     'pendente','pix',
     $4,$5,$6,$7,
-    'ipag',$8,$9,$10,$11,
+    $20,$8,$9,$10,$11,
     $12,$13,$14,$15,$16,$17,$18,$19,
     NOW(),NOW()
   )
@@ -12917,9 +13011,18 @@ await client.query(
     versao_termos || "2026-06-07",
     fingerprint || "",
     cpfPremium,
-    telefonePremium
+    telefonePremium,
+    pixGatewayPremium
   ]
 );
+
+    // Quando Stripe PIX, registrar payment intent ID para o webhook encontrar o registro
+    if (pixGatewayPremium === 'stripe') {
+      await client.query(
+        `UPDATE premium_unlocks SET stripe_payment_intent_id = $1 WHERE premium_post_id = $2 AND cliente_id = $3`,
+        [ipagIdPremium, premiumPostIdNum, cliente_id]
+      );
+    }
 
     console.log("Premium unlock registrado");
 
