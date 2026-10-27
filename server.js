@@ -4136,6 +4136,7 @@ function formatarTelefoneIpag(tel) {
 }
 
 async function criarPixIpag({ valorTotal, nome, email, cpf, telefone, endereco, referencia }) {
+  throw new Error("iPag desabilitado — usando Stripe PIX"); // TESTE: remover após validar
   const appUrl = process.env.APP_URL || "https://velvet-app.onrender.com";
   const orderId = String(referencia || Date.now()).replace(/\D/g, "").slice(-16) || String(Date.now()).slice(-16);
   const telefoneIpag = formatarTelefoneIpag(telefone);
