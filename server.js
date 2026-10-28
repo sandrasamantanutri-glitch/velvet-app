@@ -80,7 +80,17 @@ async function getOrCreateStripeCustomer(dbClient, cliente_id, email) {
     'SELECT stripe_customer_id FROM clientes WHERE id = $1',
     [cliente_id]
   );
-  if (res.rows[0]?.stripe_customer_id) return res.rows[0].stripe_customer_id;
+  const existingId = res.rows[0]?.stripe_customer_id;
+
+  if (existingId) {
+    // Verificar se o customer existe na conta Stripe atual (pode ser de conta antiga)
+    try {
+      const existing = await stripe.customers.retrieve(existingId);
+      if (!existing.deleted) return existingId;
+    } catch (_) {
+      // Customer não existe nesta conta (migração de conta Stripe) — cria novo abaixo
+    }
+  }
 
   const customer = await stripe.customers.create({
     email,
