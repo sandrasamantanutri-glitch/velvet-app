@@ -101,9 +101,9 @@
     "tipos_social_titulo": "Social",
     "tipos_social_desc": "Everyday content like photos, videos, travel, lifestyle, gaming, fitness, fashion and much more.",
     "tipos_premium_titulo": "Premium",
-    "tipos_premium_desc": "Exclusive content with greater visual appeal, such as fashion shoots, cosplay and other special posts.",
+    "tipos_premium_desc": "More sensual content such as bikini shoots, lingerie, cosplay and other visually appealing posts, without nudity or explicit content.",
     "tipos_privado_titulo": "Private",
-    "tipos_privado_desc": "Identity verification may be requested from the VIP subscriber."
+    "tipos_privado_desc": "Content reserved for adults, available upon identity verification."
   },
   "updates": {
     "titulo": "Updates since your last visit",
@@ -1083,7 +1083,7 @@
   },
   "faq4": {
     "q": "What type of content is allowed?",
-    "a": "Lifestyle content, behind-the-scenes, tips and entertainment. Access to the platform is restricted to users aged 18 or older."
+    "a": "Lifestyle, behind-the-scenes, tips, entertainment, +18 and more. Explicit content is not allowed on the platform."
   },
   "faq5": {
     "q": "What is the minimum age to use Velvet?",
@@ -1115,9 +1115,9 @@
     "cat_social_nome": "🌍 Social",
     "cat_social_desc": "Day-to-day content including photos, videos, travel, lifestyle, gaming, fitness, fashion and other entertainment content.",
     "cat_premium_nome": "🔥 Premium",
-    "cat_premium_desc": "Exclusive content with greater visual appeal, such as fashion shoots, cosplay and other special posts.",
+    "cat_premium_desc": "More sensual content such as bikini shoots, lingerie, cosplay and other visually appealing productions, WITHOUT NUDITY OR EXPLICIT CONTENT.",
     "cat_adulto_nome": "🔒 Private",
-    "cat_adulto_desc": "Identity verification may be requested from the VIP subscriber."
+    "cat_adulto_desc": "Adult content reserved for verified users."
   },
   "contato_extra": {
     "denuncia": "Report account",
