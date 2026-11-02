@@ -5274,7 +5274,12 @@ router.get("/modelo-pagamentos/:id/recibo", authAdmin, async (req, res) => {
     const assinaturas_bruto = Number(brutoRes.rows[0]?.assinaturas_bruto || 0);
     const ganhosBrutos      = midias_bruto + assinaturas_bruto;
     const saldoDoMes        = ganhosBrutos + bonusVal;
-    const valorDisponivel   = saldoDoMes - totalSacado;
+    const [ganhosDispRes, pagosDispRes, comprometidosRes] = await Promise.all([
+      db.query(`SELECT COALESCE(SUM(valor_modelo) FILTER (WHERE gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW())), 0) AS v FROM transacoes_agency WHERE modelo_id = $1 AND status = 'pago'`, [p.modelo_id]),
+      db.query(`SELECT ${pagosEfetivosSql('$1')} AS v`, [p.modelo_id]),
+      db.query(`SELECT COALESCE(SUM(valor + COALESCE(taxa_saque,0)) FILTER (WHERE status IN ('pago','pendente')), 0) AS v FROM saques WHERE modelo_id = $1`, [p.modelo_id])
+    ]);
+    const valorDisponivel = Math.max(0, Number(ganhosDispRes.rows[0].v) - Number(pagosDispRes.rows[0].v) - Number(comprometidosRes.rows[0].v));
 
     try { await db.query(`INSERT INTO recibos_pagamento (pagamento_id, modelo_id, numero_recibo) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING`, [p.id, p.modelo_id, reciboNum]); } catch (_) {}
 
