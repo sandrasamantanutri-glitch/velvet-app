@@ -4439,7 +4439,8 @@ router.post("/modelo-pagamentos", authAdmin, upload.single("recibo"), async (req
         comissao_velvet: valorBruto * pctPlataforma,
         valor_liquido:   total,
         pago_em:         null,
-        saques_do_mes:   saquesDoMesRes.rows
+        saques_do_mes:   saquesDoMesRes.rows,
+        saldo_atual:     await saldoAtualModelo(modeloIdNum)
       };
       const pdfBuffer = await gerarReciboPDF(dadosPDF);
       const pdfKey = `recibos/${modeloIdNum}/${novoId}-recibo.pdf`;
@@ -4793,6 +4794,15 @@ router.post("/transacoes-agency/backfill-stripe", authAdmin, async (req, res) =>
 });
 
 // ── Helper: gerar PDF do recibo com PDFKit ──
+async function saldoAtualModelo(modeloId) {
+  const [g, pg, sq] = await Promise.all([
+    db.query(`SELECT COALESCE(SUM(valor_modelo) FILTER (WHERE gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW())), 0) AS v FROM transacoes_agency WHERE modelo_id = $1 AND status = 'pago'`, [modeloId]),
+    db.query(`SELECT ${pagosEfetivosSql('$1')} AS v`, [modeloId]),
+    db.query(`SELECT COALESCE(SUM(valor + COALESCE(taxa_saque,0)) FILTER (WHERE status IN ('pago','pendente')), 0) AS v FROM saques WHERE modelo_id = $1`, [modeloId])
+  ]);
+  return Number(g.rows[0].v) - Number(pg.rows[0].v) - Number(sq.rows[0].v);
+}
+
 function gerarReciboPDF(p) {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ size: 'A4', margin: 50 });
@@ -4957,7 +4967,7 @@ function gerarReciboPDF(p) {
       doc.fillColor('black');
 
       // Saldo final disponível
-      const saldoFinal = liquido - totalSacado;
+      const saldoFinal = p.saldo_atual != null ? Number(p.saldo_atual) : liquido - totalSacado;
       const sfY = saqRowY + 34;
       doc.rect(50, sfY, W, 32).fill(saldoFinal > 0 ? '#f0fff4' : '#fff5f5').stroke(saldoFinal > 0 ? '#c3e6cb' : '#fecaca');
       doc.fontSize(9).font('Helvetica').fillColor('#555').text('Saldo líquido do mês:', 65, sfY + 7);
@@ -5068,7 +5078,8 @@ router.post("/modelo-pagamentos/:id/pagar", authAdmin, async (req, res) => {
         comissao_velvet: comissao,
         valor_liquido:   liquido,
         pago_em:         new Date(),
-        saques_do_mes:   saqFallbackRes.rows
+        saques_do_mes:   saqFallbackRes.rows,
+        saldo_atual:     await saldoAtualModelo(p.modelo_id)
       };
       pdfBuffer = await gerarReciboPDF(dadosPDF);
       try {
@@ -5279,7 +5290,7 @@ router.get("/modelo-pagamentos/:id/recibo", authAdmin, async (req, res) => {
       db.query(`SELECT ${pagosEfetivosSql('$1')} AS v`, [p.modelo_id]),
       db.query(`SELECT COALESCE(SUM(valor + COALESCE(taxa_saque,0)) FILTER (WHERE status IN ('pago','pendente')), 0) AS v FROM saques WHERE modelo_id = $1`, [p.modelo_id])
     ]);
-    const valorDisponivel = Math.max(0, Number(ganhosDispRes.rows[0].v) - Number(pagosDispRes.rows[0].v) - Number(comprometidosRes.rows[0].v));
+    const valorDisponivel = Number(ganhosDispRes.rows[0].v) - Number(pagosDispRes.rows[0].v) - Number(comprometidosRes.rows[0].v);
 
     try { await db.query(`INSERT INTO recibos_pagamento (pagamento_id, modelo_id, numero_recibo) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING`, [p.id, p.modelo_id, reciboNum]); } catch (_) {}
 
@@ -5376,7 +5387,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f0f0;padding:20px;col
   <!-- Valor disponível -->
   <div class="sec">
     <hr class="divider">
-    <div class="row disponivel" style="padding-top:10px"><span class="lbl">Valor Disponível no ato do fechamento</span><span class="val">${fmtBRL(valorDisponivel)}</span></div>
+    <div class="row disponivel" style="padding-top:10px"><span class="lbl">Valor Disponível no ato do fechamento</span><span class="val"${valorDisponivel < 0 ? ' style="color:#dc2626"' : ''}>${valorDisponivel < 0 ? '− ' : ''}${fmtBRL(Math.abs(valorDisponivel))}</span></div>
   </div>
 
   <div class="pi">
@@ -7113,7 +7124,7 @@ router.get("/saldo-modelo/:id", authAdmin, async (req, res) => {
     const pagos               = Number(pagosRes.rows[0].pagos);
     const comprometidos       = Number(saquesRes.rows[0].comprometidos);
     const saques_pendentes    = Number(saquesRes.rows[0].pendentes);
-    const saldo_disponivel    = Math.max(0, ganhos_liberados - pagos - comprometidos);
+    const saldo_disponivel    = ganhos_liberados - pagos - comprometidos;
     res.json({ ganhos_geral, ganhos_liberados_mes, saques_pendentes, saldo_disponivel });
   } catch (err) {
     console.error("Erro saldo-modelo:", err);
