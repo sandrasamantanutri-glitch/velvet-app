@@ -4058,8 +4058,8 @@ router.get("/modelo-pagamentos/calcular", authAdmin, async (req, res) => {
         WHERE modelo_id = $1
           AND status = 'pago'
           AND (gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW()))
-          AND EXTRACT(YEAR  FROM COALESCE(disponivel_em, created_at) AT TIME ZONE 'America/Sao_Paulo') = $2
-          AND EXTRACT(MONTH FROM COALESCE(disponivel_em, created_at) AT TIME ZONE 'America/Sao_Paulo') = $3
+          AND EXTRACT(YEAR  FROM CASE WHEN created_at AT TIME ZONE 'America/Sao_Paulo' >= '2026-06-24' THEN disponivel_em AT TIME ZONE 'America/Sao_Paulo' ELSE created_at AT TIME ZONE 'America/Sao_Paulo' END) = $2
+          AND EXTRACT(MONTH FROM CASE WHEN created_at AT TIME ZONE 'America/Sao_Paulo' >= '2026-06-24' THEN disponivel_em AT TIME ZONE 'America/Sao_Paulo' ELSE created_at AT TIME ZONE 'America/Sao_Paulo' END) = $3
       `, [modelo_id, ano, mesNum]),
 
       // Chargebacks do mês
@@ -5233,8 +5233,9 @@ router.get("/modelo-pagamentos/:id/recibo", authAdmin, async (req, res) => {
       FROM transacoes_agency
       WHERE modelo_id = $1
         AND status = 'pago'
-        AND EXTRACT(YEAR  FROM CASE WHEN disponivel_em IS NOT NULL THEN disponivel_em ELSE created_at AT TIME ZONE 'America/Sao_Paulo' END) = $2
-        AND EXTRACT(MONTH FROM CASE WHEN disponivel_em IS NOT NULL THEN disponivel_em ELSE created_at AT TIME ZONE 'America/Sao_Paulo' END) = $3
+        AND (gateway IS DISTINCT FROM 'stripe' OR (disponivel_em IS NOT NULL AND disponivel_em <= NOW()))
+        AND EXTRACT(YEAR  FROM CASE WHEN created_at AT TIME ZONE 'America/Sao_Paulo' >= '2026-06-24' THEN disponivel_em AT TIME ZONE 'America/Sao_Paulo' ELSE created_at AT TIME ZONE 'America/Sao_Paulo' END) = $2
+        AND EXTRACT(MONTH FROM CASE WHEN created_at AT TIME ZONE 'America/Sao_Paulo' >= '2026-06-24' THEN disponivel_em AT TIME ZONE 'America/Sao_Paulo' ELSE created_at AT TIME ZONE 'America/Sao_Paulo' END) = $3
     `, [p.modelo_id, anoMes, mesMes]);
 
     // Saques do mês
