@@ -6457,7 +6457,8 @@ app.get("/api/modelos", auth, async (req, res) => {
             WHEN COALESCE(cont.recente, 0) > 0 OR COALESCE(cont.premium, 0) > 0
             THEN true ELSE false
           END AS ativa_conteudo,
-          COALESCE(cont.premium, 0) AS total_premium
+          COALESCE(cont.premium, 0) AS total_premium,
+          COALESCE(cont.feed, 0) AS total_feed
         FROM modelos m
         LEFT JOIN modelos_dados md2 ON md2.modelo_id = m.id AND md2.ativo = true
         JOIN LATERAL (
@@ -6487,7 +6488,8 @@ app.get("/api/modelos", auth, async (req, res) => {
         LEFT JOIN LATERAL (
           SELECT
             COUNT(*) FILTER (WHERE criado_em >= NOW() - INTERVAL '7 days') AS recente,
-            COUNT(*) FILTER (WHERE tipo_conteudo = 'venda' AND preco > 0) AS premium
+            COUNT(*) FILTER (WHERE tipo_conteudo = 'venda' AND preco > 0) AS premium,
+            COUNT(*) FILTER (WHERE tipo_conteudo = 'feed' AND ativo = true) AS feed
           FROM conteudos WHERE modelo_id = m.id
         ) cont ON true
         WHERE ver.status = 'aprovado' AND m.feed = true AND m.ativo = true
@@ -6498,7 +6500,10 @@ app.get("/api/modelos", auth, async (req, res) => {
     }
 
     // ── 2. Cópia + filtros em memória ──────────────────────────────────────
-    let modelos = baseModelos.map(m => ({ ...m }));
+    // Perfil sem conteúdo no feed e no premium não aparece na plataforma até subir algum
+    let modelos = baseModelos
+      .filter(m => Number(m.total_feed) > 0 || Number(m.total_premium) > 0)
+      .map(m => ({ ...m }));
     if (genero) modelos = modelos.filter(m => m.genero === genero);
     if (busca) {
       const q = busca.toLowerCase();
