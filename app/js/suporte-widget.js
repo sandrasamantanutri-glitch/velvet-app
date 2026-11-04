@@ -258,14 +258,14 @@
       ]
     },
     c5_1: {
-      bot: "Na Velvet, os Criadores podem monetizar qualquer tipo de conteúdo digital:\n\n📚 Educativos\n🎨 Artísticos e culturais\n📣 Informativos e de entretenimento\n📸 Pessoais e de lifestyle\n🔒 Privado (pode exigir validação de identidade)\n\nTodos os conteúdos devem respeitar a legislação aplicável, direitos de terceiros e as políticas da Velvet.",
+      bot: "A Velvet não é exclusiva para conteúdo adulto! Os Criadores podem monetizar qualquer tipo de conteúdo digital:\n\n📚 Educativos\n🎨 Artísticos e culturais\n📣 Informativos e de entretenimento\n📸 Pessoais e de lifestyle\n🔞 Adulto (com validação de identidade)\n\nTodos os conteúdos devem respeitar a legislação aplicável, direitos de terceiros e as políticas da Velvet.",
       opcoes: [
         { label: "← Voltar",        next: "c5_midias" },
         { label: "🏠 Menu Criadora", next: "criadora"  },
       ]
     },
     c5_2: {
-      bot: "Você pode classificar seu perfil de acordo com o que tem a oferecer:\n\n🌍 Social — Dia a dia, viagens, gaming, fitness, moda e muito mais.\n\n🔥 Premium — Conteúdo exclusivo (moda, cosplay e outras publicações especiais).\n\n🔒 Privado — Pode ser solicitada a validação de identidade do assinante VIP.",
+      bot: "Você pode classificar seu perfil de acordo com o que tem a oferecer:\n\n🌍 Social — Dia a dia, viagens, gaming, fitness, moda e muito mais.\n\n🔥 Premium — Conteúdo sensual (biquíni, lingerie, cosplay) sem nudez explícita.\n\n🔒 Privado — Conteúdo adulto, disponível mediante validação de identidade do utilizador.",
       opcoes: [
         { label: "← Voltar",        next: "c5_midias" },
         { label: "🏠 Menu Criadora", next: "criadora"  },
@@ -339,7 +339,7 @@
       ]
     },
     cl1_2: {
-      bot: "Pode encontrar conteúdo de lifestyle, bastidores, dicas, entretenimento, privados e muito mais.\n\nAntes de assinar, consulte a categoria ao passar o mouse sobre o perfil no feed:\n\n🌍 Social — Fotos, vídeos, viagens, lifestyle, gaming, fitness, moda e muito mais.\n\n🔥 Premium — Conteúdo exclusivo (moda, cosplay e outras publicações especiais).\n\n🔒 Privado — Pode ser solicitada a validação de identidade do assinante VIP.",
+      bot: "Pode encontrar conteúdo de lifestyle, bastidores, dicas, entretenimento, privados e muito mais.\n\nAntes de assinar, consulte a categoria ao passar o mouse sobre o perfil no feed:\n\n🌍 Social — Fotos, vídeos, viagens, lifestyle, gaming, fitness, moda e muito mais.\n\n🔥 Premium — Conteúdo sensual (biquíni, lingerie, cosplay) sem nudez explícita.\n\n🔒 Privado — Conteúdo adulto, disponível mediante validação de identidade.",
       opcoes: [
         { label: "← Voltar",       next: "cl1_plataforma" },
         { label: "🏠 Menu Cliente", next: "cliente"        },
@@ -763,14 +763,14 @@
       ]
     },
     c5_1: {
-      bot: "En Velvet, los Creadores pueden monetizar cualquier tipo de contenido digital:\n\n📚 Educativos\n🎨 Artísticos y culturales\n📣 Informativos y de entretenimiento\n📸 Personales y de lifestyle\n🔒 Privado (puede requerir verificación de identidad)\n\nTodo el contenido debe respetar la legislación aplicable, los derechos de terceros y las políticas de Velvet.",
+      bot: "¡Velvet no es exclusiva para contenido adulto! Los Creadores pueden monetizar cualquier tipo de contenido digital:\n\n📚 Educativos\n🎨 Artísticos y culturales\n📣 Informativos y de entretenimiento\n📸 Personales y de lifestyle\n🔞 Adulto (con validación de identidad)\n\nTodo el contenido debe respetar la legislación aplicable, los derechos de terceros y las políticas de Velvet.",
       opcoes: [
         { label: "← Volver",         next: "c5_midias" },
         { label: "🏠 Menú Creadora", next: "criadora"  },
       ]
     },
     c5_2: {
-      bot: "Puedes clasificar tu perfil según lo que tienes para ofrecer:\n\n🌍 Social — Día a día, viajes, gaming, fitness, moda y mucho más.\n\n🔥 Premium — Contenido exclusivo (moda, cosplay y otras publicaciones especiales).\n\n🔒 Privado — Se puede solicitar la verificación de identidad del suscriptor VIP.",
+      bot: "Puedes clasificar tu perfil según lo que tienes para ofrecer:\n\n🌍 Social — Día a día, viajes, gaming, fitness, moda y mucho más.\n\n🔥 Premium — Contenido sensual (bikini, lencería, cosplay) sin desnudez explícita.\n\n🔒 Privado — Contenido adulto, disponible previa validación de identidad del usuario.",
       opcoes: [
         { label: "← Volver",         next: "c5_midias" },
         { label: "🏠 Menú Creadora", next: "criadora"  },
@@ -840,7 +840,7 @@
       ]
     },
     cl1_2: {
-      bot: "Puedes encontrar contenido de lifestyle, bastidores, consejos, entretenimiento, privados y mucho más.\n\nAntes de suscribirte, consulta la categoría al pasar el mouse sobre el perfil en el feed:\n\n🌍 Social — Fotos, videos, viajes, lifestyle, gaming, fitness, moda y mucho más.\n\n🔥 Premium — Contenido exclusivo.\n\n🔒 Privado — Se puede solicitar la verificación de identidad del suscriptor VIP.",
+      bot: "Puedes encontrar contenido de lifestyle, bastidores, consejos, entretenimiento, privados y mucho más.\n\nAntes de suscribirte, consulta la categoría al pasar el mouse sobre el perfil en el feed:\n\n🌍 Social — Fotos, videos, viajes, lifestyle, gaming, fitness, moda y mucho más.\n\n🔥 Premium — Contenido sensual sin desnudez explícita.\n\n🔒 Privado — Contenido adulto, previa validación de identidad.",
       opcoes: [
         { label: "← Volver",        next: "cl1_plataforma" },
         { label: "🏠 Menú Cliente", next: "cliente"        },
@@ -1254,14 +1254,14 @@
       ]
     },
     c5_1: {
-      bot: "On Velvet, Creators can monetize any type of digital content:\n\n📚 Educational\n🎨 Artistic and cultural\n📣 Informational and entertainment\n📸 Personal and lifestyle\n🔒 Private (may require identity verification)\n\nAll content must comply with applicable law, third-party rights and Velvet's policies.",
+      bot: "Velvet is not exclusive to adult content! Creators can monetize any type of digital content:\n\n📚 Educational\n🎨 Artistic and cultural\n📣 Informational and entertainment\n📸 Personal and lifestyle\n🔞 Adult (with identity verification)\n\nAll content must comply with applicable law, third-party rights and Velvet's policies.",
       opcoes: [
         { label: "← Back",          next: "c5_midias" },
         { label: "🏠 Creator Menu", next: "criadora"  },
       ]
     },
     c5_2: {
-      bot: "You can classify your profile according to what you have to offer:\n\n🌍 Social — Daily life, travel, gaming, fitness, fashion and much more.\n\n🔥 Premium — Exclusive content (fashion, cosplay and other special posts).\n\n🔒 Private — Identity verification may be requested from the VIP subscriber.",
+      bot: "You can classify your profile according to what you have to offer:\n\n🌍 Social — Daily life, travel, gaming, fitness, fashion and much more.\n\n🔥 Premium — Sensual content (bikini, lingerie, cosplay) without explicit nudity.\n\n🔒 Private — Adult content, available upon user identity verification.",
       opcoes: [
         { label: "← Back",          next: "c5_midias" },
         { label: "🏠 Creator Menu", next: "criadora"  },
@@ -1331,7 +1331,7 @@
       ]
     },
     cl1_2: {
-      bot: "You can find lifestyle, behind-the-scenes, tips, entertainment, private and much more.\n\nBefore subscribing, check the category by hovering over the profile in the feed:\n\n🌍 Social — Photos, videos, travel, lifestyle, gaming, fitness, fashion and more.\n\n🔥 Premium — Exclusive content.\n\n🔒 Private — Identity verification may be requested from the VIP subscriber.",
+      bot: "You can find lifestyle, behind-the-scenes, tips, entertainment, private and much more.\n\nBefore subscribing, check the category by hovering over the profile in the feed:\n\n🌍 Social — Photos, videos, travel, lifestyle, gaming, fitness, fashion and more.\n\n🔥 Premium — Sensual content without explicit nudity.\n\n🔒 Private — Adult content, available upon identity verification.",
       opcoes: [
         { label: "← Back",         next: "cl1_plataforma" },
         { label: "🏠 Client Menu", next: "cliente"        },

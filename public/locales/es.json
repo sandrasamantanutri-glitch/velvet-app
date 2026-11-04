@@ -101,9 +101,9 @@
     "tipos_social_titulo": "Social",
     "tipos_social_desc": "Contenido del día a día, como fotos, vídeos, viajes, lifestyle, gaming, fitness, moda y mucho más.",
     "tipos_premium_titulo": "Premium",
-    "tipos_premium_desc": "Contenido exclusivo con mayor atractivo visual, como sesiones de moda, cosplay y otras publicaciones especiales.",
+    "tipos_premium_desc": "Contenido más sensual, como sesiones en bikini, lencería, cosplay y otras publicaciones con mayor atractivo visual, sin desnudos ni contenido explícito.",
     "tipos_privado_titulo": "Privado",
-    "tipos_privado_desc": "Se puede solicitar la verificación de identidad del suscriptor VIP."
+    "tipos_privado_desc": "Contenido reservado para adultos, disponible previa verificación de identidad del usuario."
   },
   "updates": {
     "titulo": "Novedades desde tu última visita",
@@ -1083,7 +1083,7 @@
   },
   "faq4": {
     "q": "Que tipo de contenido esta permitido?",
-    "a": "Contenido de lifestyle, bastidores, consejos y entretenimiento. El acceso a la plataforma está restringido a mayores de 18 años."
+    "a": "Lifestyle, bastidores, consejos, entretenimiento, +18 y mas. El contenido explicito no esta permitido."
   },
   "faq5": {
     "q": "Cual es la edad minima para usar Velvet?",
@@ -1115,9 +1115,9 @@
     "cat_social_nome": "🌍 Social",
     "cat_social_desc": "Contenido del día a día, incluyendo fotografías, vídeos, viajes, lifestyle, gaming, fitness, moda y otros contenidos de entretenimiento.",
     "cat_premium_nome": "🔥 Premium",
-    "cat_premium_desc": "Contenido exclusivo con mayor atractivo visual, como sesiones de moda, cosplay y otras publicaciones especiales.",
+    "cat_premium_desc": "Contenido más sensual, como sesiones en bikini, lencería, cosplay y otras producciones con mayor atractivo visual, SIN DESNUDEZ NI CONTENIDO EXPLÍCITO.",
     "cat_adulto_nome": "🔒 Privado",
-    "cat_adulto_desc": "Se puede solicitar la verificación de identidad del suscriptor VIP."
+    "cat_adulto_desc": "Contenido reservado para adultos, disponible mediante validación de identidad del usuario."
   },
   "contato_extra": {
     "denuncia": "Denunciar cuenta",
