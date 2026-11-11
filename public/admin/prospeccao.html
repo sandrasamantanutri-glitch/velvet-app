@@ -144,6 +144,8 @@ document.addEventListener('click', async (e) => {
       $('#n_eng').value = d.engajamento; $('#n_pps').value = d.posts_semana; $('#n_cat').value = d.categorias.join(', ');
       window._buscaBio = d.bio; window._buscaEmail = d.email;
       $('#n_info').textContent = d.privado ? 'Perfil privado: engajamento indisponível.'
+        : d.engajamento_tipo === 'comentarios' ? `Curtidas ocultas neste perfil: engajamento estimado só com os comentários de ${d.posts_analisados} posts (costuma ser bem menor que o real).`
+        : d.engajamento_tipo === 'indisponivel' ? 'Não foi possível calcular: o Instagram não devolveu curtidas nem comentários.'
         : `Engajamento calculado com a mediana de ${d.posts_analisados} posts recentes.`;
     } catch (err) { $('#n_info').textContent = ''; toast(err.message); }
     btn.disabled = false;

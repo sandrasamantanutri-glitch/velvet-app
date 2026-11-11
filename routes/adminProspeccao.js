@@ -43,7 +43,13 @@ function analisarPerfil(d) {
   const seguidores = d.followersCount || 0;
   const posts = d.latestPosts || [];
   const validos = posts.filter((p) => (p.likesCount ?? -1) >= 0);
-  const interacoes = validos.map((p) => (p.likesCount || 0) + (p.commentsCount || 0));
+  let interacoes = validos.map((p) => (p.likesCount || 0) + (p.commentsCount || 0));
+  let engajamentoTipo = interacoes.length ? "completo" : "indisponivel";
+  if (!interacoes.length) {
+    // Curtidas ocultas (likesCount = -1): estima só com comentários, se existirem
+    interacoes = posts.filter((p) => (p.commentsCount ?? -1) >= 0).map((p) => p.commentsCount || 0);
+    if (interacoes.length) engajamentoTipo = "comentarios";
+  }
   const engajamento = seguidores && interacoes.length
     ? Math.round((mediana(interacoes) / seguidores) * 10000) / 100 : 0;
   const datas = posts.map((p) => Date.parse(p.timestamp)).filter(Number.isFinite);
@@ -63,7 +69,8 @@ function analisarPerfil(d) {
     categorias: Object.keys(CATEGORIAS).filter((c) => CATEGORIAS[c].some((k) => texto.includes(k))),
     email: d.businessEmail || "",
     privado: !!d.private,
-    posts_analisados: validos.length,
+    posts_analisados: interacoes.length,
+    engajamento_tipo: engajamentoTipo,
   };
 }
 

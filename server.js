@@ -2754,20 +2754,20 @@ app.post("/api/webhook/stripe", express.raw({ type: "application/json" }), async
        VALIDAÇÃO DE VALOR
     ===================================================== */
 
-const moedaEsperada = String(pagamento.currency || metadata.currency || "").toLowerCase();
-const moedaRecebida = String(currency || "").toLowerCase();
+ const moedaEsperada = String(pagamento.currency || metadata.currency || "").toLowerCase();
+ const moedaRecebida = String(currency || "").toLowerCase();
 
-if (moedaEsperada && moedaRecebida && moedaEsperada !== moedaRecebida) {
+ if (moedaEsperada && moedaRecebida && moedaEsperada !== moedaRecebida) {
   console.log("🚨 Moeda divergente:", moedaRecebida, moedaEsperada);
   await client.query("ROLLBACK");
   return res.status(200).send("ok");
-}
+ }
 
-if (valorEsperado > 0 && Math.abs(Number(valorPago) - Number(valorEsperado)) > 0.01) {
+ if (valorEsperado > 0 && Math.abs(Number(valorPago) - Number(valorEsperado)) > 0.01) {
   console.log("🚨 Valor divergente", valorPago, valorEsperado);
   await client.query("ROLLBACK");
   return res.status(200).send("ok");
-}
+ }
 
     console.log("Valor validado");
 
