@@ -295,25 +295,28 @@ function unsignDeep(payload) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * URL de preview segura para quem NÃO pagou, ou null (cadeado sem imagem).
- *
- * Só devolve o thumbnail quando ele é um arquivo SEPARADO da mídia original:
- *  - nunca um thumbnail do Stream (é um frame nítido e carrega o uid do vídeo);
- *  - nunca outra variante da mesma imagem do Cloudflare Images (mesmo id).
+ * De onde o SERVIDOR busca a imagem para gerar o preview borrado de uma mídia.
+ * Esta URL nunca vai para o cliente bloqueado — só o resultado borrado vai.
+ * Devolve null quando não há de onde tirar uma imagem.
  */
-function previewSeguro(fullUrl, thumbUrl) {
-  if (!thumbUrl || thumbUrl === fullUrl) return null;
+function fontePreview(fullUrl, thumbUrl) {
+  const ehHttp = (u) => typeof u === "string" && /^https:\/\//.test(u);
+  const pareceImagem = (u) => /\.(jpe?g|png|webp|gif|avif)(\?|$)/i.test(u);
 
-  const thumb = parse(thumbUrl);
-  if (thumb && thumb.kind === "stream") return null;
-
-  if (thumb && thumb.kind === "image") {
-    const full = parse(fullUrl);
-    if (full && full.kind === "image" && full.id === thumb.id) return null;
-    if (thumb.variant === "thumbnail") return null; // variante que pode não existir
+  // 1) miniatura gravada no banco (exceto variante CF "/thumbnail", que pode não existir)
+  if (ehHttp(thumbUrl)) {
+    const t = parse(thumbUrl);
+    if (!(t && t.kind === "image" && t.variant === "thumbnail")) return thumbUrl;
   }
 
-  return thumbUrl;
+  // 2) derivada da mídia original
+  if (!ehHttp(fullUrl)) return null;
+  const f = parse(fullUrl);
+  if (f && f.kind === "stream") {
+    return `https://videodelivery.net/${f.uid}/thumbnails/thumbnail.jpg?height=120`;
+  }
+  if (f && f.kind === "image") return fullUrl;
+  return pareceImagem(fullUrl) ? fullUrl : null;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -453,7 +456,7 @@ module.exports = {
   unsignUrl,
   signDeep,
   unsignDeep,
-  previewSeguro,
+  fontePreview,
   definirProtecao,
   protegerUpload,
   expressMiddleware,

@@ -4111,9 +4111,104 @@ async function criarPixSafe2Pay({ valorTotal, nome, email, cpf, telefone, endere
 // (a imagem 40x40 gerada pelo sharp). Nunca passa:
 //  - thumbnail de vídeo do CF Stream (frame nítido + expõe o uid do vídeo);
 //  - outra variante da mesma imagem do CF Images.
-function getPreviewUrl(fullUrl, thumbUrl) {
-  return cfMedia.previewSeguro(fullUrl, thumbUrl);
+//
+// O cliente bloqueado nunca recebe URL de mídia nem de miniatura real: recebe
+// /api/preview/<id>/<assinatura>.jpg, uma imagem de 32px já borrada que o
+// próprio servidor gera a partir da miniatura (ou da mídia) e guarda em cache.
+function getPreviewUrl(conteudoId, fullUrl, thumbUrl) {
+  const id = Number(conteudoId);
+  if (!Number.isInteger(id) || id <= 0) return null;
+  if (!cfMedia.fontePreview(fullUrl, thumbUrl)) return null;
+  return `/api/preview/${id}/${assinarPreviewId(id)}.jpg`;
 }
+
+// Assinatura curta do id: impede varrer /api/preview/1, /2, /3...
+function assinarPreviewId(id) {
+  return crypto
+    .createHmac("sha256", String(process.env.JWT_SECRET || ""))
+    .update(`preview:${id}`)
+    .digest("hex")
+    .slice(0, 24);
+}
+
+const previewCache = new Map();      // id → Buffer (jpeg ~1KB) | null (sem preview)
+const previewEmAndamento = new Map(); // id → Promise
+const PREVIEW_CACHE_MAX = 5000;
+
+async function gerarPreviewBorrado(id) {
+  const { rows } = await db.query(
+    `SELECT url, thumbnail_url FROM conteudos WHERE id = $1 LIMIT 1`,
+    [id]
+  );
+  if (!rows.length) return null;
+
+  const fonte = cfMedia.fontePreview(rows[0].url, rows[0].thumbnail_url);
+  if (!fonte) return null;
+
+  const resp = await fetch(cfMedia.signUrl(fonte), { signal: AbortSignal.timeout(15000) });
+  if (!resp.ok) return null;
+  if (!String(resp.headers.get("content-type") || "").startsWith("image/")) return null;
+
+  const original = Buffer.from(await resp.arrayBuffer());
+  if (original.length > 25 * 1024 * 1024) return null;
+
+  const sharp = require("sharp");
+  return sharp(original)
+    .rotate()
+    .resize({ width: 32, height: 32, fit: "inside" })
+    .blur(1.5)
+    .jpeg({ quality: 50 })
+    .toBuffer();
+}
+
+app.get("/api/preview/:id/:sig.jpg", async (req, res) => {
+  const id = Number(req.params.id);
+  const sig = String(req.params.sig || "");
+  const esperado = Number.isInteger(id) && id > 0 ? assinarPreviewId(id) : "";
+
+  if (
+    !esperado ||
+    sig.length !== esperado.length ||
+    !crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(esperado))
+  ) {
+    return res.status(404).end();
+  }
+
+  try {
+    if (!previewCache.has(id)) {
+      if (!previewEmAndamento.has(id)) {
+        previewEmAndamento.set(
+          id,
+          gerarPreviewBorrado(id)
+            .catch((err) => {
+              console.error("[preview] erro ao gerar", id, err.message);
+              return null;
+            })
+            .then((buf) => {
+              if (previewCache.size >= PREVIEW_CACHE_MAX) previewCache.clear();
+              previewCache.set(id, buf);
+              previewEmAndamento.delete(id);
+              return buf;
+            })
+        );
+      }
+      await previewEmAndamento.get(id);
+    }
+
+    const buf = previewCache.get(id);
+    if (!buf) {
+      res.set("Cache-Control", "public, max-age=300");
+      return res.status(404).end();
+    }
+
+    res.set("Content-Type", "image/jpeg");
+    res.set("Cache-Control", "public, max-age=604800");
+    return res.end(buf);
+  } catch (err) {
+    console.error("[preview] erro:", err.message);
+    return res.status(500).end();
+  }
+});
 
 // ── iPag PIX ──────────────────────────────────────────────────────────────────
 const IPAG_BASE = process.env.IPAG_BASE_URL || "https://api.ipag.com.br";
@@ -5013,7 +5108,7 @@ socket.on("getHistory", async ({ cliente_id, modelo_id, offset = 0, limit = 20 }
             // Modelo recebe thumb real; cliente bloqueado recebe preview seguro (null se igual à URL)
             thumbnail_url: (ehModeloLogada || liberado)
               ? midia.thumbnail_url
-              : getPreviewUrl(midia.url, midia.thumbnail_url),
+              : getPreviewUrl(midia.conteudo_id, midia.url, midia.thumbnail_url),
             // Modelo sempre recebe a URL real; cliente só se liberado
             url:           ehModeloLogada ? midia.url : (liberado ? midia.url : null),
             ja_possuia:    jaPossuia,
@@ -5197,7 +5292,7 @@ socket.on("sendConteudo", async ({
 
     // Cliente recebe preview borrado enquanto não pagar — URL real só após confirmação
     const midiasParaCliente = precoNum > 0
-      ? midias.map(m => ({ conteudo_id: m.conteudo_id, thumbnail_url: getPreviewUrl(m.url, m.thumbnail_url), tipo_media: m.tipo_media, url: null }))
+      ? midias.map(m => ({ conteudo_id: m.conteudo_id, thumbnail_url: getPreviewUrl(m.conteudo_id, m.url, m.thumbnail_url), tipo_media: m.tipo_media, url: null }))
       : midias.map(m => ({ conteudo_id: m.conteudo_id, url: m.url, thumbnail_url: m.thumbnail_url, tipo_media: m.tipo_media }));
     socket.to(sala).emit("newMessage", { ...payloadBase, midias: midiasParaCliente });
 
@@ -7430,7 +7525,7 @@ app.get("/api/chat/conteudo/:message_id", authCliente, async (req, res) => {
         conteudo_id:   conteudoId,
         url:           jaPossuia ? row.url : null,
         tipo_media:    row.tipo_media,
-        thumbnail_url: jaPossuia ? row.thumbnail_url : getPreviewUrl(row.url, row.thumbnail_url),
+        thumbnail_url: jaPossuia ? row.thumbnail_url : getPreviewUrl(conteudoId, row.url, row.thumbnail_url),
         ja_possuia:    jaPossuia,
         liberado:      jaPossuia,
         bloqueado:     !jaPossuia
