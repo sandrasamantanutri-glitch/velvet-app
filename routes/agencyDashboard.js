@@ -1613,6 +1613,9 @@ async function uploadMidiaCloudflare(buffer, originalname, mimetype) {
     thumbnailUrl = `https://videodelivery.net/${videoId}/thumbnails/thumbnail.jpg`;
   }
 
+  // Mídia original só abre com URL assinada (no-op sem CF_REQUIRE_SIGNED_UPLOADS)
+  await require("../utils/cfMedia").protegerUpload(url);
+
   return { tipo, url, thumbnailUrl };
 }
 

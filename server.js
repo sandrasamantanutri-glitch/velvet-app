@@ -223,8 +223,14 @@ const io = new Server(server, {
     credentials: true
   },
   transports: ["websocket"],
-  
+
 });
+
+// Assina URLs do Cloudflare (Stream/Images) em tudo o que sai por socket.
+// Sem as chaves CF_*_SIGNING_* configuradas isto é passthrough.
+const cfMedia = require("./utils/cfMedia");
+cfMedia.attachSocketIO(io);
+console.log("[cfMedia] assinatura de mídia:", JSON.stringify(cfMedia.status()));
 
 // ===========================
 // WEBPUSH
@@ -3505,6 +3511,9 @@ app.post("/api/webhook/stripe", express.raw({ type: "application/json" }), async
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(cookieParser());
+// Toda resposta JSON daqui para baixo sai com as URLs de mídia assinadas;
+// tokens que voltarem no body são removidos antes de chegar às rotas.
+app.use(cfMedia.expressMiddleware());
 const { router: servercontentRouter, calcularValores } = require('./servercontent');
 app.use("/api", servercontentRouter);
 app.set("calcularValores", calcularValores);
@@ -4097,17 +4106,13 @@ async function criarPixSafe2Pay({ valorTotal, nome, email, cpf, telefone, endere
 }
 */
 
-// Deriva URL de preview (variant pequena) para conteúdo bloqueado.
-// Para imagens CF Images: troca /public → /thumbnail (ou CF_PREVIEW_VARIANT).
-// Para vídeos CF Stream: já tem thumbnail próprio — retorna null (sem preview de vídeo).
-// Retorna a URL de preview para conteúdo bloqueado.
-// Usa o thumbnail_url do banco (imagem 40x40 gerada pelo sharp) quando diferente da url original.
-// Nunca gera URLs com variantes CF Images que podem não existir.
+// Retorna a URL de preview para conteúdo bloqueado (ou null → cadeado sem imagem).
+// Só passa o thumbnail_url quando ele é um arquivo separado da mídia original
+// (a imagem 40x40 gerada pelo sharp). Nunca passa:
+//  - thumbnail de vídeo do CF Stream (frame nítido + expõe o uid do vídeo);
+//  - outra variante da mesma imagem do CF Images.
 function getPreviewUrl(fullUrl, thumbUrl) {
-  if (thumbUrl && thumbUrl !== fullUrl && !thumbUrl.endsWith("/thumbnail")) {
-    return thumbUrl;
-  }
-  return null;
+  return cfMedia.previewSeguro(fullUrl, thumbUrl);
 }
 
 // ── iPag PIX ──────────────────────────────────────────────────────────────────
@@ -6746,9 +6751,11 @@ app.get("/api/updates", auth, async (req, res) => {
       ? eventos.filter(e => new Date(e.evento_em) > new Date(ultimaVisita)).length
       : eventos.length;
 
-    // Remove thumbnails de eventos bloqueados — nunca expõe URL para não-VIP
+    // Remove thumbnails de eventos bloqueados — nunca expõe URL para não-VIP.
+    // Só o feed é liberado pelo VIP: mídias à venda no chat e premium são pagas
+    // à parte, então os thumbs delas nunca saem daqui (mesmo para VIP).
     const eventosSeguros = eventos.slice(0, 60).map(e => {
-      if (!e.is_vip) {
+      if (!e.is_vip || e.tipo !== "feed") {
         const { thumbs, ...resto } = e;
         return resto;
       }
@@ -10101,9 +10108,12 @@ app.post("/api/upload", auth, authModelo, uploadLimiter, uploadB2.array("file", 
 
           publicUrl = `https://iframe.videodelivery.net/${videoId}`;
 
-          const thumbnailUrl =
+          thumbnailUrl =
           `https://videodelivery.net/${videoId}/thumbnails/thumbnail.jpg`;
         }
+
+        // Mídia original só abre com URL assinada (o preview 40x40 continua público)
+        await cfMedia.protegerUpload(publicUrl);
 
         await db.query(
           `
@@ -16515,6 +16525,9 @@ app.post("/api/conteudos", authModelo, uploadLimiter, uploadB2.array("file", 10)
       `https://videodelivery.net/${videoId}/thumbnails/thumbnail.jpg`;
   }
 
+  // Mídia original só abre com URL assinada
+  await cfMedia.protegerUpload(url);
+
   const result = await db.query(
     `
     INSERT INTO conteudos (
@@ -16838,6 +16851,9 @@ app.post("/api/premium", auth, authModelo, uploadLimiter, uploadB2.array("files"
       if (!url) {
         throw new Error(`Falha ao enviar arquivo ${i + 1} para Cloudflare`);
       }
+
+      // Mídia original só abre com URL assinada
+      await cfMedia.protegerUpload(url);
 
       const midiaRes = await client.query(
         `
