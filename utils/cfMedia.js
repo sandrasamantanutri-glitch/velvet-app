@@ -291,32 +291,6 @@ function unsignDeep(payload) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Preview de conteúdo bloqueado
-// ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * URL de preview segura para quem NÃO pagou, ou null (cadeado sem imagem).
- *
- * Só devolve o thumbnail quando ele é um arquivo SEPARADO da mídia original:
- *  - nunca um thumbnail do Stream (é um frame nítido e carrega o uid do vídeo);
- *  - nunca outra variante da mesma imagem do Cloudflare Images (mesmo id).
- */
-function previewSeguro(fullUrl, thumbUrl) {
-  if (!thumbUrl || thumbUrl === fullUrl) return null;
-
-  const thumb = parse(thumbUrl);
-  if (thumb && thumb.kind === "stream") return null;
-
-  if (thumb && thumb.kind === "image") {
-    const full = parse(fullUrl);
-    if (full && full.kind === "image" && full.id === thumb.id) return null;
-    if (thumb.variant === "thumbnail") return null; // variante que pode não existir
-  }
-
-  return thumbUrl;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 // API do Cloudflare: ligar/desligar requireSignedURLs em um arquivo
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -453,7 +427,6 @@ module.exports = {
   unsignUrl,
   signDeep,
   unsignDeep,
-  previewSeguro,
   definirProtecao,
   protegerUpload,
   expressMiddleware,

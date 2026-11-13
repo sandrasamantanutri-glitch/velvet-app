@@ -4106,13 +4106,11 @@ async function criarPixSafe2Pay({ valorTotal, nome, email, cpf, telefone, endere
 }
 */
 
-// Retorna a URL de preview para conteúdo bloqueado (ou null → cadeado sem imagem).
-// Só passa o thumbnail_url quando ele é um arquivo separado da mídia original
-// (a imagem 40x40 gerada pelo sharp). Nunca passa:
-//  - thumbnail de vídeo do CF Stream (frame nítido + expõe o uid do vídeo);
-//  - outra variante da mesma imagem do CF Images.
+// Conteúdo bloqueado NUNCA recebe miniatura (Cloudflare ou Backblaze):
+// retorna sempre null → o front mostra só o fundo cinza com o cadeado.
+// Mantida como função porque é chamada em vários pontos do chat.
 function getPreviewUrl(fullUrl, thumbUrl) {
-  return cfMedia.previewSeguro(fullUrl, thumbUrl);
+  return null;
 }
 
 // ── iPag PIX ──────────────────────────────────────────────────────────────────
