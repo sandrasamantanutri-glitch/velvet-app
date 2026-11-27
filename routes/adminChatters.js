@@ -9,6 +9,62 @@ const REGEX_CODIGO = /^[A-Z0-9_-]{2,20}$/;
 const REGEX_PIN = /^\d{4,8}$/;
 const REGEX_DATA = /^\d{4}-\d{2}-\d{2}$/;
 
+// Datas AAAA-MM-DD, pessoa, modelo e página vindos da query string
+function lerFiltros(query) {
+  const data = v => (REGEX_DATA.test(v || "") ? v : null);
+  const inteiro = v => (/^\d{1,9}$/.test(v || "") ? Number(v) : null);
+  return {
+    pagina: Math.max(1, inteiro(query.pagina) || 1),
+    filtros: [
+      data(query.de),
+      data(query.ate),
+      inteiro(query.chatter_id),
+      inteiro(query.modelo_id)
+    ]
+  };
+}
+
+// Soma em centavos para não acumular erro de ponto flutuante
+function resumirVendas(rows) {
+  const total = { quantidade: 0, centavos: 0 };
+  const pessoas = new Map();
+  const dias = new Map();
+
+  const somar = (grupo, centavos) => {
+    grupo.quantidade += 1;
+    grupo.centavos += centavos;
+  };
+  const grupoDe = (mapa, chave, dados) => {
+    if (!mapa.has(chave)) mapa.set(chave, { ...dados, quantidade: 0, centavos: 0 });
+    return mapa.get(chave);
+  };
+
+  for (const v of rows) {
+    const centavos = Math.round(Number(v.valor) * 100);
+    const pessoa = {
+      chatter_id: v.chatter_id,
+      chatter_nome: v.chatter_nome,
+      chatter_codigo: v.chatter_codigo
+    };
+    somar(total, centavos);
+    somar(grupoDe(pessoas, v.chatter_id, pessoa), centavos);
+    somar(grupoDe(dias, `${v.dia}|${v.chatter_id}|${v.modelo_id}`, {
+      ...pessoa, dia: v.dia, modelo_id: v.modelo_id, modelo_nome: v.modelo_nome
+    }), centavos);
+  }
+
+  const emReais = ({ centavos, ...resto }) => ({ ...resto, valor: centavos / 100 });
+  const maiorValor = (a, b) => b.centavos - a.centavos;
+
+  return {
+    total: emReais(total),
+    por_pessoa: [...pessoas.values()].sort(maiorValor).map(emReais),
+    por_dia: [...dias.values()]
+      .sort((a, b) => b.dia.localeCompare(a.dia) || maiorValor(a, b))
+      .map(emReais)
+  };
+}
+
 module.exports = function adminChattersRouter(db, sessoes) {
   const router = express.Router();
 
@@ -122,16 +178,7 @@ module.exports = function adminChattersRouter(db, sessoes) {
   // toda sessão que esteve aberta em algum momento do período.
   router.get("/sessoes", async (req, res) => {
     try {
-      const data = v => (REGEX_DATA.test(v || "") ? v : null);
-      const inteiro = v => (/^\d{1,9}$/.test(v || "") ? Number(v) : null);
-
-      const pagina = Math.max(1, inteiro(req.query.pagina) || 1);
-      const filtros = [
-        data(req.query.de),
-        data(req.query.ate),
-        inteiro(req.query.chatter_id),
-        inteiro(req.query.modelo_id)
-      ];
+      const { filtros, pagina } = lerFiltros(req.query);
 
       await sessoes.encerrarInativas();
 
@@ -172,6 +219,70 @@ module.exports = function adminChattersRouter(db, sessoes) {
     } catch (err) {
       console.error("Erro ao listar sessões de chatters:", err);
       res.status(500).json({ erro: "Erro ao carregar o registro" });
+    }
+  });
+
+  // Mídias pagas enviadas pela equipe. O dia é o da COMPRA (São Paulo) e o
+  // crédito é de quem enviou. Estornos e chargebacks registrados no pagamento
+  // ficam de fora; chargeback lançado à mão não aponta a mensagem, só gera alerta.
+  router.get("/vendas", async (req, res) => {
+    try {
+      const { filtros, pagina } = lerFiltros(req.query);
+
+      const { rows } = await db.query(
+        `SELECT e.message_id, e.chatter_id, c.nome AS chatter_nome, c.codigo AS chatter_codigo,
+                e.modelo_id, COALESCE(mo.nome_exibicao, mo.nome) AS modelo_nome,
+                cp.cliente_id, e.enviado_em, cp.pago_em, cp.metodo_pagamento,
+                to_char(cp.pago_em AT TIME ZONE '${FUSO}', 'YYYY-MM-DD') AS dia,
+                COALESCE(cp.valor_base, cp.preco, msg.preco, 0) AS valor,
+                EXISTS (
+                  SELECT 1 FROM chargebacks cb
+                   WHERE cb.cliente_id = cp.cliente_id AND cb.modelo_id = cp.modelo_id
+                     AND cb.tipo = 'midia' AND cb.status = 'ativo'
+                ) AS alerta_chargeback
+           FROM chatter_envios e
+           JOIN chatters c ON c.id = e.chatter_id
+           JOIN messages msg ON msg.id = e.message_id
+           JOIN conteudo_pacotes cp
+             ON cp.message_id = e.message_id
+            AND cp.cliente_id = msg.cliente_id
+            AND cp.status = 'pago'
+           LEFT JOIN modelos mo ON mo.id = e.modelo_id
+          WHERE cp.pago_em IS NOT NULL
+            AND ($1::date IS NULL OR cp.pago_em >= ($1::date::timestamp AT TIME ZONE '${FUSO}'))
+            AND ($2::date IS NULL OR cp.pago_em < (($2::date + 1)::timestamp AT TIME ZONE '${FUSO}'))
+            AND ($3::int IS NULL OR e.chatter_id = $3)
+            AND ($4::int IS NULL OR e.modelo_id = $4)
+            AND NOT EXISTS (
+              SELECT 1 FROM pagamentos_pix px
+               WHERE px.cliente_id = cp.cliente_id AND px.message_id = cp.message_id
+                 AND px.status IN ('estornado', 'chargeback'))
+            AND NOT EXISTS (
+              SELECT 1 FROM pagamentos_cartao pc
+               -- em pagamentos_cartao, conteudo_id guarda o id da mensagem
+               WHERE pc.cliente_id = cp.cliente_id AND pc.conteudo_id = cp.message_id
+                 AND pc.status IN ('estornado', 'chargeback'))
+          ORDER BY cp.pago_em DESC`,
+        filtros
+      );
+
+      const modelos = await db.query(
+        `SELECT DISTINCT e.modelo_id AS id, COALESCE(m.nome_exibicao, m.nome) AS nome
+           FROM chatter_envios e
+           LEFT JOIN modelos m ON m.id = e.modelo_id
+          ORDER BY nome`
+      );
+
+      res.json({
+        ...resumirVendas(rows),
+        vendas: rows.slice((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA),
+        modelos: modelos.rows,
+        pagina,
+        total_paginas: Math.ceil(rows.length / POR_PAGINA)
+      });
+    } catch (err) {
+      console.error("Erro ao listar vendas de chatters:", err);
+      res.status(500).json({ erro: "Erro ao carregar as vendas" });
     }
   });
 

@@ -19,6 +19,8 @@ const db = require("./db");
 const { registrarLog } = require("./utils/securityLog");
 const { criarNotificacaoAdmin } = require("./utils/notificacoesAdmin");
 const { pagosEfetivosSql } = require("./utils/pagosModelo");
+const { marcarChargebackNaTransacao } = require("./utils/chargebackTransacao");
+const { registrarChargebackIpag } = require("./utils/chargebackIpag");
 const bcrypt = require("bcrypt");
 const path = require("path");
 const fs = require("fs");
@@ -887,6 +889,37 @@ app.post("/api/webhook/ipag", express.raw({ type: "*/*" }), async (req, res) => 
     return res.status(200).send("ok");
   }
 
+  // Chargeback de um PIX já pago: registra e avisa o admin (desconto é manual)
+  if (statusCode === "9") {
+    try {
+      // sem assinatura HMAC, só vale o que a própria API do iPag confirmar
+      if (!hmacVerificado) {
+        const tx = await ipagRequest("GET", `/service/payment/${idTx}`);
+        if (String(tx?.attributes?.status?.code || "") !== "9") {
+          console.warn("🚨 Chargeback iPag não confirmado pela API:", idTx);
+          return res.status(200).send("ok");
+        }
+      }
+
+      const chargeback = await registrarChargebackIpag(db, idTx);
+      if (chargeback) {
+        if (chargeback.novo) {
+          await criarNotificacaoAdmin(db, req.app.get("io"), {
+            tipo:          "chargeback_pix_ipag",
+            referencia_id: chargeback.cliente_id,
+            titulo:        "⚠️ Chargeback de PIX (iPag)",
+            mensagem:      `${chargeback.tabela} #${chargeback.id}, R$ ${Number(chargeback.valor || 0).toFixed(2)}, tx=${idTx}. Lance o desconto em Chargebacks.`
+          });
+        }
+        return res.status(200).send("ok");
+      }
+      // não estava pago: segue o fluxo normal de falha
+    } catch (err) {
+      console.error("🔥 ERRO CHARGEBACK IPAG:", err);
+      return res.status(500).send("erro");
+    }
+  }
+
   const novoStatus = isPaidEvent ? "pago" : "falhou";
 
   const calcularValores =
@@ -916,7 +949,8 @@ app.post("/api/webhook/ipag", express.raw({ type: "*/*" }), async (req, res) => 
     if (premiumRes.rowCount > 0) {
       const row = premiumRes.rows[0];
 
-      if (row.status === "pago") {
+      // já pago ou contestado: um novo aviso não pode reprocessar a venda
+      if (["pago", "chargeback", "estornado"].includes(row.status)) {
         await client.query("ROLLBACK");
         return res.status(200).send("ok");
       }
@@ -999,7 +1033,8 @@ app.post("/api/webhook/ipag", express.raw({ type: "*/*" }), async (req, res) => 
 
     const row = pixRes.rows[0];
 
-    if (row.status === "pago") {
+    // já pago ou contestado: um novo aviso não pode reprocessar a venda
+    if (["pago", "chargeback", "estornado"].includes(row.status)) {
       await client.query("ROLLBACK");
       return res.status(200).send("ok");
     }
@@ -1261,926 +1296,6 @@ app.post("/api/webhook/ipag", express.raw({ type: "*/*" }), async (req, res) => 
   }
 });
 
-// ── PLACEHOLDER para o antigo webhook pagarme (removido) ──
-app.post("/api/webhook/pagarme_REMOVED", express.raw({ type: "*/*" }), async (req, res) => {
-  console.log("======================================");
-  console.log("🔥 WEBHOOK PAGARME RECEBIDO");
-  console.log("URL:", req.originalUrl);
-  console.log("METHOD:", req.method);
-
-  let event = null;
-
-  try {
-    const raw = req.body?.toString("utf8") || "";
-    event = raw ? JSON.parse(raw) : null;
-  } catch (err) {
-    console.error("Erro parse webhook:", err);
-    return res.status(400).send("invalid body");
-  }
-
-  if (!event || typeof event !== "object") {
-    console.log("Evento inválido (sem objeto)");
-    return res.status(200).send("ok");
-  }
-
-  if (!event.type) {
-    console.log("Evento sem type:", event);
-    return res.status(200).send("ok");
-  }
-
-  console.log("Evento:", event.type);
-  console.log("EventID:", event.id);
-
-  const eventId = event.id || null;
-  const eventType = String(event.type || "").toLowerCase();
-
-  if (!eventId) {
-    console.log("🚨 event.id ausente");
-    return res.status(200).send("ok");
-  }
-
-  const data = event.data || {};
-  const isOrderEvent = eventType.startsWith("order.");
-  const isChargeEvent = eventType.startsWith("charge.");
-
-  const order = isOrderEvent ? data : (data.order || null);
-  const charge = isChargeEvent ? data : (data.charges?.[0] || null);
-
-  const orderId = order?.id || charge?.order?.id || null;
-  const chargeId = charge?.id || null;
-  const metadata = order?.metadata || charge?.metadata || charge?.order?.metadata || {};
-
-  console.log("OrderID:", orderId);
-  console.log("ChargeID:", chargeId);
-  console.log("Metadata:", metadata);
-
-  if (!orderId) {
-    console.log("🚨 orderId ausente");
-    return res.status(200).send("ok");
-  }
-
-  const gatewayStatus = String(charge?.status || order?.status || "").toLowerCase();
-
-  const isPaidEvent =
-    eventType === "order.paid" ||
-    eventType === "charge.paid" ||
-    ["paid"].includes(gatewayStatus);
-
-  const isFailedEvent =
-    eventType === "order.payment_failed" ||
-    eventType === "charge.payment_failed" ||
-    eventType === "charge.failed" ||
-    eventType === "order.canceled" ||
-    eventType === "charge.canceled";
-
-  const isRefundedEvent =
-    eventType === "charge.refunded";
-
-  const isChargebackEvent =
-    eventType === "charge.chargedback";
-
-  const amountCentavos = Number(charge?.amount ?? order?.amount ?? 0);
-  const valorPago = amountCentavos / 100;
-
-  console.log("Valor pago:", valorPago);
-
-  const client = await db.connect();
-  let dadosParaEmitir = null;
-
-  try {
-    console.log("🔹 BEGIN");
-    await client.query("BEGIN");
-
-    /* =====================================================
-       IDEMPOTÊNCIA
-    ===================================================== */
-
-    console.log("🔎 Verificando evento duplicado");
-
-    const jaProcessado = await client.query(
-      `
-      SELECT 1
-      FROM pagarme_events
-      WHERE id = $1
-      FOR UPDATE
-      `,
-      [eventId]
-    );
-
-    console.log("Evento já processado?", jaProcessado.rowCount);
-
-    if (jaProcessado.rowCount > 0) {
-      console.log("Evento já existia, ignorando");
-      await client.query("ROLLBACK");
-      return res.status(200).send("ok");
-    }
-
-await client.query(
-  `
-  INSERT INTO pagarme_events (id, type, payload, received_at)
-  VALUES ($1, $2, $3::jsonb, NOW())
-  `,
-  [eventId, event.type, JSON.stringify(event)]
-);
-
-    console.log("Evento registrado em pagarme_events");
-
-    /* =====================================================
-       BUSCAR PAGAMENTO LOCAL (SOMENTE PIX)
-    ===================================================== */
-
-    let pagamento = null;
-    let tabelaPagamento = null;
-    let metodoPagamento = "pix";
-
-    // 1) PREMIUM PIX
-    const premiumRes = await client.query(
-      `
-      SELECT *
-      FROM premium_unlocks
-      WHERE pagarme_order_id = $1
-      FOR UPDATE
-      `,
-      [orderId]
-    );
-
-    if (premiumRes.rowCount > 0) {
-      pagamento = premiumRes.rows[0];
-      tabelaPagamento = "premium_unlocks";
-      metodoPagamento = pagamento.metodo_pagamento || "pix";
-    } else {
-      // 2) PIX geral
-      const pagamentoPixRes = await client.query(
-        `
-        SELECT *
-        FROM pagamentos_pix
-        WHERE gateway = 'pagarme'
-          AND pagarme_order_id = $1
-        FOR UPDATE
-        `,
-        [orderId]
-      );
-
-      if (pagamentoPixRes.rowCount > 0) {
-        pagamento = pagamentoPixRes.rows[0];
-        tabelaPagamento = "pagamentos_pix";
-        metodoPagamento = "pix";
-      }
-    }
-
-    if (!pagamento) {
-      console.log("🚨 Pagamento não encontrado:", orderId);
-      await client.query("ROLLBACK");
-      return res.status(200).send("ok");
-    }
-
-    console.log("Pagamento encontrado em", tabelaPagamento, pagamento);
-
-    const cliente_id = Number(
-      pagamento.cliente_id || metadata.cliente_id || 0
-    ) || null;
-
-    const modelo_id = Number(
-      pagamento.modelo_id || metadata.modelo_id || 0
-    ) || null;
-
-    const message_id = Number(
-      pagamento.message_id ||
-      pagamento.conteudo_id ||
-      metadata.message_id ||
-      0
-    ) || null;
-
-    const premium_post_id = Number(
-      pagamento.premium_post_id ||
-      metadata.premium_post_id ||
-      0
-    ) || null;
-
-    const valorEsperado = Number(
-      pagamento.valor_total ||
-      pagamento.valor ||
-      metadata.valor_total ||
-      0
-    );
-
-    const tipoPagamento = String(
-      metadata.tipo ||
-      pagamento.tipo ||
-      ""
-    ).toLowerCase().trim();
-
-    let fluxoProcessado = false;
-
-    console.log("cliente_id:", cliente_id);
-    console.log("modelo_id:", modelo_id);
-    console.log("valor esperado:", valorEsperado);
-    console.log("message_id:", message_id);
-    console.log("premium_post_id:", premium_post_id);
-    console.log("tipoPagamento:", tipoPagamento);
-
-    /* =====================================================
-       EVENTOS DE FALHA / ESTORNO / CHARGEBACK
-    ===================================================== */
-
-    if (isFailedEvent) {
-      console.log("❌ Evento de falha");
-
-      if (tabelaPagamento === "premium_unlocks") {
-        await client.query(
-          `
-          UPDATE premium_unlocks
-          SET status = 'falhou',
-              updated_at = NOW()
-          WHERE id = $1
-          `,
-          [pagamento.id]
-        );
-      } else if (tabelaPagamento === "pagamentos_pix") {
-        await client.query(
-          `
-          UPDATE pagamentos_pix
-          SET status = 'falhou'
-          WHERE id = $1
-          `,
-          [pagamento.id]
-        );
-      }
-
-      await client.query("COMMIT");
-      return res.status(200).send("ok");
-    }
-
-    if (isRefundedEvent) {
-      console.log("↩️ Evento de estorno");
-
-      if (tabelaPagamento === "premium_unlocks") {
-        await client.query(
-          `
-          UPDATE premium_unlocks
-          SET status = 'estornado',
-              updated_at = NOW()
-          WHERE id = $1
-          `,
-          [pagamento.id]
-        );
-      } else if (tabelaPagamento === "pagamentos_pix") {
-        await client.query(
-          `
-          UPDATE pagamentos_pix
-          SET status = 'estornado'
-          WHERE id = $1
-          `,
-          [pagamento.id]
-        );
-      }
-
-      await client.query("COMMIT");
-      return res.status(200).send("ok");
-    }
-
-    if (isChargebackEvent) {
-      console.log("🚨 Evento de chargeback");
-
-      if (tabelaPagamento === "premium_unlocks") {
-        await client.query(
-          `UPDATE premium_unlocks SET status = 'chargeback', updated_at = NOW() WHERE id = $1`,
-          [pagamento.id]
-        );
-      } else if (tabelaPagamento === "pagamentos_pix") {
-        await client.query(
-          `UPDATE pagamentos_pix SET status = 'chargeback' WHERE id = $1`,
-          [pagamento.id]
-        );
-      }
-
-      // Propaga chargeback para transacoes_agency
-      await client.query(`
-        UPDATE transacoes_agency
-        SET status = 'chargeback', gateway = 'pix'
-        WHERE id = (
-          SELECT id FROM transacoes_agency
-          WHERE cliente_id = $1 AND modelo_id = $2 AND status = 'pago'
-          ORDER BY created_at DESC LIMIT 1
-        )
-      `, [pagamento.cliente_id, pagamento.modelo_id]);
-
-      await client.query("COMMIT");
-      return res.status(200).send("ok");
-    }
-
-    if (!isPaidEvent) {
-      console.log("Evento não é de pagamento confirmado, ignorando:", eventType);
-      await client.query("ROLLBACK");
-      return res.status(200).send("ok");
-    }
-
-    /* =====================================================
-       JÁ PAGO
-    ===================================================== */
-
-    const statusLocal = String(pagamento.status || "").toLowerCase().trim();
-    const pagamentoJaFinalizado = ["pago"].includes(statusLocal);
-
-    if (pagamentoJaFinalizado) {
-      console.log("Pagamento já estava pago");
-      await client.query("ROLLBACK");
-      return res.status(200).send("ok");
-    }
-
-    /* =====================================================
-       VALIDAÇÃO DE VALOR
-    ===================================================== */
-
-    if (valorEsperado > 0 && Math.abs(Number(valorPago) - Number(valorEsperado)) > 0.01) {
-      console.log("🚨 Valor divergente", valorPago, valorEsperado);
-      await client.query("ROLLBACK");
-      return res.status(200).send("ok");
-    }
-
-    console.log("Valor validado");
-
-    /* =====================================================
-       MIDIA PIX
-    ===================================================== */
-
-    if (tipoPagamento === "conteudo" || tipoPagamento === "conteudo_pix") {
-      console.log("💰 Processando compra de mídia PIX");
-
-      const conteudoRes = await client.query(
-        `
-        SELECT preco
-        FROM messages
-        WHERE id = $1
-        LIMIT 1
-        `,
-        [message_id]
-      );
-
-      if (!conteudoRes.rowCount) {
-        console.log("🚨 mensagem não encontrada:", message_id);
-        await client.query("ROLLBACK");
-        return res.status(200).send("ok");
-      }
-
-      const valorBase = Number(Number(conteudoRes.rows[0].preco).toFixed(2));
-      const taxaGateway = Number((valorBase * 0.15).toFixed(2));
-      const valorBruto = valorBase;
-
-      const valores = await calcularValores({
-        modelo_id,
-        valor_bruto: valorBase,
-        taxa_gateway: taxaGateway
-      });
-
-      console.log("Valores calculados:", valores);
-
-      await client.query(
-        `
-        INSERT INTO conteudo_pacotes (
-          message_id,
-          cliente_id,
-          modelo_id,
-          preco,
-          valor_base,
-          valor_total,
-          status,
-          metodo_pagamento,
-          pago_em
-        )
-        VALUES ($1,$2,$3,$4,$4,$5,'pago',$6,NOW())
-        ON CONFLICT (message_id,cliente_id)
-        DO UPDATE SET
-          status='pago',
-          metodo_pagamento=$6,
-          pago_em=NOW(),
-          valor_total=$5
-        `,
-        [
-          message_id,
-          cliente_id,
-          modelo_id,
-          valorBase,
-          valorPago,
-          metodoPagamento
-        ]
-      );
-
-      console.log("conteudo_pacotes atualizado");
-
-      const conteudo_ids =
-        await marcarConteudoComoLiberadoPorPagamento(client, {
-          message_id,
-          cliente_id,
-          modelo_id
-        });
-
-      console.log("Conteúdos liberados:", conteudo_ids);
-
-      await client.query(
-        `
-        INSERT INTO transacoes_agency (
-          modelo_id,
-          cliente_id,
-          tipo,
-          valor_bruto,
-          valor_modelo,
-          agency_fee,
-          velvet_fee,
-          taxa_gateway,
-          status,
-          created_at
-        )
-        VALUES (
-          $1,$2,'midia',
-          $3,$4,$5,$6,$7,'pago',NOW()
-        )
-        `,
-        [
-          modelo_id,
-          cliente_id,
-          valorBruto,
-          Number(valores.valor_modelo || 0),
-          Number(valores.agency_fee || 0),
-          Number(valores.velvet_fee || 0),
-          taxaGateway
-        ]
-      );
-
-      console.log("transacoes_agency (midia) inserido");
-
-      dadosParaEmitir = {
-        tipo: "conteudo",
-        cliente_id,
-        modelo_id,
-        message_id,
-        conteudo_ids
-      };
-
-      fluxoProcessado = true;
-      console.log("✅ Conteúdo atualizado com sucesso");
-    }
-
-    /* =====================================================
-       PREMIUM PIX
-    ===================================================== */
-
-    if (
-      tabelaPagamento === "premium_unlocks" ||
-      ["premium", "premium_pix"].includes(tipoPagamento)
-    ) {
-      console.log("💎 Processando premium PIX");
-
-      if (!premium_post_id || !cliente_id || !modelo_id) {
-        console.log("🚨 premium sem premium_post_id, cliente_id ou modelo_id");
-        await client.query("ROLLBACK");
-        return res.status(200).send("ok");
-      }
-
-      if (tabelaPagamento !== "premium_unlocks") {
-        console.log("🚨 metadata premium recebida, mas pagamento não veio de premium_unlocks");
-        await client.query("ROLLBACK");
-        return res.status(200).send("ok");
-      }
-
-      const premiumPostRes = await client.query(
-        `
-        SELECT preco
-        FROM premium_posts
-        WHERE id = $1
-        LIMIT 1
-        `,
-        [premium_post_id]
-      );
-
-      if (!premiumPostRes.rowCount) {
-        console.log("🚨 premium_post não encontrado:", premium_post_id);
-        await client.query("ROLLBACK");
-        return res.status(200).send("ok");
-      }
-
-      const valorBase = Number(Number(premiumPostRes.rows[0].preco).toFixed(2));
-
-      if (!Number.isFinite(valorBase) || valorBase <= 0) {
-        console.log("🚨 valorBase premium inválido:", valorBase);
-        await client.query("ROLLBACK");
-        return res.status(200).send("ok");
-      }
-
-      const taxaGateway = Number((valorBase * 0.15).toFixed(2));
-      const valorBruto = valorBase;
-
-      const valores = await calcularValores({
-        modelo_id,
-        valor_bruto: valorBase,
-        taxa_gateway: taxaGateway
-      });
-
-      await client.query(
-        `
-        UPDATE premium_unlocks
-        SET status = 'pago',
-            pago_em = NOW(),
-            pagarme_order_id = $1,
-            pagarme_charge_id = $2,
-            updated_at = NOW()
-        WHERE id = $3
-        `,
-        [orderId, chargeId, pagamento.id]
-      );
-
-      await client.query(
-        `
-        INSERT INTO transacoes_agency (
-          modelo_id,
-          cliente_id,
-          tipo,
-          valor_bruto,
-          valor_modelo,
-          agency_fee,
-          velvet_fee,
-          taxa_gateway,
-          status,
-          created_at
-        )
-        VALUES (
-          $1,$2,'midia',
-          $3,$4,$5,$6,$7,'pago',NOW()
-        )
-        `,
-        [
-          modelo_id,
-          cliente_id,
-          valorBruto,
-          Number(valores.valor_modelo || 0),
-          Number(valores.agency_fee || 0),
-          Number(valores.velvet_fee || 0),
-          taxaGateway
-        ]
-      );
-
-      fluxoProcessado = true;
-      console.log("✅ Premium atualizado com sucesso");
-    }
-
-    /* =====================================================
-       VIP PIX
-    ===================================================== */
-
-    if (tipoPagamento === "vip" || tipoPagamento === "vip_pix") {
-      console.log("⭐ Processando VIP PIX");
-
-      const vipExistente = await client.query(
-        `
-        SELECT id, ativo, expiration_at
-        FROM vip_subscriptions
-        WHERE cliente_id = $1
-          AND modelo_id = $2
-        LIMIT 1
-        FOR UPDATE
-        `,
-        [cliente_id, modelo_id]
-      );
-
-      const primeiraAssinatura = vipExistente.rowCount === 0;
-
-      let valorBase = Number(
-        metadata.valor_assinatura ??
-        metadata.valor_base ??
-        pagamento.valor ??
-        0
-      );
-
-      if (!Number.isFinite(valorBase) || valorBase <= 0) {
-        console.log(
-          "🚨 valorBase inválido:",
-          metadata.valor_assinatura,
-          metadata.valor_base,
-          pagamento.valor
-        );
-        await client.query("ROLLBACK");
-        return res.status(200).send("ok");
-      }
-
-      valorBase = Number(valorBase.toFixed(2));
-
-      const taxaTransacao = Number(metadata.taxa_transacao || 0);
-      const taxaPlataforma = Number(metadata.taxa_plataforma || 0);
-
-      const taxaGateway = Number((valorBase * 0.15).toFixed(2));
-      const valorBruto = valorBase;
-
-      const valores = await calcularValores({
-        modelo_id,
-        valor_bruto: valorBase,
-        taxa_gateway: taxaGateway
-      });
-
-      const valorModelo = Number(valores.valor_modelo || 0);
-      const agencyFee = Number(valores.agency_fee || 0);
-      const velvetFee = Number(valores.velvet_fee || 0);
-
-      console.log("Valores VIP:", {
-        valorBruto,
-        valorModelo,
-        agencyFee,
-        velvetFee,
-        taxaGateway
-      });
-
-      let novaExpiracao;
-
-      if (
-        vipExistente.rowCount > 0 &&
-        vipExistente.rows[0].expiration_at &&
-        new Date(vipExistente.rows[0].expiration_at) > new Date()
-      ) {
-        novaExpiracao = new Date(vipExistente.rows[0].expiration_at);
-        novaExpiracao.setMonth(novaExpiracao.getMonth() + 1);
-        console.log("Renovando VIP ativo. Nova expiração:", novaExpiracao);
-      } else {
-        novaExpiracao = new Date();
-        novaExpiracao.setMonth(novaExpiracao.getMonth() + 1);
-        console.log("Ativando/Reativando VIP. Nova expiração:", novaExpiracao);
-      }
-
-      if (vipExistente.rowCount > 0) {
-        await client.query(
-          `
-          UPDATE vip_subscriptions
-          SET
-            ativo = true,
-            updated_at = NOW(),
-            expiration_at = $3,
-            valor_assinatura = $4,
-            taxa_transacao = $5,
-            taxa_plataforma = $6,
-            valor_total = $7,
-            recorrente = false,
-            gateway_subscription_id = $8
-          WHERE cliente_id = $1
-            AND modelo_id = $2
-          `,
-          [
-            cliente_id,
-            modelo_id,
-            novaExpiracao,
-            valorBase,
-            taxaTransacao,
-            taxaPlataforma,
-            valorPago,
-            orderId
-          ]
-        );
-
-        console.log("vip_subscriptions atualizado (UPDATE)");
-      } else {
-        await client.query(
-          `
-          INSERT INTO vip_subscriptions (
-            cliente_id,
-            modelo_id,
-            ativo,
-            created_at,
-            updated_at,
-            expiration_at,
-            valor_assinatura,
-            taxa_transacao,
-            taxa_plataforma,
-            valor_total,
-            recorrente,
-            gateway_subscription_id
-          )
-          VALUES (
-            $1, $2, true,
-            NOW(), NOW(),
-            $3, $4, $5, $6, $7,
-            false, $8
-          )
-          `,
-          [
-            cliente_id,
-            modelo_id,
-            novaExpiracao,
-            valorBase,
-            taxaTransacao,
-            taxaPlataforma,
-            valorPago,
-            orderId
-          ]
-        );
-
-        console.log("vip_subscriptions atualizado (INSERT)");
-      }
-
-      await client.query(
-        `
-        INSERT INTO transacoes_agency (
-          modelo_id,
-          cliente_id,
-          tipo,
-          valor_bruto,
-          valor_modelo,
-          agency_fee,
-          velvet_fee,
-          taxa_gateway,
-          status,
-          created_at
-        )
-        VALUES (
-          $1,$2,'assinatura',
-          $3,$4,$5,$6,$7,'pago',NOW()
-        )
-        `,
-        [
-          modelo_id,
-          cliente_id,
-          valorBruto,
-          valorModelo,
-          agencyFee,
-          velvetFee,
-          taxaGateway
-        ]
-      );
-
-      console.log("transacoes_agency (vip) inserido");
-
-      if (primeiraAssinatura) {
-        const _boasVindas2038 = await getMensagemBoasVindas(client, cliente_id);
-        await client.query(
-          `
-          INSERT INTO messages (
-            cliente_id,
-            modelo_id,
-            text,
-            sender,
-            tipo,
-            created_at,
-            lida,
-            visto,
-            deletada
-          )
-          VALUES ($1,$2,$3,'modelo','texto',NOW(),false,false,false)
-          `,
-          [
-            cliente_id,
-            modelo_id,
-            _boasVindas2038
-          ]
-        );
-        console.log("Mensagem de boas-vindas enviada");
-      }
-
-      dadosParaEmitir = {
-        tipo: "vip",
-        cliente_id,
-        modelo_id,
-        primeiraAssinatura
-      };
-
-      fluxoProcessado = true;
-      console.log("✅ Bloco VIP finalizado com sucesso");
-    }
-
-    /* =====================================================
-       MARCAR PAGAMENTO COMO PAGO
-    ===================================================== */
-
-    if (!fluxoProcessado) {
-      console.log("🚨 Nenhum fluxo de negócio foi processado para este pagamento:", {
-        tabelaPagamento,
-        tipoPagamento,
-        metadata
-      });
-      await client.query("ROLLBACK");
-      return res.status(200).send("ok");
-    }
-
-    console.log("Marcando pagamento como pago");
-
-    if (tabelaPagamento === "pagamentos_pix") {
-      await client.query(
-        `
-        UPDATE pagamentos_pix
-        SET status = 'pago',
-            pago_em = NOW(),
-            pagarme_order_id = COALESCE(pagarme_order_id, $2)
-        WHERE id = $1
-        `,
-        [pagamento.id, orderId]
-      );
-    } else if (tabelaPagamento === "premium_unlocks") {
-      console.log("premium_unlocks já foi atualizado no bloco premium");
-    }
-
-    console.log("Pagamento atualizado");
-
-    /* =====================================================
-       COMMIT
-    ===================================================== */
-
-    await client.query("COMMIT");
-    console.log("COMMIT realizado");
-
-    /* =====================================================
-       SOCKET
-    ===================================================== */
-
-    try {
-      console.log("Emitindo eventos socket");
-
-      if (dadosParaEmitir?.tipo === "conteudo") {
-        const sala = `chat_${dadosParaEmitir.cliente_id}_${dadosParaEmitir.modelo_id}`;
-
-        console.log("Emitindo conteudoLiberado para", sala);
-
-        io.to(sala).emit("conteudoLiberado", {
-          message_id: Number(dadosParaEmitir.message_id),
-          conteudo_ids: dadosParaEmitir.conteudo_ids || []
-        });
-      }
-
-      if (dadosParaEmitir?.tipo === "vip") {
-        const sala = `chat_${dadosParaEmitir.cliente_id}_${dadosParaEmitir.modelo_id}`;
-
-        console.log("Emitindo vipAtivado para", sala);
-
-        io.to(sala).emit("vipAtivado", {
-          cliente_id: Number(dadosParaEmitir.cliente_id),
-          modelo_id: Number(dadosParaEmitir.modelo_id)
-        });
-      }
-
-    } catch (e) {
-      console.error("Erro emitir socket:", e);
-    }
-
-    // ── EMAIL FATURA PAGARME PIX (fire-and-forget) ───────────────
-    if (dadosParaEmitir) {
-      (async () => {
-        try {
-          const ci = await buscarDadosEmailPagamento(db, {
-            cliente_id: dadosParaEmitir.cliente_id,
-            modelo_id:  dadosParaEmitir.modelo_id
-          });
-          if (!ci?.email) return;
-
-          const base = {
-            nome:             ci.nome,
-            email:            ci.email,
-            modelo_nome:      ci.modelo_nome,
-            valor:            Number(pagamento?.valor || 0),
-            metodo:           'pix',
-            card_info:        null,
-            cpf:              pagamento?.cpf,
-            telefone:         pagamento?.telefone || ci.tel_cad,
-            ip:               pagamento?.aceite_ip,
-            aceite_timestamp: pagamento?.aceite_timestamp,
-            versao_termos:    pagamento?.versao_termos,
-            payment_ref:      orderId
-          };
-
-          if (dadosParaEmitir.tipo === 'vip') {
-            const vipR = await db.query(
-              `SELECT expiration_at FROM vip_subscriptions WHERE cliente_id = $1 AND modelo_id = $2 LIMIT 1`,
-              [dadosParaEmitir.cliente_id, dadosParaEmitir.modelo_id]
-            );
-            await enviarFaturaVIP({
-              ...base,
-              endereco:           ci.endereco_fmt,
-              primeiraAssinatura: dadosParaEmitir.primeiraAssinatura ?? true,
-              novaExpiracao:      vipR.rows[0]?.expiration_at
-            });
-            if (ci.pref_novidades_criadoras !== false) {
-              const audId = await obterOuCriarAudienceVIP(db, dadosParaEmitir.modelo_id, ci.modelo_nome);
-              await adicionarContatoAudienceVIP(audId, ci.email, ci.nome);
-            }
-          } else if (dadosParaEmitir.tipo === 'conteudo') {
-            await enviarFaturaConteudo(base);
-          }
-        } catch (emailErr) {
-          console.error('Erro email fatura Pagarme:', emailErr.message);
-        }
-      })();
-    }
-    // ─────────────────────────────────────────────────────────────
-
-    console.log("✅ PAGAMENTO FINALIZADO");
-    return res.status(200).send("ok");
-
-  } catch (err) {
-    await client.query("ROLLBACK");
-
-    console.error("🔥 ERRO WEBHOOK PAGARME:", err);
-
-    return res.status(500).send("erro");
-
-  } finally {
-    client.release();
-    console.log("🔚 conexão liberada");
-  }
-});
-
 app.post("/api/webhook/stripe", express.raw({ type: "application/json" }), async (req, res) => {
   console.log("======================================");
   console.log("🔥 WEBHOOK STRIPE RECEBIDO");
@@ -2259,7 +1374,8 @@ app.post("/api/webhook/stripe", express.raw({ type: "application/json" }), async
       null;
   } else if (eventType.startsWith("charge.")) {
     currency = obj.currency || null;
-    chargeId = obj.id || null;
+    // em eventos de disputa o objeto é a disputa; a cobrança vem em obj.charge
+    chargeId = (eventType.startsWith("charge.dispute.") ? obj.charge : obj.id) || null;
     paymentIntentId = obj.payment_intent || null;
     metadata = obj.metadata || {};
     amountCentavos = Number(obj.amount || 0);
@@ -2652,6 +1768,11 @@ app.post("/api/webhook/stripe", express.raw({ type: "application/json" }), async
           `,
           [pagamento.id, paymentIntentId, chargeId]
         );
+      } else if (tabelaPagamento === "pagamentos_pix") {
+        await client.query(
+          `UPDATE pagamentos_pix SET status = 'falhou' WHERE id = $1 AND status <> 'pago'`,
+          [pagamento.id]
+        );
       } else {
         await client.query(
           `
@@ -2686,6 +1807,11 @@ app.post("/api/webhook/stripe", express.raw({ type: "application/json" }), async
           `,
           [pagamento.id, paymentIntentId, chargeId]
         );
+      } else if (tabelaPagamento === "pagamentos_pix") {
+        await client.query(
+          `UPDATE pagamentos_pix SET status = 'estornado' WHERE id = $1`,
+          [pagamento.id]
+        );
       } else {
         await client.query(
           `
@@ -2714,6 +1840,11 @@ app.post("/api/webhook/stripe", express.raw({ type: "application/json" }), async
            stripe_charge_id=COALESCE($3,stripe_charge_id) WHERE id=$1`,
           [pagamento.id, paymentIntentId, chargeId]
         );
+      } else if (tabelaPagamento === "pagamentos_pix") {
+        await client.query(
+          `UPDATE pagamentos_pix SET status = 'chargeback' WHERE id = $1`,
+          [pagamento.id]
+        );
       } else {
         await client.query(
           `UPDATE pagamentos_cartao SET status='chargeback', updated_at=NOW(),
@@ -2723,18 +1854,23 @@ app.post("/api/webhook/stripe", express.raw({ type: "application/json" }), async
         );
       }
 
-      // Propaga chargeback para transacoes_agency
-      await client.query(`
-        UPDATE transacoes_agency
-        SET status = 'chargeback', gateway = 'cartao'
-        WHERE id = (
-          SELECT id FROM transacoes_agency
-          WHERE cliente_id = $1 AND modelo_id = $2 AND status = 'pago'
-          ORDER BY created_at DESC LIMIT 1
-        )
-      `, [pagamento.cliente_id, pagamento.modelo_id]);
+      // Propaga chargeback para a venda contestada em transacoes_agency
+      const transacaoId = await marcarChargebackNaTransacao(client, {
+        tabela: tabelaPagamento,
+        pagamento,
+        paymentIntentId
+      });
 
       await client.query("COMMIT");
+
+      if (!transacaoId) {
+        criarNotificacaoAdmin(db, req.app.get("io"), {
+          tipo: "chargeback_sem_transacao",
+          referencia_id: pagamento.cliente_id,
+          titulo: "⚠️ Chargeback sem venda identificada",
+          mensagem: `${tabelaPagamento} #${pagamento.id} — lance o desconto manualmente`
+        });
+      }
       return res.status(200).send("ok");
     }
 
@@ -5063,6 +4199,8 @@ socket.on("sendConteudo", async ({
 } = {}) => {
   const clienteIdNum = Number(cliente_id);
   const modeloIdNum = Number(modelo_id);
+  // quem está identificado no chat-agency no momento do envio
+  const chatterSessaoId = socket.chatterSessaoId;
 
   try {
     if (!socket.user || socket.user.role !== "modelo") {
@@ -5160,6 +4298,17 @@ socket.on("sendConteudo", async ({
       `,
       [message.id, ...idsParaEnviar]
     );
+
+    // Credita o envio a quem atende (uma falha aqui não impede a mensagem)
+    try {
+      await chatterSessoes.registrarEnvio({
+        sessaoId: chatterSessaoId,
+        messageId: message.id,
+        modeloId: modeloIdNum
+      });
+    } catch (envioErr) {
+      console.error("Erro ao creditar envio, message_id", message.id, envioErr.message);
+    }
 
     // 7️⃣ BUSCAR MÍDIAS
     const midiasRes = await db.query(
@@ -17484,6 +16633,10 @@ db.query("ALTER TABLE saques ADD COLUMN IF NOT EXISTS origem TEXT NOT NULL DEFAU
 db.query(`ALTER TABLE fechamento_ajustes DROP CONSTRAINT IF EXISTS fechamento_ajustes_tipo_check,
   ADD CONSTRAINT fechamento_ajustes_tipo_check CHECK (tipo IN ('taxa_gateway','retencao','salario_chatters'))`)
   .catch(err => console.error("Migração fechamento_ajustes_tipo_check:", err.message));
+// pagamentos_pix.status: libera 'estornado' e 'chargeback'
+fs.promises.readFile(path.join(__dirname, "migrations", "add_pix_status_estorno_chargeback.sql"), "utf8")
+  .then(sql => db.query(sql))
+  .catch(err => console.error("Migração pagamentos_pix_status_check:", err.message));
 db.query("ALTER TABLE saques ADD COLUMN IF NOT EXISTS mes_referencia DATE")
   .then(() => db.query("UPDATE saques SET mes_referencia = (DATE_TRUNC('month', processado_em AT TIME ZONE 'America/Sao_Paulo') - INTERVAL '1 month')::date WHERE origem='contabilidade' AND mes_referencia IS NULL AND processado_em IS NOT NULL"))
   .catch(err => console.error("Migração mes_referencia saques:", err.message));

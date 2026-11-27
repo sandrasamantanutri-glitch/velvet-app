@@ -29,3 +29,15 @@ CREATE INDEX IF NOT EXISTS idx_chatter_sessoes_abertas ON chatter_sessoes(ultimo
 -- Como as demais tabelas: sem acesso pela API pública do Supabase
 ALTER TABLE chatters        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE chatter_sessoes ENABLE ROW LEVEL SECURITY;
+
+-- Quem enviou cada mídia pelo chat (a venda é creditada a essa pessoa)
+CREATE TABLE IF NOT EXISTS chatter_envios (
+  message_id  INTEGER PRIMARY KEY,
+  chatter_id  INTEGER NOT NULL REFERENCES chatters(id),
+  sessao_id   INTEGER NOT NULL REFERENCES chatter_sessoes(id),
+  modelo_id   INTEGER NOT NULL,
+  enviado_em  TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_chatter_envios_chatter ON chatter_envios(chatter_id);
+ALTER TABLE chatter_envios ENABLE ROW LEVEL SECURITY;
