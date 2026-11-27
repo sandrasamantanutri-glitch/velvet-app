@@ -6649,9 +6649,82 @@ function chatterDuracao(segundos) {
 }
 
 pageLoaders.chatters = async function () {
+  // Vendas começa no mês atual (horário de São Paulo)
+  if (!$('chVendasDe').value && !$('chVendasAte').value) {
+    const hoje = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date());
+    $('chVendasDe').value = hoje.slice(0, 8) + '01';
+    $('chVendasAte').value = hoje;
+  }
   await carregarChatters();
-  await carregarChatterSessoes(1);
+  await Promise.all([carregarChatterSessoes(1), carregarChatterVendas(1)]);
 };
+
+function chatterQuem(linha) {
+  return `${escapeHtml(linha.chatter_nome)} <small>(${escapeHtml(linha.chatter_codigo)})</small>`;
+}
+
+async function carregarChatterVendas(pagina = 1) {
+  const params = new URLSearchParams({
+    pagina,
+    de: $('chVendasDe').value,
+    ate: $('chVendasAte').value,
+    chatter_id: $('chVendasPessoa').value,
+    modelo_id: $('chVendasModelo').value
+  });
+
+  try {
+    const dados = await fetchJSON('/api/admin/chatters/vendas?' + params);
+    const modelo = l => escapeHtml(l.modelo_nome || 'Modelo ' + l.modelo_id);
+    const linhas = (tabela, itens, colunas, html) => {
+      document.querySelector(tabela + ' tbody').innerHTML = itens.length
+        ? itens.map(html).join('')
+        : emptyRow(colunas);
+    };
+
+    $('kpi-chVendasQtd').textContent = dados.total.quantidade;
+    $('kpi-chVendasValor').textContent = money(dados.total.valor);
+
+    linhas('#tableChVendasPessoa', dados.por_pessoa, 4, (p, i) => `
+      <tr>
+        <td>${i + 1}</td>
+        <td>${chatterQuem(p)}</td>
+        <td>${p.quantidade}</td>
+        <td><strong>${money(p.valor)}</strong></td>
+      </tr>`);
+
+    linhas('#tableChVendasDia', dados.por_dia, 5, d => `
+      <tr>
+        <td>${d.dia.split('-').reverse().join('/')}</td>
+        <td>${chatterQuem(d)}</td>
+        <td>${modelo(d)}</td>
+        <td>${d.quantidade}</td>
+        <td>${money(d.valor)}</td>
+      </tr>`);
+
+    linhas('#tableChVendas', dados.vendas, 7, v => `
+      <tr>
+        <td>${chatterDataHora(v.pago_em)}</td>
+        <td>${chatterQuem(v)}</td>
+        <td>${modelo(v)}</td>
+        <td>#${v.cliente_id}</td>
+        <td>${chatterDataHora(v.enviado_em)}</td>
+        <td>${escapeHtml(v.metodo_pagamento || '—')}</td>
+        <td>${money(v.valor)}${v.alerta_chargeback
+          ? ' <span class="badge badge-warning" title="Há chargeback de mídia lançado para este cliente nesta modelo">conferir chargeback</span>'
+          : ''}</td>
+      </tr>`);
+
+    const filtro = $('chVendasModelo');
+    const escolhido = filtro.value;
+    filtro.innerHTML = '<option value="">Todas as modelos</option>' +
+      dados.modelos.map(m => `<option value="${m.id}">${escapeHtml(m.nome || 'Modelo ' + m.id)}</option>`).join('');
+    filtro.value = escolhido;
+
+    buildPagination('chVendasPaginacao', dados.pagina, dados.total_paginas, 'carregarChatterVendas');
+  } catch (err) {
+    toast('Erro ao carregar as vendas: ' + err.message, 'error');
+  }
+}
 
 async function carregarChatters() {
   try {
@@ -6672,11 +6745,12 @@ async function carregarChatters() {
           </tr>`).join('')
       : emptyRow(5);
 
-    const filtro = $('chSessoesPessoa');
-    const escolhido = filtro.value;
-    filtro.innerHTML = '<option value="">Toda a equipe</option>' +
-      chatters.map(c => `<option value="${c.id}">${escapeHtml(c.nome)}</option>`).join('');
-    filtro.value = escolhido;
+    for (const filtro of [$('chSessoesPessoa'), $('chVendasPessoa')]) {
+      const escolhido = filtro.value;
+      filtro.innerHTML = '<option value="">Toda a equipe</option>' +
+        chatters.map(c => `<option value="${c.id}">${escapeHtml(c.nome)}</option>`).join('');
+      filtro.value = escolhido;
+    }
   } catch (err) {
     toast('Erro ao carregar a equipe: ' + err.message, 'error');
   }

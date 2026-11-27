@@ -133,10 +133,10 @@ router.get('/:identificador', async (req, res) => {
          LEFT JOIN LATERAL (
            SELECT aceite_ip, pago_em FROM (
              SELECT aceite_ip, pago_em FROM pagamentos_pix pp
-             WHERE pp.cliente_id = vs.cliente_id AND pp.modelo_id = vs.modelo_id AND pp.status = 'pago'
+             WHERE pp.cliente_id = vs.cliente_id AND pp.modelo_id = vs.modelo_id AND pp.status IN ('pago', 'chargeback')
              UNION ALL
              SELECT aceite_ip, pago_em FROM pagamentos_cartao pc
-             WHERE pc.cliente_id = vs.cliente_id AND pc.modelo_id = vs.modelo_id AND pc.status = 'pago' AND pc.tipo = 'vip'
+             WHERE pc.cliente_id = vs.cliente_id AND pc.modelo_id = vs.modelo_id AND pc.status IN ('pago', 'chargeback') AND pc.tipo = 'vip'
            ) uniao
            ORDER BY ABS(EXTRACT(EPOCH FROM (pago_em - vs.created_at)))
            LIMIT 1
@@ -178,13 +178,15 @@ router.get('/:identificador', async (req, res) => {
          JOIN modelos m ON m.id = cp.modelo_id
          LEFT JOIN LATERAL (
            SELECT aceite_ip, pago_em FROM pagamentos_pix pp
-           WHERE pp.cliente_id = cp.cliente_id AND pp.message_id = cp.message_id AND pp.status = 'pago'
+           WHERE pp.cliente_id = cp.cliente_id AND pp.message_id = cp.message_id
+             AND pp.status IN ('pago', 'chargeback')
            ORDER BY pp.pago_em DESC LIMIT 1
          ) ppx ON true
          LEFT JOIN LATERAL (
+           -- em pagamentos_cartao, conteudo_id guarda o id da mensagem
            SELECT aceite_ip, pago_em FROM pagamentos_cartao pc
-           WHERE pc.cliente_id = cp.cliente_id AND pc.status = 'pago'
-             AND pc.conteudo_id IN (SELECT mc.conteudo_id FROM messages_conteudos mc WHERE mc.message_id = cp.message_id)
+           WHERE pc.cliente_id = cp.cliente_id AND pc.conteudo_id = cp.message_id
+             AND pc.status IN ('pago', 'chargeback')
            ORDER BY pc.pago_em DESC LIMIT 1
          ) pcx ON true
          WHERE cp.cliente_id = $1

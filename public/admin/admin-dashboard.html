@@ -2496,6 +2496,7 @@
 <section class="page" id="page-chatters">
   <div class="tabs">
     <button class="tab active" data-tab="chatters-registro">Entradas e saídas</button>
+    <button class="tab" data-tab="chatters-vendas">Vendas</button>
     <button class="tab" data-tab="chatters-equipe">Equipe</button>
   </div>
 
@@ -2517,6 +2518,52 @@
       </div>
     </div>
     <div id="chSessoesPaginacao" class="pagination"></div>
+  </div>
+
+  <div class="tab-content" id="tab-chatters-vendas">
+    <div class="page-actions" style="flex-wrap:wrap;gap:8px;">
+      <label style="font-size:13px;">De <input type="date" id="chVendasDe" class="input-search" style="width:160px;"></label>
+      <label style="font-size:13px;">Até <input type="date" id="chVendasAte" class="input-search" style="width:160px;"></label>
+      <select id="chVendasPessoa" class="input-select" style="width:200px;"><option value="">Toda a equipe</option></select>
+      <select id="chVendasModelo" class="input-select" style="width:200px;"><option value="">Todas as modelos</option></select>
+      <button class="btn btn-primary" onclick="carregarChatterVendas(1)">Filtrar</button>
+    </div>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">
+      Mídias pagas enviadas pelo chat da agência e já compradas. O crédito é de quem enviou, a data é a da compra
+      (horário de São Paulo) e o valor é o preço da mídia, sem a taxa cobrada do cliente.
+    </p>
+    <div class="kpi-row">
+      <div class="kpi-card purple"><span>Mídias vendidas</span><strong id="kpi-chVendasQtd">--</strong></div>
+      <div class="kpi-card green"><span>Total vendido</span><strong id="kpi-chVendasValor">--</strong></div>
+    </div>
+    <div class="card">
+      <h3>Total por pessoa</h3>
+      <div style="overflow-x:auto;">
+        <table class="table" id="tableChVendasPessoa">
+          <thead><tr><th>#</th><th>Quem</th><th>Vendas</th><th>Total</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Por dia e modelo</h3>
+      <div style="overflow-x:auto;">
+        <table class="table" id="tableChVendasDia">
+          <thead><tr><th>Dia</th><th>Quem</th><th>Modelo</th><th>Vendas</th><th>Total</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Cada venda</h3>
+      <div style="overflow-x:auto;">
+        <table class="table" id="tableChVendas">
+          <thead><tr><th>Comprada em</th><th>Enviada por</th><th>Modelo</th><th>Cliente</th><th>Enviada em</th><th>Pagamento</th><th>Valor</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <div id="chVendasPaginacao" class="pagination"></div>
   </div>
 
   <div class="tab-content" id="tab-chatters-equipe">

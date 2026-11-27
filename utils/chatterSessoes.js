@@ -35,9 +35,21 @@ const MIGRACAO = `
   CREATE INDEX IF NOT EXISTS idx_chatter_sessoes_chatter ON chatter_sessoes(chatter_id);
   CREATE INDEX IF NOT EXISTS idx_chatter_sessoes_abertas ON chatter_sessoes(ultimo_sinal) WHERE saiu_em IS NULL;
 
+  -- Quem enviou cada mídia pelo chat (a venda é creditada a essa pessoa)
+  CREATE TABLE IF NOT EXISTS chatter_envios (
+    message_id  INTEGER PRIMARY KEY,
+    chatter_id  INTEGER NOT NULL REFERENCES chatters(id),
+    sessao_id   INTEGER NOT NULL REFERENCES chatter_sessoes(id),
+    modelo_id   INTEGER NOT NULL,
+    enviado_em  TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_chatter_envios_chatter ON chatter_envios(chatter_id);
+
   -- Como as demais tabelas: sem acesso pela API pública do Supabase
   ALTER TABLE chatters        ENABLE ROW LEVEL SECURITY;
   ALTER TABLE chatter_sessoes ENABLE ROW LEVEL SECURITY;
+  ALTER TABLE chatter_envios  ENABLE ROW LEVEL SECURITY;
 `;
 
 // O token não leva "id" nem "role", por isso nunca é aceito como login.
@@ -140,11 +152,31 @@ function criarChatterSessoes(db) {
     return nova.rows[0].id;
   }
 
+  function avisarEncerrada(socket) {
+    delete socket.chatterSessaoId;
+    socket.emit(EVENTO_ENCERRADA);
+  }
+
   function avisarEncerradas(ids) {
     for (const id of ids) {
-      for (const socket of conectados.get(id) || []) socket.emit(EVENTO_ENCERRADA);
+      for (const socket of conectados.get(id) || []) avisarEncerrada(socket);
       conectados.delete(id);
     }
+  }
+
+  // Guarda quem enviou a mídia. A compra pode acontecer muito depois, com outra
+  // pessoa no chat: o crédito continua sendo de quem enviou.
+  async function registrarEnvio({ sessaoId, messageId, modeloId }) {
+    if (!sessaoId) return;
+    await migrar();
+    await db.query(
+      `INSERT INTO chatter_envios (message_id, chatter_id, sessao_id, modelo_id)
+       SELECT $1::int, chatter_id, id, modelo_id
+         FROM chatter_sessoes
+        WHERE id = $2 AND modelo_id = $3
+       ON CONFLICT (message_id) DO NOTHING`,
+      [messageId, sessaoId, modeloId]
+    );
   }
 
   async function sair(sessaoId) {
@@ -181,6 +213,9 @@ function criarChatterSessoes(db) {
       return;
     }
 
+    // definido antes de qualquer await: envios feitos logo ao reconectar contam
+    socket.chatterSessaoId = sessaoId;
+
     let desconectado = false;
     socket.on("disconnect", async () => {
       desconectado = true;
@@ -200,7 +235,7 @@ function criarChatterSessoes(db) {
 
     try {
       if (!(await renovar(sessaoId))) {
-        socket.emit(EVENTO_ENCERRADA);
+        avisarEncerrada(socket);
         return;
       }
     } catch (err) {
@@ -245,6 +280,7 @@ function criarChatterSessoes(db) {
     sair,
     encerrarInativas,
     encerrarDoChatter,
+    registrarEnvio,
     conectarSocket,
     ciclo,
     iniciar
