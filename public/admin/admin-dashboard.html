@@ -149,6 +149,10 @@
   <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-1 14l-3-3 1.41-1.41L11 12.17l4.59-4.58L17 9l-6 6z"/></svg>
   <span>Restrições cliente</span>
 </a>
+<a class="nav-item" data-page="chatters">
+  <svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
+  <span>Chat Agência</span>
+</a>
 </nav>
 
   <div class="sidebar-bottom">
@@ -2487,6 +2491,66 @@
   </div>
   <div id="rcPaginacao" style="display:flex;gap:6px;justify-content:center;margin-top:16px;flex-wrap:wrap;"></div>
 </section>
+
+<!-- CHAT AGÊNCIA: quem atendeu, quando entrou e quando saiu -->
+<section class="page" id="page-chatters">
+  <div class="tabs">
+    <button class="tab active" data-tab="chatters-registro">Entradas e saídas</button>
+    <button class="tab" data-tab="chatters-equipe">Equipe</button>
+  </div>
+
+  <div class="tab-content active" id="tab-chatters-registro">
+    <div class="page-actions" style="flex-wrap:wrap;gap:8px;">
+      <label style="font-size:13px;">De <input type="date" id="chSessoesDe" class="input-search" style="width:160px;"></label>
+      <label style="font-size:13px;">Até <input type="date" id="chSessoesAte" class="input-search" style="width:160px;"></label>
+      <select id="chSessoesPessoa" class="input-select" style="width:200px;"><option value="">Toda a equipe</option></select>
+      <select id="chSessoesModelo" class="input-select" style="width:200px;"><option value="">Todas as modelos</option></select>
+      <button class="btn btn-primary" onclick="carregarChatterSessoes(1)">Filtrar</button>
+    </div>
+    <div class="card">
+      <h3>Registro do chat da agência (horário de São Paulo)</h3>
+      <div style="overflow-x:auto;">
+        <table class="table" id="tableChatterSessoes">
+          <thead><tr><th>Quem</th><th>Modelo</th><th>Entrou</th><th>Saiu</th><th>Duração</th><th>Como saiu</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <div id="chSessoesPaginacao" class="pagination"></div>
+  </div>
+
+  <div class="tab-content" id="tab-chatters-equipe">
+    <div class="page-actions">
+      <button class="btn btn-primary" onclick="abrirModalChatter()">+ Cadastrar pessoa</button>
+    </div>
+    <div class="card">
+      <h3>Quem pode atender no chat da agência</h3>
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">
+        Enquanto houver alguém ativo nesta lista, o chat da agência pede código e PIN antes de abrir.
+      </p>
+      <div style="overflow-x:auto;">
+        <table class="table" id="tableChatters">
+          <thead><tr><th>Código</th><th>Nome</th><th>Status</th><th>Última entrada</th><th>Ações</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="modal" id="modalChatter">
+  <h3 id="modalChatterTitulo">Cadastrar pessoa</h3>
+  <form id="formChatter" onsubmit="salvarChatter(event)">
+    <input type="hidden" name="id">
+    <label>Nome<input type="text" name="nome" maxlength="80" required></label>
+    <label>Código<input type="text" name="codigo" maxlength="20" pattern="[A-Za-z0-9_\-]{2,20}" placeholder="Ex.: TH01" autocomplete="off" required></label>
+    <label><span id="modalChatterPinRotulo">PIN (4 a 8 números)</span><input type="text" name="pin" inputmode="numeric" pattern="\d{4,8}" maxlength="8" autocomplete="off"></label>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" onclick="closeAllModals()">Cancelar</button>
+      <button type="submit" class="btn btn-primary">Salvar</button>
+    </div>
+  </form>
+</div>
 
 <!-- Toast -->
 <div class="toast" id="toast"></div>

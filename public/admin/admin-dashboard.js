@@ -199,7 +199,8 @@ const pageTitles = {
   'usuarios-confiaveis': 'Usuários Confiáveis',
   'pix-modelos': 'PIX por Modelo',
   contestacoes: 'Contestações',
-  ocorrencias: 'Ocorrências'
+  ocorrencias: 'Ocorrências',
+  chatters: 'Chat Agência'
 };
 
 const pageLoaders = {};
@@ -6621,3 +6622,147 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('click', destravarAudioNotificacao, { once: true });
   document.addEventListener('keydown', destravarAudioNotificacao, { once: true });
 });
+
+// ========== CHAT AGÊNCIA (quem atende no chat-agency) ==========
+
+let _chatters = [];
+
+const CHATTER_MOTIVOS = {
+  desconexao: 'Fechou ou perdeu conexão',
+  botao: 'Botão Sair',
+  admin: 'Encerrado pelo admin'
+};
+
+function chatterDataHora(valor) {
+  if (!valor) return '—';
+  return new Date(valor).toLocaleString('pt-BR', {
+    timeZone: 'America/Sao_Paulo',
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit'
+  });
+}
+
+function chatterDuracao(segundos) {
+  const minutos = Math.floor(Number(segundos || 0) / 60);
+  const horas = Math.floor(minutos / 60);
+  return horas ? `${horas}h${String(minutos % 60).padStart(2, '0')}` : `${minutos} min`;
+}
+
+pageLoaders.chatters = async function () {
+  await carregarChatters();
+  await carregarChatterSessoes(1);
+};
+
+async function carregarChatters() {
+  try {
+    const { chatters } = await fetchJSON('/api/admin/chatters');
+    _chatters = chatters;
+
+    document.querySelector('#tableChatters tbody').innerHTML = chatters.length
+      ? chatters.map(c => `
+          <tr>
+            <td><strong>${escapeHtml(c.codigo)}</strong></td>
+            <td>${escapeHtml(c.nome)}</td>
+            <td>${c.ativo ? badgeStatus('ativo') : '<span class="badge badge-muted">inativo</span>'}</td>
+            <td>${chatterDataHora(c.ultima_entrada)}</td>
+            <td>
+              <button class="btn btn-sm btn-primary" onclick="abrirModalChatter(${c.id})">Editar</button>
+              <button class="btn btn-sm ${c.ativo ? 'btn-danger' : ''}" onclick="alternarChatter(${c.id})">${c.ativo ? 'Desativar' : 'Reativar'}</button>
+            </td>
+          </tr>`).join('')
+      : emptyRow(5);
+
+    const filtro = $('chSessoesPessoa');
+    const escolhido = filtro.value;
+    filtro.innerHTML = '<option value="">Toda a equipe</option>' +
+      chatters.map(c => `<option value="${c.id}">${escapeHtml(c.nome)}</option>`).join('');
+    filtro.value = escolhido;
+  } catch (err) {
+    toast('Erro ao carregar a equipe: ' + err.message, 'error');
+  }
+}
+
+async function carregarChatterSessoes(pagina = 1) {
+  const params = new URLSearchParams({
+    pagina,
+    de: $('chSessoesDe').value,
+    ate: $('chSessoesAte').value,
+    chatter_id: $('chSessoesPessoa').value,
+    modelo_id: $('chSessoesModelo').value
+  });
+
+  try {
+    const dados = await fetchJSON('/api/admin/chatters/sessoes?' + params);
+
+    document.querySelector('#tableChatterSessoes tbody').innerHTML = dados.sessoes.length
+      ? dados.sessoes.map(s => `
+          <tr>
+            <td>${escapeHtml(s.chatter_nome)} <small>(${escapeHtml(s.chatter_codigo)})</small></td>
+            <td>${escapeHtml(s.modelo_nome || 'Modelo ' + s.modelo_id)}</td>
+            <td>${chatterDataHora(s.entrou_em)}</td>
+            <td>${s.saiu_em ? chatterDataHora(s.saiu_em) : '<span class="badge badge-success">no chat agora</span>'}</td>
+            <td>${chatterDuracao(s.duracao_segundos)}</td>
+            <td>${escapeHtml(CHATTER_MOTIVOS[s.motivo_saida] || '—')}</td>
+          </tr>`).join('')
+      : emptyRow(6);
+
+    const filtro = $('chSessoesModelo');
+    const escolhido = filtro.value;
+    filtro.innerHTML = '<option value="">Todas as modelos</option>' +
+      dados.modelos.map(m => `<option value="${m.id}">${escapeHtml(m.nome || 'Modelo ' + m.id)}</option>`).join('');
+    filtro.value = escolhido;
+
+    buildPagination('chSessoesPaginacao', dados.pagina, dados.total_paginas, 'carregarChatterSessoes');
+  } catch (err) {
+    toast('Erro ao carregar o registro: ' + err.message, 'error');
+  }
+}
+
+function abrirModalChatter(id) {
+  const form = $('formChatter');
+  const pessoa = _chatters.find(c => c.id === id);
+  form.reset();
+  form.elements.id.value = pessoa?.id || '';
+  form.elements.nome.value = pessoa?.nome || '';
+  form.elements.codigo.value = pessoa?.codigo || '';
+  form.elements.codigo.disabled = Boolean(pessoa);
+  form.elements.pin.required = !pessoa;
+  $('modalChatterTitulo').textContent = pessoa ? 'Editar cadastro' : 'Cadastrar pessoa';
+  $('modalChatterPinRotulo').textContent = pessoa
+    ? 'Novo PIN (deixe vazio para manter)'
+    : 'PIN (4 a 8 números)';
+  openModal('modalChatter');
+}
+
+async function salvarChatter(event) {
+  event.preventDefault();
+  const campos = event.target.elements;
+  const id = campos.id.value;
+  const corpo = { nome: campos.nome.value, pin: campos.pin.value };
+
+  try {
+    if (id) {
+      await putJSON(`/api/admin/chatters/${id}`, corpo);
+    } else {
+      await postJSON('/api/admin/chatters', { ...corpo, codigo: campos.codigo.value });
+    }
+    toast('Cadastro salvo', 'success');
+    closeAllModals();
+    await carregarChatters();
+  } catch (err) {
+    toast('Erro: ' + err.message, 'error');
+  }
+}
+
+async function alternarChatter(id) {
+  const pessoa = _chatters.find(c => c.id === id);
+  if (!pessoa) return;
+  if (pessoa.ativo && !confirm(`Desativar ${pessoa.nome}? Se estiver no chat, a sessão é encerrada.`)) return;
+
+  try {
+    await putJSON(`/api/admin/chatters/${id}`, { ativo: !pessoa.ativo });
+    await carregarChatters();
+  } catch (err) {
+    toast('Erro: ' + err.message, 'error');
+  }
+}

@@ -140,3 +140,14 @@ async function carregarTransacoesCliente() {
 document.addEventListener("DOMContentLoaded", () => {
   carregarTransacoesCliente();
 });
+// Quem veio do chat-agency continua com a sessão de atendimento aberta aqui
+(() => {
+  const sessao = sessionStorage.getItem("chatter_sessao");
+  if (!sessao) return;
+  const sinal = () => fetch("/api/chatter/sinal", {
+    method: "POST",
+    headers: { Authorization: "Bearer " + token, "X-Chatter-Sessao": sessao }
+  }).catch(() => {});
+  sinal();
+  setInterval(sinal, 30000);
+})();

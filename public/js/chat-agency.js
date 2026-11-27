@@ -13,7 +13,9 @@ if (!token || role !== "modelo") {
 // ===========================
 const socket = io({
   transports: ["websocket", "polling"],
-  auth: { token },
+  // só conecta depois da identificação de quem atende (ver INIT)
+  autoConnect: false,
+  auth: cb => cb({ token, chatterSessao: window.chatterSessao.ler() }),
   reconnection: true,
   reconnectionAttempts: Infinity,
   reconnectionDelay: 1000,
@@ -21,6 +23,8 @@ const socket = io({
 });
 
 window.socket = socket;
+
+socket.on("chatterSessaoEncerrada", () => window.chatterSessao.encerrada());
 
 // ===========================
 // INBOX STATE
@@ -1364,6 +1368,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (inboxHeader && modelo.nome_exibicao) {
       inboxHeader.textContent = modelo.nome_exibicao;
     }
+
+    // Identificação obrigatória antes de abrir o chat
+    await window.chatterSessao.garantir();
+    socket.connect();
 
     // Chat input handlers
     document.getElementById("sendBtn")?.addEventListener("click", enviarMensagem);

@@ -277,11 +277,125 @@
       font-size: 11px;
       color: #aaa;
     }
+
+    /* ─── IDENTIFICAÇÃO DE QUEM ATENDE ─── */
+    #chatterTela {
+      position: fixed;
+      inset: 0;
+      z-index: 100000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      background: #f7f7fb;
+    }
+
+    #chatterTela[hidden],
+    #chatterTela [hidden],
+    #chatterAtual[hidden] { display: none; }
+
+    .chatter-caixa {
+      width: 100%;
+      max-width: 340px;
+      box-sizing: border-box;
+      padding: 24px;
+      background: #fff;
+      border: 1px solid #9E6BFF;
+      border-radius: 18px;
+      box-shadow: 0 6px 20px rgba(93,36,190,0.15);
+      text-align: center;
+    }
+
+    .chatter-caixa h2 {
+      margin: 0 0 16px;
+      font-size: 17px;
+      color: #7B2CFF;
+    }
+
+    #chatterForm {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    #chatterForm input {
+      height: 42px;
+      box-sizing: border-box;
+      width: 100%;
+      padding: 0 14px;
+      border: 1px solid #9E6BFF;
+      border-radius: 12px;
+      font-size: 16px;
+      outline: none;
+    }
+
+    #chatterCodigo { text-transform: uppercase; }
+    #chatterCodigo::placeholder { text-transform: none; }
+
+    #chatterEntrar,
+    #chatterTentar {
+      height: 42px;
+      padding: 0 18px;
+      border: none;
+      border-radius: 12px;
+      background: #7B2CFF;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    #chatterEntrar:disabled { opacity: 0.6; cursor: default; }
+
+    #chatterAviso {
+      margin: 10px 0 0;
+      font-size: 13px;
+      color: #c0392b;
+    }
+
+    #chatterAtual {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 8px 14px;
+      border-bottom: 1px solid #e9e9ef;
+      flex-shrink: 0;
+      font-size: 12px;
+      color: #555;
+    }
+
+    #chatterSair {
+      padding: 4px 10px;
+      border: 1px solid #9E6BFF;
+      border-radius: 10px;
+      background: #fff;
+      color: #7B2CFF;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
   </style>
 </head>
 
 <body class="role-modelo">
   <!-- <div id="header-container"></div> -->
+
+  <!-- ══════════ IDENTIFICAÇÃO DE QUEM ATENDE ══════════ -->
+  <div id="chatterTela">
+    <div class="chatter-caixa">
+      <h2>Quem está atendendo?</h2>
+      <form id="chatterForm" hidden>
+        <input id="chatterCodigo" type="text" maxlength="20" placeholder="Seu código"
+               aria-label="Seu código" autocomplete="off" autocapitalize="characters" required />
+        <input id="chatterPin" type="password" inputmode="numeric" maxlength="8" placeholder="PIN"
+               aria-label="PIN" autocomplete="off" required />
+        <button id="chatterEntrar" type="submit">Entrar</button>
+      </form>
+      <button id="chatterTentar" type="button" hidden>Tentar novamente</button>
+      <p id="chatterAviso" role="alert">Verificando…</p>
+    </div>
+  </div>
 
   <div id="agencyWrap">
     <div id="agencyLayout">
@@ -289,6 +403,10 @@
       <!-- ══════════ ESQUERDA: LISTA DE CONVERSAS ══════════ -->
       <div id="agencyInbox">
         <div id="agencyInboxHeader" data-i18n="inbox.title">Conversas</div>
+        <div id="chatterAtual" hidden>
+          <span id="chatterNome"></span>
+          <button id="chatterSair" type="button">Sair</button>
+        </div>
         <!-- inboxPanel = referenciado pelo chat-agency.js para scroll infinito -->
         <div id="inboxPanel">
           <!-- inbox = onde o chat-agency.js injeta os .chat-item -->
@@ -430,6 +548,7 @@
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="/js/header.js"></script>
+  <script src="/js/chatter-sessao.js" defer></script>
   <script src="/js/chat-agency.js" defer></script>
 </body>
 </html>

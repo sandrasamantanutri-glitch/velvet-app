@@ -54,6 +54,7 @@ const ffmpegPath = require("ffmpeg-static");
 const authCliente = require("./middleware/authCliente");
 const authModelo = require("./middleware/authModelo");
 const auth = require("./middleware/auth");
+const requireRole = require("./middleware/requireRole");
 
 const crypto = require("crypto");
 const contratoTextos = require("./contrato-textos");
@@ -3542,6 +3543,11 @@ app.use('/api/admin/contestacoes', auth, authAdmin, contestacoesRouter);
 app.use('/api/admin/prospeccao', auth, authAdmin, adminProspeccaoRouter);
 app.use('/api/suporte', suporteRouter);
 
+// Registro de quem atende no chat-agency.html (entrada/saída)
+const chatterSessoes = require('./utils/chatterSessoes')(db);
+app.use('/api/chatter', auth, requireRole('modelo'), require('./routes/chatterSessao')(db, chatterSessoes));
+app.use('/api/admin/chatters', auth, authAdmin, require('./routes/adminChatters')(db, chatterSessoes));
+
 // ── CAMPANHAS VIP ─────────────────────────────────────────────
 // POST /api/admin/campanhas/vip
 // Body: { modelo_id, subject, html, nome_campanha }
@@ -4315,6 +4321,9 @@ io.use((socket, next) => {
 
 io.on("connection", (socket) => {
   console.log("🔥 Socket conectado:", socket.id, socket.user);
+
+  // Presença de quem está identificado no chat-agency.html
+  chatterSessoes.conectarSocket(socket);
 
   // ─── NOTIFICAÇÕES ADMIN (sino do dashboard) ─────────────────────────────
   if (socket.user?.role === "admin") {
@@ -17092,6 +17101,8 @@ const PORT = process.env.PORT || 3000;
 
 server.listen(PORT, "0.0.0.0", () => {
   console.log("🚀 Servidor rodando na porta", PORT);
+
+  chatterSessoes.iniciar();
 
   // Job automático: sync social a cada 6h
   // Processa até 5 modelos por rodada (novos ou com >30 dias sem sync)
